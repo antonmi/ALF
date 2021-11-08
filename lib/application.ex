@@ -8,7 +8,6 @@ defmodule ALF.Application do
       {DynamicSupervisor, strategy: :one_for_one, name: ALF.DynamicSupervisor}
     ]
 
-
     opts = [strategy: :one_for_one, name: ALF.Supervisor]
     Supervisor.start_link(children, opts)
   end

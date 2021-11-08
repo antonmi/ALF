@@ -1,4 +1,4 @@
-defmodule ALF.Loop do
+defmodule ALF.GoTo do
   use ALF.BaseStage
 
   defstruct [
@@ -22,20 +22,18 @@ defmodule ALF.Loop do
     {:producer_consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
   end
 
-  def find_where_to_loop(pid, stages) do
-    GenStage.call(pid, {:find_where_to_loop, stages})
+  def find_where_to_go(pid, stages) do
+    GenStage.call(pid, {:find_where_to_go, stages})
   end
 
-  def handle_call({:find_where_to_loop, stages}, _from, state) do
-    pid = case Enum.filter(stages, &(&1.name == state.to and &1.__struct__ == ALF.Empty)) do
+  def handle_call({:find_where_to_go, stages}, _from, state) do
+    pid = case Enum.filter(stages, &(&1.name == state.to and &1.__struct__ == Flwx.Empty)) do
       [stage] ->
         stage.pid
       [stage | _other] = stages ->
-#        raise "Loop state error: found #{Enum.count(stages)} stages with name #{state.to}"
-        1
-      nil ->
-#        raise "Loop state error: no stage with name #{state.to}"
-1
+        raise "GoTo stage error: found #{Enum.count(stages)} stages with name #{state.to}"
+      [] ->
+        raise "GoTo stage error: no stage with name #{state.to}"
     end
 
     state = %{state | to_pid: pid}
@@ -48,7 +46,7 @@ defmodule ALF.Loop do
     ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
 
     if (state.if === true) or call_condition_function(state.if, ip.datum, state.pipeline_module) do
-      :ok = GenStage.call(state.to_pid, {:loop, ip})
+      :ok = GenStage.call(state.to_pid, {:go_to, ip})
       {:noreply, [], state}
     else
       {:noreply, [ip], state}

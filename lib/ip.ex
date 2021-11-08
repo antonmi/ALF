@@ -11,5 +11,4 @@ defmodule ALF.IP do
     manager_name: nil
   ]
 
-
 end
