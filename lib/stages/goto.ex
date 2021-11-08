@@ -1,4 +1,4 @@
-defmodule ALF.GoTo do
+defmodule ALF.Goto do
   use ALF.BaseStage
 
   defstruct [
@@ -31,22 +31,20 @@ defmodule ALF.GoTo do
       [stage] ->
         stage.pid
       [stage | _other] = stages ->
-        raise "GoTo stage error: found #{Enum.count(stages)} stages with name #{state.to}"
+        raise "Goto stage error: found #{Enum.count(stages)} stages with name #{state.to}"
       [] ->
-        raise "GoTo stage error: no stage with name #{state.to}"
+        raise "Goto stage error: no stage with name #{state.to}"
     end
 
     state = %{state | to_pid: pid}
     {:reply, state, [], state}
   end
 
-
-
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{} = state) do
     ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
 
     if (state.if === true) or call_condition_function(state.if, ip.datum, state.pipeline_module) do
-      :ok = GenStage.call(state.to_pid, {:go_to, ip})
+      :ok = GenStage.call(state.to_pid, {:goto, ip})
       {:noreply, [], state}
     else
       {:noreply, [ip], state}

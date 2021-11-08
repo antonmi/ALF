@@ -1,6 +1,6 @@
 defmodule ALF.Builder do
 
-  alias ALF.{Producer, Pipeline, Stage, GoTo, DeadEnd, Empty, Switch, Clone, Consumer}
+  alias ALF.{Producer, Pipeline, Stage, Goto, DeadEnd, Empty, Switch, Clone, Consumer}
 
   def build(pipe_spec, supervisor_pid) when is_list(pipe_spec) do
     producer = start_producer(supervisor_pid)
@@ -46,9 +46,9 @@ defmodule ALF.Builder do
           end)
 
           {new_stages, stages ++ new_stages}
-        %GoTo{} = go_to ->
-          go_to = start_stage(go_to, supervisor_pid, prev_stages)
-          {[go_to], stages ++ [go_to]}
+        %Goto{} = goto ->
+          goto = start_stage(goto, supervisor_pid, prev_stages)
+          {[goto], stages ++ [goto]}
         %DeadEnd{} = dead_end ->
           dead_end = start_stage(dead_end, supervisor_pid, prev_stages)
           {[], stages ++ [dead_end]}
