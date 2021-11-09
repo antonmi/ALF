@@ -23,7 +23,7 @@ defmodule ALF.Empty do
     {:noreply, [ip], state}
   end
 
-  def handle_call({:loop, %ALF.IP{} = ip}, _from, %__MODULE__{} = state) do
+  def handle_call({:goto, %ALF.IP{} = ip}, _from, %__MODULE__{} = state) do
 
     ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
     {:reply, :ok, [ip], state}

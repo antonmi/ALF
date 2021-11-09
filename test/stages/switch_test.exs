@@ -88,6 +88,4 @@ defmodule ALF.SwitchTest do
       assert [%IP{datum: 1}] = TestConsumer.ips(consumer2_pid)
     end
   end
-
-
 end
