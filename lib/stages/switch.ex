@@ -9,7 +9,8 @@ defmodule ALF.Switch do
     partitions: %{},
     pipe_module: nil,
     pipeline_module: nil,
-    hash: nil
+    cond: nil,
+    opts: %{}
   ]
 
   def start_link(%__MODULE__{} = state) do
@@ -18,15 +19,15 @@ defmodule ALF.Switch do
 
   def init(state) do
     partitions = Map.keys(state.partitions)
-    hash = fn ip ->
-      partition = call_hash_function(state.hash, ip.datum, state.pipeline_module)
+    cond = fn ip ->
+      partition = call_cond_function(state.cond, ip.datum, state.pipeline_module, state.opts)
       ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
       {ip, partition}
     end
 
     {:producer_consumer,
       %{state | pid: self()},
-      dispatcher: {GenStage.PartitionDispatcher, partitions: partitions, hash: hash},
+      dispatcher: {GenStage.PartitionDispatcher, partitions: partitions, hash: cond},
       subscribe_to: state.subscribe_to}
   end
 
@@ -34,16 +35,12 @@ defmodule ALF.Switch do
     {:noreply, [ip], state}
   end
 
-  defp call_hash_function(function, datum, pipeline_module) when is_atom(function) do
-    apply(pipeline_module, function, [datum])
+  defp call_cond_function(function, datum, pipeline_module, opts) when is_atom(function) do
+    apply(pipeline_module, function, [datum, opts])
   end
 
-  defp call_hash_function({module, function, _pipeline_module}, datum) when is_atom(module) and is_atom(function) do
-    apply(module, function, [datum])
-  end
-
-  defp call_hash_function(hash, datum, _pipeline_module) when is_function(hash) do
-    hash.(datum)
+  defp call_cond_function(cond, datum, _pipeline_module, opts) when is_function(cond) do
+    cond.(datum, opts)
   end
 
 end

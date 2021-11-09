@@ -1,5 +1,5 @@
 defmodule ALF.DSLTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.{Builder, Stage, Switch, Clone, DeadEnd, Empty, Goto}
 
@@ -25,7 +25,7 @@ defmodule ALF.DSLTest do
           part1: stages_from(PipelineA, %{foo: :bar}),
           part2: [stage(ModInPart2)]
         },
-        hash: :hash_function
+        cond: :cond_function
       ),
       goto(:goto, to: :empty, if: :function)
     ]
@@ -55,12 +55,12 @@ defmodule ALF.DSLTest do
       [empty, clone, switch, goto] = pipeline.stages
 
       assert %Empty{name: :empty} = empty
-      assert %Clone{name: :clone, to: [stage_mod1, dead_end]} = clone
+      assert %Clone{name: :clone, to: [_stage_mod1, dead_end]} = clone
       assert %Switch{
         name: :switch,
         partitions: %{
           part1: [one, two, three, four],
-          part2: [stage_in_part2]
+          part2: [_stage_in_part2]
         }
       } = switch
 

@@ -1,5 +1,5 @@
 defmodule ALF.BuilderTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.{Builder, Stage, Switch, Clone, DeadEnd}
 
@@ -54,7 +54,7 @@ defmodule ALF.BuilderTest do
             part1: [%Stage{name: :stage_in_part1}],
             part2: [%Stage{name: :stage_in_part2}]
           },
-          hash: :hash_function
+          cond: :cond_function
         },
       ]
     end
@@ -65,7 +65,7 @@ defmodule ALF.BuilderTest do
       switch = hd(pipeline.stages)
 
       assert %ALF.Switch{
-        hash: :hash_function,
+        cond: :cond_function,
         name: :switch,
         pid: switch_pid,
         partitions: partitions,

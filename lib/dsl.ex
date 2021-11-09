@@ -57,7 +57,7 @@ defmodule ALF.DSL do
       %Switch{
         name: unquote(name),
         partitions: partitions,
-        hash: unquote(options)[:hash],
+        cond: unquote(options)[:cond],
         pipe_module: __MODULE__,
         pipeline_module: __MODULE__
       }

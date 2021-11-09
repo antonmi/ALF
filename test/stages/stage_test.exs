@@ -1,5 +1,5 @@
 defmodule ALF.StageTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   alias ALF.{IP, Stage, TestProducer, TestConsumer}
 
   defmodule Component do
