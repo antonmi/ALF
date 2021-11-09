@@ -1,4 +1,4 @@
-defmodule ALF.Empty do
+defmodule ALF.GotoPoint do
   use ALF.BaseStage
 
   defstruct [

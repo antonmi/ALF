@@ -28,7 +28,7 @@ defmodule ALF.Goto do
   end
 
   def handle_call({:find_where_to_go, stages}, _from, state) do
-    pid = case Enum.filter(stages, &(&1.name == state.to and &1.__struct__ == Flwx.Empty)) do
+    pid = case Enum.filter(stages, &(&1.name == state.to and &1.__struct__ == ALF.GotoPoint)) do
       [stage] ->
         stage.pid
       [stage | _other] = stages ->

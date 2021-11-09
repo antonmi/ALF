@@ -1,5 +1,5 @@
 defmodule ALF.DSL do
-  alias ALF.{Stage, Switch, Clone, DeadEnd, Empty, Goto}
+  alias ALF.{Stage, Switch, Clone, DeadEnd, GotoPoint, Goto}
 
   defmacro stage(atom, options \\ [opts: [], count: 1, name: nil]) do
     count = options[:count]
@@ -11,9 +11,9 @@ defmodule ALF.DSL do
     end
   end
 
-  defmacro empty(name) do
+  defmacro goto_point(name) do
     quote do
-      %Empty{
+      %GotoPoint{
         name: unquote(name),
         pipe_module: __MODULE__,
         pipeline_module: __MODULE__

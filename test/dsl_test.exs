@@ -1,7 +1,7 @@
 defmodule ALF.DSLTest do
   use ExUnit.Case, async: true
 
-  alias ALF.{Builder, Stage, Switch, Clone, DeadEnd, Empty, Goto}
+  alias ALF.{Builder, Stage, Switch, Clone, DeadEnd, GotoPoint, Goto}
 
   defmodule PipelineA do
     use ALF.DSL
@@ -18,7 +18,7 @@ defmodule ALF.DSLTest do
     use ALF.DSL
 
     @stages [
-      empty(:empty),
+      goto_point(:goto_point),
       clone(:clone, to: [stage(Mod1), dead_end(:dead_end)]),
       switch(:switch,
         partitions: %{
@@ -27,7 +27,7 @@ defmodule ALF.DSLTest do
         },
         cond: :cond_function
       ),
-      goto(:goto, to: :empty, if: :function)
+      goto(:goto, to: :goto_point, if: :function)
     ]
   end
 
@@ -52,9 +52,9 @@ defmodule ALF.DSLTest do
     test "build PipelineB", %{sup_pid: sup_pid} do
       {:ok, pipeline} = Builder.build(PipelineB.stages(), sup_pid)
 
-      [empty, clone, switch, goto] = pipeline.stages
+      [goto_point, clone, switch, goto] = pipeline.stages
 
-      assert %Empty{name: :empty} = empty
+      assert %GotoPoint{name: :goto_point} = goto_point
       assert %Clone{name: :clone, to: [_stage_mod1, dead_end]} = clone
       assert %Switch{
         name: :switch,
@@ -65,7 +65,7 @@ defmodule ALF.DSLTest do
       } = switch
 
       assert %DeadEnd{name: :dead_end} = dead_end
-      assert %Goto{name: :goto, to: :empty} = goto
+      assert %Goto{name: :goto, to: :goto_point} = goto
       assert [
         %Stage{name: ModuleA, opts: %{foo: :bar}},
         %Stage{name: :custom_name, opts: %{foo: :bar}},
