@@ -7,6 +7,7 @@ defmodule ALF.Components.Producer do
             pipeline_module: nil,
             subscribe_to: []
 
+  # TODO think about its state
   def start_link(args) do
     GenStage.start_link(__MODULE__, nil)
   end
