@@ -1,6 +1,8 @@
 defmodule ALF.Components.Consumer do
   use GenStage
 
+  alias ALF.Manager
+
   defstruct [
     name: :consumer,
     pid: nil,
@@ -18,7 +20,7 @@ defmodule ALF.Components.Consumer do
   end
 
   def handle_events([ip], _from, state) do
-    ALF.PipelineManager.result_ready(ip.manager_name, ip)
+    Manager.result_ready(ip.manager_name, ip)
 
     {:noreply, [], state}
   end

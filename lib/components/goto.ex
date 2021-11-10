@@ -14,6 +14,7 @@ defmodule ALF.Components.Goto do
     subscribers: []
   ]
 
+  alias ALF.Components.GotoPoint
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
@@ -23,18 +24,18 @@ defmodule ALF.Components.Goto do
     {:producer_consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
   end
 
-  def find_where_to_go(pid, stages) do
-    GenStage.call(pid, {:find_where_to_go, stages})
+  def find_where_to_go(pid, components) do
+    GenStage.call(pid, {:find_where_to_go, components})
   end
 
-  def handle_call({:find_where_to_go, stages}, _from, state) do
-    pid = case Enum.filter(stages, &(&1.name == state.to and &1.__struct__ == ALF.GotoPoint)) do
-      [stage] ->
-        stage.pid
-      [stage | _other] = stages ->
-        raise "Goto stage error: found #{Enum.count(stages)} stages with name #{state.to}"
+  def handle_call({:find_where_to_go, components}, _from, state) do
+    pid = case Enum.filter(components, &(&1.name == state.to and &1.__struct__ == GotoPoint)) do
+      [component] ->
+        component.pid
+      [component | _other] = components ->
+        raise "Goto component error: found #{Enum.count(components)} components with name #{state.to}"
       [] ->
-        raise "Goto stage error: no stage with name #{state.to}"
+        raise "Goto component error: no component with name #{state.to}"
     end
 
     state = %{state | to_pid: pid}

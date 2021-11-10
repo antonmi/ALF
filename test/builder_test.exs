@@ -25,8 +25,8 @@ defmodule ALF.BuilderTest do
     test "build simple pipeline", %{sup_pid: sup_pid} do
       {:ok, pipeline} = Builder.build(spec_simple(), sup_pid)
 
-      stages = pipeline.stages
-      stage = hd(stages)
+      components = pipeline.components
+      stage = hd(components)
 
       assert %Stage{
                name: :stage1,
@@ -40,8 +40,8 @@ defmodule ALF.BuilderTest do
 
       assert stage.subscribe_to == [{pipeline.producer.pid, max_demand: 1}]
 
-      assert Enum.count(stages) == 3
-      assert Enum.map(stages, &(&1.number)) == [0, 1, 2]
+      assert Enum.count(components) == 3
+      assert Enum.map(components, &(&1.number)) == [0, 1, 2]
     end
   end
 
@@ -62,7 +62,7 @@ defmodule ALF.BuilderTest do
     test "build pipeline with switch", %{sup_pid: sup_pid} do
       {:ok, pipeline} = Builder.build(spec_with_switch(), sup_pid)
 
-      switch = hd(pipeline.stages)
+      switch = hd(pipeline.components)
 
       assert %Switch{
         cond: :cond_function,
@@ -114,7 +114,7 @@ defmodule ALF.BuilderTest do
     test "build pipeline with clone", %{sup_pid: sup_pid} do
       {:ok, pipeline} = Builder.build(spec_with_clone(), sup_pid)
 
-      [clone | [stage2]] = pipeline.stages
+      [clone | [stage2]] = pipeline.components
 
       assert %Clone{
                name: :clone,
@@ -133,7 +133,7 @@ defmodule ALF.BuilderTest do
     test "build pipeline with clone and dead_end", %{sup_pid: sup_pid} do
       {:ok, pipeline} = Builder.build(spec_with_clone_and_dead_end(), sup_pid)
 
-      [clone | [stage2]] = pipeline.stages
+      [clone | [stage2]] = pipeline.components
 
       assert %Clone{
                name: :clone,

@@ -12,7 +12,7 @@ defmodule ALF.Builder do
     consumer = start_consumer(supervisor_pid, last_stages)
 
     {producer, consumer} = set_modules({producer, consumer}, last_stages)
-    pipeline = %Pipeline{producer: producer, consumer: consumer, stages: final_stages}
+    pipeline = %Pipeline{producer: producer, consumer: consumer, components: final_stages}
     {:ok, pipeline}
   end
 
