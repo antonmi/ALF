@@ -6,7 +6,7 @@ defmodule ALF.Pipeline do
     consumer: nil
   ]
 
-  alias ALF.{Switch, Clone}
+  alias ALF.Components.{Switch, Clone}
 
   def stages_to_list(stages) do
     do_stages_to_list(stages, [])

@@ -1,6 +1,9 @@
 defmodule ALF.Builder do
 
-  alias ALF.{Producer, Pipeline, Stage, Goto, DeadEnd, GotoPoint, Switch, Clone, Consumer}
+  alias ALF.Pipeline
+  alias ALF.Components.{
+    Producer, Stage, Goto, DeadEnd, GotoPoint, Switch, Clone, Consumer
+  }
 
   def build(pipe_spec, supervisor_pid) when is_list(pipe_spec) do
     producer = start_producer(supervisor_pid)

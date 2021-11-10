@@ -1,6 +1,7 @@
-defmodule ALF.GotoTest do
+defmodule ALF.Components.GotoTest do
   use ExUnit.Case, async: true
-  alias ALF.{IP, GotoPoint, Stage, Goto, TestProducer, TestConsumer}
+  alias ALF.{IP, TestProducer, TestConsumer}
+  alias ALF.Components.{GotoPoint, Stage, Goto}
 
   setup do
     {:ok, producer_pid} = TestProducer.start_link([])

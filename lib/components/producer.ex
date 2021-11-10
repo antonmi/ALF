@@ -1,4 +1,4 @@
-defmodule ALF.Producer do
+defmodule ALF.Components.Producer do
   use GenStage
 
   defstruct [

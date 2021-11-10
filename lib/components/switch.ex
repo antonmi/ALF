@@ -1,5 +1,5 @@
-defmodule ALF.Switch do
-  use ALF.BaseStage
+defmodule ALF.Components.Switch do
+  use ALF.Components.Basic
 
   defstruct [
     name: nil,

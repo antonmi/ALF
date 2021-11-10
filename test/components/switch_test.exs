@@ -1,6 +1,7 @@
-defmodule ALF.SwitchTest do
+defmodule ALF.Components.SwitchTest do
   use ExUnit.Case, async: true
-  alias ALF.{IP, Switch, TestProducer, TestConsumer}
+  alias ALF.{IP, TestProducer, TestConsumer}
+  alias ALF.Components.Switch
 
   setup do
     {:ok, producer_pid} = TestProducer.start_link([])

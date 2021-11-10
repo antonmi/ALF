@@ -1,5 +1,7 @@
 defmodule ALF.DSL do
-  alias ALF.{Stage, Switch, Clone, DeadEnd, GotoPoint, Goto}
+  alias ALF.Components.{
+    Stage, Switch, Clone, DeadEnd, GotoPoint, Goto
+    }
 
   defmacro stage(atom, options \\ [opts: [], count: 1, name: nil]) do
     count = options[:count]

@@ -1,5 +1,5 @@
-defmodule ALF.Goto do
-  use ALF.BaseStage
+defmodule ALF.Components.Goto do
+  use ALF.Components.Basic
 
   defstruct [
     name: nil,

@@ -1,4 +1,4 @@
-defmodule ALF.BaseStage do
+defmodule ALF.Components.Basic do
   defmacro __using__(_opts) do
     quote do
       use GenStage

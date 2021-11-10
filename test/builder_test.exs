@@ -1,8 +1,8 @@
 defmodule ALF.BuilderTest do
   use ExUnit.Case, async: true
 
-  alias ALF.{Builder, Stage, Switch, Clone, DeadEnd}
-
+  alias ALF.Builder
+  alias ALF.Components.{Stage, Switch, Clone, DeadEnd}
 
   setup do
     sup_pid = Process.whereis(ALF.DynamicSupervisor)
@@ -64,7 +64,7 @@ defmodule ALF.BuilderTest do
 
       switch = hd(pipeline.stages)
 
-      assert %ALF.Switch{
+      assert %Switch{
         cond: :cond_function,
         name: :switch,
         pid: switch_pid,
@@ -75,14 +75,14 @@ defmodule ALF.BuilderTest do
       assert switch.subscribe_to == [{pipeline.producer.pid, max_demand: 1}]
 
       assert [
-               %ALF.Stage{
+               %Stage{
                  name: :stage_in_part1,
                  subscribe_to: [{^switch_pid, [max_demand: 1, partition: :part1]}]
                }
              ] = partitions[:part1]
 
       assert [
-               %ALF.Stage{
+               %Stage{
                  name: :stage_in_part2,
                  subscribe_to: [{^switch_pid, [max_demand: 1, partition: :part2]}]
                }
@@ -116,7 +116,7 @@ defmodule ALF.BuilderTest do
 
       [clone | [stage2]] = pipeline.stages
 
-      assert %ALF.Clone{
+      assert %Clone{
                name: :clone,
                pid: clone_pid,
                to: [to_stage],
@@ -135,7 +135,7 @@ defmodule ALF.BuilderTest do
 
       [clone | [stage2]] = pipeline.stages
 
-      assert %ALF.Clone{
+      assert %Clone{
                name: :clone,
                pid: clone_pid,
                to: [to_stage, dead_end],

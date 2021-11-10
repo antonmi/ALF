@@ -1,6 +1,7 @@
-defmodule ALF.StageTest do
+defmodule ALF.Components.StageTest do
   use ExUnit.Case, async: true
-  alias ALF.{IP, Stage, TestProducer, TestConsumer}
+  alias ALF.{IP, TestProducer, TestConsumer}
+  alias ALF.Components.Stage
 
   defmodule Component do
     def init(opts) do

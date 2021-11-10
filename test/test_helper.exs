@@ -25,7 +25,7 @@ defmodule ALF.TestProducer do
 end
 
 defmodule ALF.TestConsumer do
-  use ALF.BaseStage
+  use ALF.Components.Basic
 
   defstruct [
     subscribe_to: [],

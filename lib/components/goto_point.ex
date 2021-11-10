@@ -1,5 +1,5 @@
-defmodule ALF.GotoPoint do
-  use ALF.BaseStage
+defmodule ALF.Components.GotoPoint do
+  use ALF.Components.Basic
 
   defstruct [
     name: nil,

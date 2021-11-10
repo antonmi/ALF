@@ -1,6 +1,7 @@
-defmodule ALF.CloneTest do
+defmodule ALF.Components.CloneTest do
   use ExUnit.Case, async: true
-  alias ALF.{IP, Clone, TestProducer, TestConsumer}
+  alias ALF.{IP, TestProducer, TestConsumer}
+  alias ALF.Components.Clone
 
   setup do
     {:ok, producer_pid} = TestProducer.start_link([])

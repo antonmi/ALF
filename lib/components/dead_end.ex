@@ -1,5 +1,5 @@
-defmodule ALF.DeadEnd do
-  use ALF.BaseStage
+defmodule ALF.Components.DeadEnd do
+  use ALF.Components.Basic
 
   defstruct [
     name: nil,

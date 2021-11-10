@@ -1,7 +1,8 @@
 defmodule ALF.DSLTest do
   use ExUnit.Case, async: true
 
-  alias ALF.{Builder, Stage, Switch, Clone, DeadEnd, GotoPoint, Goto}
+  alias ALF.Builder
+  alias ALF.Components.{Stage, Switch, Clone, DeadEnd, GotoPoint, Goto}
 
   defmodule PipelineA do
     use ALF.DSL

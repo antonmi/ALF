@@ -1,5 +1,5 @@
-defmodule ALF.Clone do
-  use ALF.BaseStage
+defmodule ALF.Components.Clone do
+  use ALF.Components.Basic
 
   defstruct [
     name: nil,

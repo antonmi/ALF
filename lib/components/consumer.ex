@@ -1,4 +1,4 @@
-defmodule ALF.Consumer do
+defmodule ALF.Components.Consumer do
   use GenStage
 
   defstruct [
