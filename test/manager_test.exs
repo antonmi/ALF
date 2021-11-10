@@ -15,6 +15,14 @@ defmodule ALF.ManagerTest do
     def mult_two(datum, _opts), do: datum * 2
   end
 
+  defmodule GoToPipeline do
+    use ALF.DSL
+
+    @components [
+      goto_point(:point),
+      goto(:goto, to: :point, if: :goto_if)
+    ]
+  end
 
   describe "start-up actions" do
     setup do
@@ -62,15 +70,6 @@ defmodule ALF.ManagerTest do
   end
 
   describe "prepare gotos after initialization" do
-    defmodule GoToPipeline do
-      use ALF.DSL
-
-      @components [
-        goto_point(:point),
-        goto(:goto, to: :point, if: :goto_if)
-      ]
-    end
-
     setup do
       Manager.start(GoToPipeline)
       state = Manager.__state__(GoToPipeline)
@@ -88,10 +87,7 @@ defmodule ALF.ManagerTest do
   describe "stream_to/2" do
     def sample_stream, do: [1, 2, 3]
 
-    setup do
-      Manager.start(SimplePipeline)
-      :ok
-    end
+    setup do: Manager.start(SimplePipeline)
 
     test "run stream and check data" do
       results =
@@ -122,6 +118,31 @@ defmodule ALF.ManagerTest do
         %ALF.IP{datum: 6},
         %ALF.IP{datum: 8},
       ] = results
+    end
+  end
+
+  describe "graph_edges/1" do
+    setup do
+      :ok = Manager.start(GoToPipeline)
+      %{edges: Manager.graph_edges(GoToPipeline)}
+    end
+
+    test "check edges", %{edges: edges} do
+      assert Enum.member?(edges,
+        {"ALF.ManagerTest.GoToPipeline-producer", "ALF.ManagerTest.GoToPipeline-point"}
+      )
+
+      assert Enum.member?(edges,
+      {"ALF.ManagerTest.GoToPipeline-point", "ALF.ManagerTest.GoToPipeline-goto"}
+      )
+
+      assert Enum.member?(edges,
+      {"ALF.ManagerTest.GoToPipeline-goto", "ALF.ManagerTest.GoToPipeline-consumer"}
+      )
+
+      assert Enum.member?(edges,
+        {"ALF.ManagerTest.GoToPipeline-goto", "ALF.ManagerTest.GoToPipeline-point"}
+      )
     end
   end
 end
