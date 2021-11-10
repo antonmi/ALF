@@ -18,7 +18,7 @@ defmodule ALF.BuilderTest do
           module: Module,
           function: :function,
           opts: %{a: 1}
-        },
+        }
       ]
     end
 
@@ -36,12 +36,13 @@ defmodule ALF.BuilderTest do
                opts: %{a: 1},
                pid: pid
              } = stage
+
       assert is_pid(pid)
 
       assert stage.subscribe_to == [{pipeline.producer.pid, max_demand: 1}]
 
       assert Enum.count(components) == 3
-      assert Enum.map(components, &(&1.number)) == [0, 1, 2]
+      assert Enum.map(components, & &1.number) == [0, 1, 2]
     end
   end
 
@@ -55,7 +56,7 @@ defmodule ALF.BuilderTest do
             part2: [%Stage{name: :stage_in_part2}]
           },
           cond: :cond_function
-        },
+        }
       ]
     end
 
@@ -65,11 +66,11 @@ defmodule ALF.BuilderTest do
       switch = hd(pipeline.components)
 
       assert %Switch{
-        cond: :cond_function,
-        name: :switch,
-        pid: switch_pid,
-        partitions: partitions,
-      } = switch
+               cond: :cond_function,
+               name: :switch,
+               pid: switch_pid,
+               partitions: partitions
+             } = switch
 
       assert is_pid(switch_pid)
       assert switch.subscribe_to == [{pipeline.producer.pid, max_demand: 1}]
@@ -119,7 +120,7 @@ defmodule ALF.BuilderTest do
       assert %Clone{
                name: :clone,
                pid: clone_pid,
-               to: [to_stage],
+               to: [to_stage]
              } = clone
 
       assert is_pid(clone_pid)
@@ -138,7 +139,7 @@ defmodule ALF.BuilderTest do
       assert %Clone{
                name: :clone,
                pid: clone_pid,
-               to: [to_stage, dead_end],
+               to: [to_stage, dead_end]
              } = clone
 
       assert is_pid(clone_pid)

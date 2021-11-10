@@ -1,7 +1,5 @@
 ExUnit.start()
 
-
-
 defmodule ALF.TestProducer do
   use GenStage
 
@@ -16,7 +14,7 @@ defmodule ALF.TestProducer do
   end
 
   def handle_demand(_demand, []) do
-    {:noreply, [] , []}
+    {:noreply, [], []}
   end
 
   def handle_cast([new_ip | new_ips], ips) do
@@ -27,10 +25,8 @@ end
 defmodule ALF.TestConsumer do
   use ALF.Components.Basic
 
-  defstruct [
-    subscribe_to: [],
-    ips: []
-  ]
+  defstruct subscribe_to: [],
+            ips: []
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
@@ -47,5 +43,3 @@ defmodule ALF.TestConsumer do
     {:noreply, [], state}
   end
 end
-
-

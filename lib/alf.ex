@@ -1,3 +1,2 @@
 defmodule ALF do
-
 end

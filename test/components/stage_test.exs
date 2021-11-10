@@ -20,12 +20,22 @@ defmodule ALF.Components.StageTest do
 
   def setup_stage(stage) do
     {:ok, pid} = Stage.start_link(stage)
-    {:ok, consumer_pid} = TestConsumer.start_link(%TestConsumer{subscribe_to: [{pid, max_demand: 1}]})
+
+    {:ok, consumer_pid} =
+      TestConsumer.start_link(%TestConsumer{subscribe_to: [{pid, max_demand: 1}]})
+
     %{pid: pid, consumer_pid: consumer_pid}
   end
 
   setup %{producer_pid: producer_pid} do
-    stage = %Stage{name: :test_stage, module: Component, function: :call, opts: %{foo: "foo"}, subscribe_to: [{producer_pid, max_demand: 1}]}
+    stage = %Stage{
+      name: :test_stage,
+      module: Component,
+      function: :call,
+      opts: %{foo: "foo"},
+      subscribe_to: [{producer_pid, max_demand: 1}]
+    }
+
     setup_stage(stage)
   end
 

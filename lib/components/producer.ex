@@ -1,13 +1,11 @@
 defmodule ALF.Components.Producer do
   use GenStage
 
-  defstruct [
-    name: :producer,
-    pid: nil,
-    pipe_module: nil,
-    pipeline_module: nil,
-    subscribe_to: [],
-  ]
+  defstruct name: :producer,
+            pid: nil,
+            pipe_module: nil,
+            pipeline_module: nil,
+            subscribe_to: []
 
   def start_link(args) do
     GenStage.start_link(__MODULE__, nil)
@@ -20,7 +18,7 @@ defmodule ALF.Components.Producer do
   end
 
   def handle_demand(_demand, []) do
-    {:noreply, [] , []}
+    {:noreply, [], []}
   end
 
   def handle_cast([new_ip | new_ips], ips) do

@@ -1,16 +1,14 @@
 defmodule ALF.Manager do
   use GenServer
 
-  defstruct [
-    name: nil,
-    pipeline_module: nil,
-    pid: nil,
-    pipeline: nil,
-    components: [],
-    pipeline_sup_pid: nil,
-    sup_pid: nil,
-    registry: %{}
-  ]
+  defstruct name: nil,
+            pipeline_module: nil,
+            pid: nil,
+            pipeline: nil,
+            components: [],
+            pipeline_sup_pid: nil,
+            sup_pid: nil,
+            registry: %{}
 
   use ALF.Manager.StreamTo
   use ALF.Manager.GraphEdges
@@ -31,19 +29,18 @@ defmodule ALF.Manager do
   def start(module) when is_atom(module) do
     sup_pid = Process.whereis(ALF.DynamicSupervisor)
 
-      case DynamicSupervisor.start_child(sup_pid,
-        {__MODULE__,
-          %__MODULE__{sup_pid: sup_pid, name: module, pipeline_module: module}
-        }) do
-        {:ok, _manager_pid} -> :ok
-        {:error, {:already_started, _pid}} -> :ok
-      end
+    case DynamicSupervisor.start_child(
+           sup_pid,
+           {__MODULE__, %__MODULE__{sup_pid: sup_pid, name: module, pipeline_module: module}}
+         ) do
+      {:ok, _manager_pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
   end
 
   def __state__(name_or_pid) when is_atom(name_or_pid) or is_pid(name_or_pid) do
     GenServer.call(name_or_pid, :__state__)
   end
-
 
   def handle_continue(:init_pipeline, %__MODULE__{} = state) do
     {:noreply, start_pipeline(state)}
@@ -58,12 +55,15 @@ defmodule ALF.Manager do
   end
 
   defp start_pipeline_supervisor(%__MODULE__{} = state) do
-    pipeline_sup_pid = case DynamicSupervisor.start_child(state.sup_pid,
-                              {PipelineDynamicSupervisor, %{name: :"#{state.name}_DynamicSupervisor"}}
-                            ) do
-      {:ok, pid} -> pid
-      {:error, {:already_started, pid}} -> pid
-    end
+    pipeline_sup_pid =
+      case DynamicSupervisor.start_child(
+             state.sup_pid,
+             {PipelineDynamicSupervisor, %{name: :"#{state.name}_DynamicSupervisor"}}
+           ) do
+        {:ok, pid} -> pid
+        {:error, {:already_started, pid}} -> pid
+      end
+
     Process.monitor(pipeline_sup_pid)
     %{state | pipeline_sup_pid: pipeline_sup_pid}
   end
@@ -77,9 +77,10 @@ defmodule ALF.Manager do
     components =
       state.pipeline.components
       |> Pipeline.stages_to_list()
-      |> Enum.map(fn(stage) ->
-      stage.__struct__.__state__(stage.pid)
-    end)
+      |> Enum.map(fn stage ->
+        stage.__struct__.__state__(stage.pid)
+      end)
+
     components = [state.pipeline.producer | components] ++ [state.pipeline.consumer]
     %{state | components: components}
   end
@@ -91,6 +92,7 @@ defmodule ALF.Manager do
         case component do
           %Goto{} ->
             Goto.find_where_to_go(component.pid, state.components)
+
           stage ->
             stage
         end

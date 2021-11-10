@@ -1,25 +1,21 @@
 defmodule ALF.Components.Clone do
   use ALF.Components.Basic
 
-  defstruct [
-    name: nil,
-    pid: nil,
-    to: [],
-    subscribe_to: [],
-    pipe_module: nil,
-    pipeline_module: nil,
-    subscribers: []
-  ]
+  defstruct name: nil,
+            pid: nil,
+            to: [],
+            subscribe_to: [],
+            pipe_module: nil,
+            pipeline_module: nil,
+            subscribers: []
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
   def init(state) do
-    {:producer_consumer,
-      %{state | pid: self()},
-      dispatcher: GenStage.BroadcastDispatcher,
-      subscribe_to: state.subscribe_to}
+    {:producer_consumer, %{state | pid: self()},
+     dispatcher: GenStage.BroadcastDispatcher, subscribe_to: state.subscribe_to}
   end
 
   def handle_events([ip], _from, state) do

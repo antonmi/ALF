@@ -35,10 +35,12 @@ defmodule ALF.Components.GotoTest do
   end
 
   def build_stage(goto_point_pid) do
-    %Stage{name: :test_stage,
+    %Stage{
+      name: :test_stage,
       module: __MODULE__,
       function: :stage_function,
-      subscribe_to: [{goto_point_pid, max_demand: 1}]}
+      subscribe_to: [{goto_point_pid, max_demand: 1}]
+    }
   end
 
   def setup_pipeline(producer_pid, if_function) do
@@ -46,9 +48,8 @@ defmodule ALF.Components.GotoTest do
     {:ok, stage_pid} = Stage.start_link(build_stage(goto_point_pid))
     {:ok, goto_pid} = Goto.start_link(build_goto(stage_pid, goto_point_pid, if_function))
 
-    {:ok, consumer_pid} = TestConsumer.start_link(
-      %TestConsumer{subscribe_to: [{goto_pid, max_demand: 1}]}
-    )
+    {:ok, consumer_pid} =
+      TestConsumer.start_link(%TestConsumer{subscribe_to: [{goto_pid, max_demand: 1}]})
 
     consumer_pid
   end
@@ -59,6 +60,7 @@ defmodule ALF.Components.GotoTest do
     Process.sleep(5)
     [ip] = TestConsumer.ips(consumer_pid)
     assert ip.datum == 2
+
     assert ip.history == [
              {:goto, 2},
              {{:test_stage, 0}, 1},

@@ -1,7 +1,12 @@
 defmodule ALF.DSL do
   alias ALF.Components.{
-    Stage, Switch, Clone, DeadEnd, GotoPoint, Goto
-    }
+    Stage,
+    Switch,
+    Clone,
+    DeadEnd,
+    GotoPoint,
+    Goto
+  }
 
   defmacro stage(atom, options \\ [opts: [], count: 1, name: nil]) do
     count = options[:count]
@@ -56,6 +61,7 @@ defmodule ALF.DSL do
   defmacro switch(name, options) do
     quote do
       partitions = ALF.DSL.build_partitions(unquote(options)[:partitions], __MODULE__)
+
       %Switch{
         name: unquote(name),
         partitions: partitions,
@@ -81,7 +87,7 @@ defmodule ALF.DSL do
 
   def build_partitions(partitions, module) do
     partitions
-    |> Enum.reduce(%{}, fn({key, stages}, final_specs)  ->
+    |> Enum.reduce(%{}, fn {key, stages}, final_specs ->
       stages = set_pipeline_module(stages, module)
       Map.put(final_specs, key, stages)
     end)
@@ -120,6 +126,7 @@ defmodule ALF.DSL do
 
   def build_stage(atom, name, opts, count, current_module) do
     name = if name, do: name, else: atom
+
     if function_exported?(atom, :__info__, 1) do
       %Stage{
         pipe_module: current_module,

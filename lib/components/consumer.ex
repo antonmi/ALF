@@ -3,13 +3,11 @@ defmodule ALF.Components.Consumer do
 
   alias ALF.Manager
 
-  defstruct [
-    name: :consumer,
-    pid: nil,
-    pipe_module: nil,
-    subscribe_to: [],
-    pipeline_module: nil,
-  ]
+  defstruct name: :consumer,
+            pid: nil,
+            pipe_module: nil,
+            subscribe_to: [],
+            pipeline_module: nil
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
@@ -24,5 +22,4 @@ defmodule ALF.Components.Consumer do
 
     {:noreply, [], state}
   end
-
 end

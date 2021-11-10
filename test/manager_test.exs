@@ -93,7 +93,7 @@ defmodule ALF.ManagerTest do
       results =
         sample_stream()
         |> Manager.stream_to(SimplePipeline)
-        |> Enum.to_list
+        |> Enum.to_list()
 
       assert results == [4, 6, 8]
     end
@@ -102,7 +102,7 @@ defmodule ALF.ManagerTest do
       results =
         sample_stream()
         |> Manager.stream_to(SimplePipeline, %{chunk_every: 5})
-        |> Enum.to_list
+        |> Enum.to_list()
 
       assert results == [4, 6, 8]
     end
@@ -111,13 +111,13 @@ defmodule ALF.ManagerTest do
       results =
         sample_stream()
         |> Manager.stream_to(SimplePipeline, %{return_ips: true})
-        |> Enum.to_list
+        |> Enum.to_list()
 
       assert [
-        %ALF.IP{datum: 4},
-        %ALF.IP{datum: 6},
-        %ALF.IP{datum: 8},
-      ] = results
+               %ALF.IP{datum: 4},
+               %ALF.IP{datum: 6},
+               %ALF.IP{datum: 8}
+             ] = results
     end
   end
 
@@ -128,21 +128,25 @@ defmodule ALF.ManagerTest do
     end
 
     test "check edges", %{edges: edges} do
-      assert Enum.member?(edges,
-        {"ALF.ManagerTest.GoToPipeline-producer", "ALF.ManagerTest.GoToPipeline-point"}
-      )
+      assert Enum.member?(
+               edges,
+               {"ALF.ManagerTest.GoToPipeline-producer", "ALF.ManagerTest.GoToPipeline-point"}
+             )
 
-      assert Enum.member?(edges,
-      {"ALF.ManagerTest.GoToPipeline-point", "ALF.ManagerTest.GoToPipeline-goto"}
-      )
+      assert Enum.member?(
+               edges,
+               {"ALF.ManagerTest.GoToPipeline-point", "ALF.ManagerTest.GoToPipeline-goto"}
+             )
 
-      assert Enum.member?(edges,
-      {"ALF.ManagerTest.GoToPipeline-goto", "ALF.ManagerTest.GoToPipeline-consumer"}
-      )
+      assert Enum.member?(
+               edges,
+               {"ALF.ManagerTest.GoToPipeline-goto", "ALF.ManagerTest.GoToPipeline-consumer"}
+             )
 
-      assert Enum.member?(edges,
-        {"ALF.ManagerTest.GoToPipeline-goto", "ALF.ManagerTest.GoToPipeline-point"}
-      )
+      assert Enum.member?(
+               edges,
+               {"ALF.ManagerTest.GoToPipeline-goto", "ALF.ManagerTest.GoToPipeline-point"}
+             )
     end
   end
 end

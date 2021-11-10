@@ -1,30 +1,24 @@
 defmodule ALF.Components.Stage do
   use ALF.Components.Basic
 
-  defstruct [
-    name: nil,
-    count: 1,
-    number: 0,
-    pipe_module: nil,
-    pipeline_module: nil,
-    module: nil,
-    function: nil,
-    opts: %{},
-    pid: nil,
-    subscribe_to: [],
-    subscribers: []
-  ]
+  defstruct name: nil,
+            count: 1,
+            number: 0,
+            pipe_module: nil,
+            pipeline_module: nil,
+            module: nil,
+            function: nil,
+            opts: %{},
+            pid: nil,
+            subscribe_to: [],
+            subscribers: []
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
   def init(state) do
-    state =
-      %{state |
-        pid: self(),
-        opts: init_opts(state.module, state.opts)
-      }
+    state = %{state | pid: self(), opts: init_opts(state.module, state.opts)}
 
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
@@ -48,6 +42,7 @@ defmodule ALF.Components.Stage do
     case try_apply(ip.datum, {state.module, state.function, state.opts}) do
       {:ok, new_datum} ->
         %{ip | datum: new_datum}
+
       {:error, error} ->
         %{ip | error: error}
     end
@@ -58,13 +53,14 @@ defmodule ALF.Components.Stage do
     {:ok, new_datum}
   rescue
     error ->
-      {:error, %{
-        datum: datum,
-        error: %{
-          error: error,
-          message: Exception.message(error),
-          pipe: {module, function, opts}
-        }
-      }}
+      {:error,
+       %{
+         datum: datum,
+         error: %{
+           error: error,
+           message: Exception.message(error),
+           pipe: {module, function, opts}
+         }
+       }}
   end
 end

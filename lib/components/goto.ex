@@ -1,18 +1,16 @@
 defmodule ALF.Components.Goto do
   use ALF.Components.Basic
 
-  defstruct [
-    name: nil,
-    to: nil,
-    to_pid: nil,
-    if: true,
-    opts: %{},
-    pipe_module: nil,
-    pipeline_module: nil,
-    pid: nil,
-    subscribe_to: [],
-    subscribers: []
-  ]
+  defstruct name: nil,
+            to: nil,
+            to_pid: nil,
+            if: true,
+            opts: %{},
+            pipe_module: nil,
+            pipeline_module: nil,
+            pid: nil,
+            subscribe_to: [],
+            subscribers: []
 
   alias ALF.Components.GotoPoint
 
@@ -29,14 +27,17 @@ defmodule ALF.Components.Goto do
   end
 
   def handle_call({:find_where_to_go, components}, _from, state) do
-    pid = case Enum.filter(components, &(&1.name == state.to and &1.__struct__ == GotoPoint)) do
-      [component] ->
-        component.pid
-      [component | _other] = components ->
-        raise "Goto component error: found #{Enum.count(components)} components with name #{state.to}"
-      [] ->
-        raise "Goto component error: no component with name #{state.to}"
-    end
+    pid =
+      case Enum.filter(components, &(&1.name == state.to and &1.__struct__ == GotoPoint)) do
+        [component] ->
+          component.pid
+
+        [component | _other] = components ->
+          raise "Goto component error: found #{Enum.count(components)} components with name #{state.to}"
+
+        [] ->
+          raise "Goto component error: no component with name #{state.to}"
+      end
 
     state = %{state | to_pid: pid}
     {:reply, state, [], state}

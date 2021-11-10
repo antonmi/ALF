@@ -11,7 +11,7 @@ defmodule ALF.DSLTest do
       stage(ModuleA),
       stage(StageA1, name: :custom_name),
       stage(:just_function),
-      stage(:just_function, name: :custom_name),
+      stage(:just_function, name: :custom_name)
     ]
   end
 
@@ -57,22 +57,24 @@ defmodule ALF.DSLTest do
 
       assert %GotoPoint{name: :goto_point} = goto_point
       assert %Clone{name: :clone, to: [_stage_mod1, dead_end]} = clone
+
       assert %Switch{
-        name: :switch,
-        partitions: %{
-          part1: [one, two, three, four],
-          part2: [_stage_in_part2]
-        }
-      } = switch
+               name: :switch,
+               partitions: %{
+                 part1: [one, two, three, four],
+                 part2: [_stage_in_part2]
+               }
+             } = switch
 
       assert %DeadEnd{name: :dead_end} = dead_end
       assert %Goto{name: :goto, to: :goto_point} = goto
+
       assert [
-        %Stage{name: ModuleA, opts: %{foo: :bar}},
-        %Stage{name: :custom_name, opts: %{foo: :bar}},
-        %Stage{name: :just_function, opts: %{foo: :bar}},
-        %Stage{name: :custom_name, opts: %{foo: :bar}}
-      ] = [one, two, three, four]
+               %Stage{name: ModuleA, opts: %{foo: :bar}},
+               %Stage{name: :custom_name, opts: %{foo: :bar}},
+               %Stage{name: :just_function, opts: %{foo: :bar}},
+               %Stage{name: :custom_name, opts: %{foo: :bar}}
+             ] = [one, two, three, four]
     end
   end
 end
