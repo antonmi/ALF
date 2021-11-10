@@ -47,7 +47,7 @@ defmodule ALF.DSL do
 
   defmacro stages_from(module, options \\ []) do
     quote do
-      unquote(module).stages
+      unquote(module).alf_components
       |> ALF.DSL.set_pipeline_module(__MODULE__)
       |> ALF.DSL.set_options(unquote(options))
     end
@@ -114,13 +114,13 @@ defmodule ALF.DSL do
 
   defmacro __before_compile__(_env) do
     quote do
-      def stages, do: @stages
+      def alf_components, do: @components
     end
   end
 
   def build_stage(atom, name, opts, count, current_module) do
     name = if name, do: name, else: atom
-    stage = if function_exported?(atom, :__info__, 1) do
+    if function_exported?(atom, :__info__, 1) do
       %Stage{
         pipe_module: current_module,
         pipeline_module: current_module,

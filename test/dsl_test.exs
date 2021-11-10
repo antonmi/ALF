@@ -7,7 +7,7 @@ defmodule ALF.DSLTest do
   defmodule PipelineA do
     use ALF.DSL
 
-    @stages [
+    @components [
       stage(ModuleA),
       stage(StageA1, name: :custom_name),
       stage(:just_function),
@@ -18,7 +18,7 @@ defmodule ALF.DSLTest do
   defmodule PipelineB do
     use ALF.DSL
 
-    @stages [
+    @components [
       goto_point(:goto_point),
       clone(:clone, to: [stage(Mod1), dead_end(:dead_end)]),
       switch(:switch,
@@ -39,7 +39,7 @@ defmodule ALF.DSLTest do
 
   describe "PipelineA" do
     test "build PipelineA", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineA.stages(), sup_pid)
+      {:ok, pipeline} = Builder.build(PipelineA.alf_components(), sup_pid)
 
       [one, two, three, four] = pipeline.stages
       assert %Stage{name: ModuleA} = one
@@ -51,7 +51,7 @@ defmodule ALF.DSLTest do
 
   describe "PipelineB" do
     test "build PipelineB", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineB.stages(), sup_pid)
+      {:ok, pipeline} = Builder.build(PipelineB.alf_components(), sup_pid)
 
       [goto_point, clone, switch, goto] = pipeline.stages
 
