@@ -13,7 +13,7 @@ defmodule ALF.Components.Stage do
             subscribe_to: [],
             subscribers: []
 
-  alias ALF.Manager
+  alias ALF.{Manager, DoneStatement}
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
@@ -42,12 +42,21 @@ defmodule ALF.Components.Stage do
     {:noreply, [], state}
   end
 
+  def handle_events([%DoneStatement{ip: ip}], _from, %__MODULE__{} = state) do
+    Manager.result_ready(ip.manager_name, ip)
+    {:noreply, [], state}
+  end
+
   defp process_ip(ip, state) do
     ip = %{ip | history: [{{state.name, state.number}, ip.datum} | ip.history]}
 
     case try_apply(ip.datum, {state.module, state.function, state.opts}) do
       {:ok, new_datum} ->
         %{ip | datum: new_datum}
+
+      {:error, %DoneStatement{datum: datum} = done} ->
+        ip = %{ip | datum: datum}
+        %{done | ip: ip}
 
       {:error, error} ->
         build_error_ip(ip, error, state)

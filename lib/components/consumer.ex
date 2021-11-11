@@ -1,7 +1,7 @@
 defmodule ALF.Components.Consumer do
   use GenStage
 
-  alias ALF.Manager
+  alias ALF.{ErrorIP, IP, Manager, DoneStatement}
 
   defstruct name: :consumer,
             pid: nil,
@@ -17,7 +17,13 @@ defmodule ALF.Components.Consumer do
     {:consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
   end
 
-  def handle_events([ip], _from, state) do
+  def handle_events([%DoneStatement{ip: ip}], _from, state) do
+    Manager.result_ready(ip.manager_name, ip)
+
+    {:noreply, [], state}
+  end
+
+  def handle_events([ip], _from, state) when is_struct(ip, IP) or is_struct(ip, ErrorIP) do
     Manager.result_ready(ip.manager_name, ip)
 
     {:noreply, [], state}

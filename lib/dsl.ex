@@ -115,6 +115,10 @@ defmodule ALF.DSL do
 
       def __pipeline__, do: true
       def __options__, do: unquote(opts)
+
+      def done!(datum) do
+        raise ALF.DoneStatement, datum
+      end
     end
   end
 
