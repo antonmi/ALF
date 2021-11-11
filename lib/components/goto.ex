@@ -46,19 +46,28 @@ defmodule ALF.Components.Goto do
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{} = state) do
     ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
 
-    if call_condition_function(state.if, ip.datum, state.pipeline_module, state.opts) do
-      :ok = GenStage.call(state.to_pid, {:goto, ip})
-      {:noreply, [], state}
-    else
-      {:noreply, [ip], state}
+    case call_condition_function(state.if, ip.datum, state.pipeline_module, state.opts) do
+      {:error, error} ->
+        {:noreply, [build_error_ip(ip, error, state)], state}
+      true ->
+        :ok = GenStage.call(state.to_pid, {:goto, ip})
+        {:noreply, [], state}
+      false ->
+        {:noreply, [ip], state}
     end
   end
 
   defp call_condition_function(function, datum, pipeline_module, opts) when is_atom(function) do
     apply(pipeline_module, function, [datum, opts])
+  rescue
+    error ->
+      {:error, error}
   end
 
   defp call_condition_function(hash, datum, _pipeline_module, opts) when is_function(hash) do
     hash.(datum, opts)
+  rescue
+    error ->
+      {:error, error}
   end
 end

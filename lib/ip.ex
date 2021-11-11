@@ -5,7 +5,6 @@ defmodule ALF.IP do
             stream_ref: nil,
             ref: nil,
             datum: nil,
-            error: nil,
             history: [],
             manager_name: nil
 end

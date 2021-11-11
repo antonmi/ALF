@@ -13,6 +13,8 @@ defmodule ALF.Components.Stage do
             subscribe_to: [],
             subscribers: []
 
+  alias ALF.Manager
+
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
@@ -31,9 +33,13 @@ defmodule ALF.Components.Stage do
     end
   end
 
-  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{} = state) do
-    new_ip = process_ip(ip, state)
-    {:noreply, [new_ip], state}
+  def handle_events([%IP{} = ip], _from, %__MODULE__{} = state) do
+    {:noreply, [process_ip(ip, state)], state}
+  end
+
+  def handle_events([%ErrorIP{} = error_ip], _from, %__MODULE__{} = state) do
+    Manager.result_ready(error_ip.manager_name, error_ip)
+    {:noreply, [], state}
   end
 
   defp process_ip(ip, state) do
@@ -44,7 +50,7 @@ defmodule ALF.Components.Stage do
         %{ip | datum: new_datum}
 
       {:error, error} ->
-        %{ip | error: error}
+        build_error_ip(ip, error, state)
     end
   end
 
@@ -53,14 +59,6 @@ defmodule ALF.Components.Stage do
     {:ok, new_datum}
   rescue
     error ->
-      {:error,
-       %{
-         datum: datum,
-         error: %{
-           error: error,
-           message: Exception.message(error),
-           pipe: {module, function, opts}
-         }
-       }}
+      {:error, error}
   end
 end

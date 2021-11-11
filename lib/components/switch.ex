@@ -19,9 +19,13 @@ defmodule ALF.Components.Switch do
     partitions = Map.keys(state.partitions)
 
     cond = fn ip ->
-      partition = call_cond_function(state.cond, ip.datum, state.pipeline_module, state.opts)
       ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
-      {ip, partition}
+      case call_cond_function(state.cond, ip.datum, state.pipeline_module, state.opts) do
+        {:error, error} ->
+          {build_error_ip(ip, error, state), hd(partitions)}
+        partition ->
+          {ip, partition}
+      end
     end
 
     {:producer_consumer, %{state | pid: self()},
@@ -35,9 +39,15 @@ defmodule ALF.Components.Switch do
 
   defp call_cond_function(function, datum, pipeline_module, opts) when is_atom(function) do
     apply(pipeline_module, function, [datum, opts])
+  rescue
+    error ->
+      {:error, error}
   end
 
   defp call_cond_function(cond, datum, _pipeline_module, opts) when is_function(cond) do
     cond.(datum, opts)
+  rescue
+    error ->
+      {:error, error}
   end
 end

@@ -1,7 +1,7 @@
 defmodule ALF.Manager.StreamTo do
   defmacro __using__(_opts) do
     quote do
-      alias ALF.IP
+      alias ALF.{IP, ErrorIP}
 
       defmodule ProcessingOptions do
         defstruct chunk_every: 10,
@@ -63,14 +63,12 @@ defmodule ALF.Manager.StreamTo do
         )
       end
 
-      defp format_output(ips, task, return_ips) do
-        if return_ips do
-          {ips, task}
-        else
-          results = Enum.map(ips, & &1.datum)
-          {results, task}
-        end
+      defp format_output([%IP{} | _] = ips, task, true), do: {ips, task}
+      defp format_output([%IP{} | _] = ips, task, false) do
+        {Enum.map(ips, & &1.datum), task}
       end
+      defp format_output([%ErrorIP{} | _] = ips, task, _return_ips), do: {ips, task}
+      defp format_output([], task, return_ips), do: {[], task}
 
       defp send_data(name, data, stream_ref) when is_atom(name) and is_list(data) do
         GenServer.call(name, {:put_data_to_registry, data, stream_ref})

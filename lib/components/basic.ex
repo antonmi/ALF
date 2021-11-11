@@ -3,6 +3,8 @@ defmodule ALF.Components.Basic do
     quote do
       use GenStage
 
+      alias ALF.{IP, ErrorIP}
+
       def __state__(pid) when is_pid(pid) do
         GenStage.call(pid, :__state__)
       end
@@ -26,6 +28,17 @@ defmodule ALF.Components.Basic do
 
       def handle_subscribe(:producer, subscription_options, from, state) do
         {:automatic, state}
+      end
+
+      defp build_error_ip(ip, error, state) do
+        %ErrorIP{
+          ip: ip,
+          manager_name: ip.manager_name,
+          ref: ip.ref,
+          stream_ref: ip.stream_ref,
+          error: error,
+          component: state
+        }
       end
     end
   end
