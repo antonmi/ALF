@@ -32,7 +32,7 @@ defmodule ALF.Components.Goto do
         [component] ->
           component.pid
 
-        [component | _other] = components ->
+        [_component | _other] = components ->
           raise "Goto component error: found #{Enum.count(components)} components with name #{state.to}"
 
         [] ->
