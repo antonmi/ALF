@@ -64,9 +64,11 @@ defmodule ALF.Manager.StreamTo do
       end
 
       defp format_output([%IP{} | _] = ips, task, true), do: {ips, task}
+
       defp format_output([%IP{} | _] = ips, task, false) do
         {Enum.map(ips, & &1.datum), task}
       end
+
       defp format_output([%ErrorIP{} | _] = ips, task, _return_ips), do: {ips, task}
       defp format_output([], task, return_ips), do: {[], task}
 

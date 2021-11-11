@@ -49,9 +49,11 @@ defmodule ALF.Components.Goto do
     case call_condition_function(state.if, ip.datum, state.pipeline_module, state.opts) do
       {:error, error} ->
         {:noreply, [build_error_ip(ip, error, state)], state}
+
       true ->
         :ok = GenStage.call(state.to_pid, {:goto, ip})
         {:noreply, [], state}
+
       false ->
         {:noreply, [ip], state}
     end

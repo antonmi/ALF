@@ -20,9 +20,11 @@ defmodule ALF.Components.Switch do
 
     cond = fn ip ->
       ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
+
       case call_cond_function(state.cond, ip.datum, state.pipeline_module, state.opts) do
         {:error, error} ->
           {build_error_ip(ip, error, state), hd(partitions)}
+
         partition ->
           {ip, partition}
       end

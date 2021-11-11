@@ -32,7 +32,7 @@ defmodule ALF.ComponentDoneTest do
                  history: [{{:add_one, 0}, 1}]
                },
                %IP{},
-               %IP{},
+               %IP{}
              ] = results
     end
 
@@ -75,7 +75,7 @@ defmodule ALF.ComponentDoneTest do
                  history: [{{:mult_two, 0}, 2}, {{:add_one, 0}, 1}]
                },
                %IP{},
-               %IP{},
+               %IP{}
              ] = results
     end
 
