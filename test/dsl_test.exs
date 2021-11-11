@@ -23,7 +23,7 @@ defmodule ALF.DSLTest do
       clone(:clone, to: [stage(Mod1), dead_end(:dead_end)]),
       switch(:switch,
         partitions: %{
-          part1: stages_from(PipelineA, %{foo: :bar}),
+          part1: stages_from(PipelineA, opts: %{foo: :bar}),
           part2: [stage(ModInPart2)]
         },
         cond: :cond_function

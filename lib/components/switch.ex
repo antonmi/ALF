@@ -22,8 +22,8 @@ defmodule ALF.Components.Switch do
       ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
 
       case call_cond_function(state.cond, ip.datum, state.pipeline_module, state.opts) do
-        {:error, error} ->
-          {build_error_ip(ip, error, state), hd(partitions)}
+        {:error, error, stacktrace} ->
+          {build_error_ip(ip, error, stacktrace, state), hd(partitions)}
 
         partition ->
           {ip, partition}
@@ -43,13 +43,13 @@ defmodule ALF.Components.Switch do
     apply(pipeline_module, function, [datum, opts])
   rescue
     error ->
-      {:error, error}
+      {:error, error, __STACKTRACE__}
   end
 
   defp call_cond_function(cond, datum, _pipeline_module, opts) when is_function(cond) do
     cond.(datum, opts)
   rescue
     error ->
-      {:error, error}
+      {:error, error, __STACKTRACE__}
   end
 end

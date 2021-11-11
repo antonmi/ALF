@@ -47,8 +47,8 @@ defmodule ALF.Components.Goto do
     ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
 
     case call_condition_function(state.if, ip.datum, state.pipeline_module, state.opts) do
-      {:error, error} ->
-        {:noreply, [build_error_ip(ip, error, state)], state}
+      {:error, error, stacktrace} ->
+        {:noreply, [build_error_ip(ip, error, stacktrace, state)], state}
 
       true ->
         :ok = GenStage.call(state.to_pid, {:goto, ip})
@@ -63,13 +63,13 @@ defmodule ALF.Components.Goto do
     apply(pipeline_module, function, [datum, opts])
   rescue
     error ->
-      {:error, error}
+      {:error, error, __STACKTRACE__}
   end
 
   defp call_condition_function(hash, datum, _pipeline_module, opts) when is_function(hash) do
     hash.(datum, opts)
   rescue
     error ->
-      {:error, error}
+      {:error, error, __STACKTRACE__}
   end
 end

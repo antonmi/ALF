@@ -21,6 +21,6 @@ be found at [https://hexdocs.pm/alf](https://hexdocs.pm/alf).
 
 
 # TODOS
-- done and error flows
 - component parametrization with pipe_module and pipeline_module
+- options for stages_from
 - DSL validations for all the necessary attributes

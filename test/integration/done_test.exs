@@ -1,4 +1,4 @@
-defmodule ALF.ComponentDoneTest do
+defmodule ALF.DoneTest do
   use ExUnit.Case, async: true
 
   alias ALF.{Manager, IP}

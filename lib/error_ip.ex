@@ -3,6 +3,7 @@ defmodule ALF.ErrorIP do
 
   defstruct ip: nil,
             error: nil,
+            stacktrace: nil,
             component: nil,
             manager_name: nil,
             ref: nil,

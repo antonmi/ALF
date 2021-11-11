@@ -99,18 +99,18 @@ defmodule ALF.ManagerTest do
     end
 
     test "run several streams at once" do
-      stream1 = Manager.stream_to((1..100), SimplePipeline)
-      stream2 = Manager.stream_to((101..200), SimplePipeline)
-      stream3 = Manager.stream_to((201..300), SimplePipeline)
+      stream1 = Manager.stream_to(1..100, SimplePipeline)
+      stream2 = Manager.stream_to(101..200, SimplePipeline)
+      stream3 = Manager.stream_to(201..300, SimplePipeline)
 
       [result1, result2, result3] =
         [stream1, stream2, stream3]
         |> Enum.map(&Task.async(fn -> Enum.to_list(&1) end))
         |> Enum.map(&Task.await(&1))
 
-      assert Enum.sort(result1) == Enum.map((1..100), &((&1+1)*2))
-      assert Enum.sort(result2) == Enum.map((101..200), &((&1+1)*2))
-      assert Enum.sort(result3) == Enum.map((201..300), &((&1+1)*2))
+      assert Enum.sort(result1) == Enum.map(1..100, &((&1 + 1) * 2))
+      assert Enum.sort(result2) == Enum.map(101..200, &((&1 + 1) * 2))
+      assert Enum.sort(result3) == Enum.map(201..300, &((&1 + 1) * 2))
     end
 
     test "run with options" do

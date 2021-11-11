@@ -30,13 +30,14 @@ defmodule ALF.Components.Basic do
         {:automatic, state}
       end
 
-      defp build_error_ip(ip, error, state) do
+      defp build_error_ip(ip, error, stacktrace, state) do
         %ErrorIP{
           ip: ip,
           manager_name: ip.manager_name,
           ref: ip.ref,
           stream_ref: ip.stream_ref,
           error: error,
+          stacktrace: stacktrace,
           component: state
         }
       end
