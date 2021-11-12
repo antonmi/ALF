@@ -16,10 +16,10 @@ defmodule ALF.Manager.StreamTo do
       end
 
       def stream_to(stream, name, opts \\ %{}) when is_atom(name) do
-        GenServer.call(name, {:process_stream, stream, ProcessingOptions.new(opts)})
+        GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts)})
       end
 
-      def handle_call({:process_stream, stream, opts}, _from, %__MODULE__{} = state) do
+      def handle_call({:stream_to, stream, opts}, _from, %__MODULE__{} = state) do
         stream_ref = make_ref()
         registry = Map.put(state.registry, stream_ref, %{inputs: %{}, queue: :queue.new()})
         state = %{state | registry: registry}
@@ -74,23 +74,35 @@ defmodule ALF.Manager.StreamTo do
 
       defp send_data(name, data, stream_ref) when is_atom(name) and is_list(data) do
         GenServer.call(name, {:put_data_to_registry, data, stream_ref})
-
-        ips =
-          Enum.map(
-            data,
-            fn {ref, datum} ->
-              %IP{
-                stream_ref: stream_ref,
-                ref: ref,
-                init_datum: datum,
-                datum: datum,
-                manager_name: name
-              }
-            end
-          )
-
         pipeline = __state__(name).pipeline
+        ips = build_ips(data, stream_ref, name)
         GenServer.cast(pipeline.producer.pid, ips)
+      end
+
+      defp resend_packets(%__MODULE__{} = state) do
+        new_registry =
+          state.registry
+          |> Enum.each(fn {stream_ref, %{inputs: inputs, queue: queue}} ->
+            ips = build_ips(inputs, stream_ref, state.name)
+            GenServer.cast(state.pipeline.producer.pid, ips)
+          end)
+
+        state
+      end
+
+      def build_ips(data, stream_ref, name) do
+        Enum.map(
+          data,
+          fn {ref, datum} ->
+            %IP{
+              stream_ref: stream_ref,
+              ref: ref,
+              init_datum: datum,
+              datum: datum,
+              manager_name: name
+            }
+          end
+        )
       end
 
       def handle_call({:put_data_to_registry, data, stream_ref}, _from, state) do

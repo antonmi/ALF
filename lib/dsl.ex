@@ -56,7 +56,7 @@ defmodule ALF.DSL do
     end
   end
 
-  defmacro stages_from(module, options \\ [opts: %{}, count: 1]) do
+  defmacro stages_from(module, options \\ [opts: [], count: 1]) do
     count = options[:count]
     opts = options[:opts]
 

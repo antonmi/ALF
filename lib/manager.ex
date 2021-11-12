@@ -38,6 +38,14 @@ defmodule ALF.Manager do
     end
   end
 
+  def stop(module) when is_atom(module) do
+    GenServer.call(module, :stop)
+  end
+
+  def terminate(:normal, state) do
+    GenServer.stop(state.pipeline_sup_pid)
+  end
+
   def __state__(name_or_pid) when is_atom(name_or_pid) or is_pid(name_or_pid) do
     GenServer.call(name_or_pid, :__state__)
   end
@@ -102,8 +110,14 @@ defmodule ALF.Manager do
   end
 
   def handle_call(:__state__, _from, state), do: {:reply, state, state}
+  def handle_call(:stop, _from, state), do: {:stop, :normal, state, state}
 
   def handle_info({:DOWN, _ref, :process, _pid, :shutdown}, %__MODULE__{} = state) do
-    {:noreply, start_pipeline(state)}
+    state =
+      state
+      |> start_pipeline()
+      |> resend_packets()
+
+    {:noreply, state}
   end
 end

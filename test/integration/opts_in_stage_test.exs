@@ -95,31 +95,4 @@ defmodule ALF.OptsInStageTest do
       assert result == "hey-bar-Elixir.ALF.OptsInStageTest.PipelineB-bbb"
     end
   end
-
-  #
-  #  describe "when pipeline is reused" do
-  #    defmodule CompositePipeline do
-  #      use ALF.DSL
-  #
-  #      @components stages_from(
-  #                    SimplePipeline,
-  #                    opts: %{pipeline_module: __MODULE__}
-  #                  )
-  #
-  #      def to_mult, do: 3
-  #    end
-  #
-  #    setup do
-  #      Manager.start(CompositePipeline)
-  #    end
-  #
-  #    test "it gets to_mult from the pipeline_module" do
-  #      results =
-  #        [1, 2, 3]
-  #        |> Manager.stream_to(CompositePipeline)
-  #        |> Enum.to_list()
-  #
-  #      assert results == [6, 9, 12]
-  #    end
-  #  end
 end

@@ -67,6 +67,18 @@ defmodule ALF.ManagerTest do
       assert consumer.name == :consumer
       assert consumer.subscribe_to == [{mult.pid, [max_demand: 1]}]
     end
+
+    test "stop pipeline" do
+      state = Manager.stop(SimplePipeline)
+
+      refute Process.alive?(state.pid)
+      refute Process.alive?(state.pipeline_sup_pid)
+
+      state.components
+      |> Enum.each(fn component ->
+        refute Process.alive?(component.pid)
+      end)
+    end
   end
 
   describe "prepare gotos after initialization" do
@@ -106,7 +118,7 @@ defmodule ALF.ManagerTest do
       [result1, result2, result3] =
         [stream1, stream2, stream3]
         |> Enum.map(&Task.async(fn -> Enum.to_list(&1) end))
-        |> Enum.map(&Task.await(&1))
+        |> Task.await_many()
 
       assert Enum.sort(result1) == Enum.map(1..100, &((&1 + 1) * 2))
       assert Enum.sort(result2) == Enum.map(101..200, &((&1 + 1) * 2))
