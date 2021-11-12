@@ -21,4 +21,4 @@ be found at [https://hexdocs.pm/alf](https://hexdocs.pm/alf).
 
 
 # TODOS
-- DSL validations for all the necessary attributes
+- DSL validations for all the necessary attributes and functions presence and arity
