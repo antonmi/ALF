@@ -9,7 +9,6 @@ defmodule ALF.Components.Stage do
             module: nil,
             function: nil,
             opts: %{},
-            extra_opts: false,
             pid: nil,
             subscribe_to: [],
             subscribers: []
@@ -51,11 +50,7 @@ defmodule ALF.Components.Stage do
   defp process_ip(ip, state) do
     ip = %{ip | history: [{{state.name, state.number}, ip.datum} | ip.history]}
 
-    case try_apply(
-           ip.datum,
-           {state.module, state.function, state.opts},
-           {state.extra_opts, state.pipe_module, state.pipeline_module}
-         ) do
+    case try_apply(ip.datum, {state.module, state.function, state.opts}) do
       {:ok, new_datum} ->
         %{ip | datum: new_datum}
 
@@ -68,28 +63,11 @@ defmodule ALF.Components.Stage do
     end
   end
 
-  defp try_apply(
-         datum,
-         {module, function, opts},
-         {extra_opts, pipe_module, pipeline_module}
-       ) do
-    opts = merge_pipeline_data_to_opts(extra_opts, opts, pipe_module, pipeline_module)
+  defp try_apply(datum, {module, function, opts}) do
     new_datum = apply(module, function, [datum, opts])
     {:ok, new_datum}
   rescue
     error ->
       {:error, error, __STACKTRACE__}
   end
-
-  def merge_pipeline_data_to_opts(true, opts, pipe_module, pipeline_module) when is_map(opts) do
-    Map.merge(opts, %{pipe_module: pipe_module, pipeline_module: pipeline_module})
-  end
-
-  def merge_pipeline_data_to_opts(true, opts, pipe_module, pipeline_module) when is_list(opts) do
-    opts
-    |> Keyword.put(:pipe_module, pipe_module)
-    |> Keyword.put(:pipeline_module, pipeline_module)
-  end
-
-  def merge_pipeline_data_to_opts(false, opts, _pipe_module, _pipeline_module), do: opts
 end

@@ -8,10 +8,9 @@ defmodule ALF.DSL do
     Goto
   }
 
-  defmacro stage(atom, options \\ [opts: [], extra_opts: false, count: 1, name: nil]) do
+  defmacro stage(atom, options \\ [opts: [], count: 1, name: nil]) do
     count = options[:count]
     opts = options[:opts]
-    extra_opts = options[:extra_opts]
     name = options[:name]
 
     quote do
@@ -19,7 +18,6 @@ defmodule ALF.DSL do
         unquote(atom),
         unquote(name),
         unquote(opts),
-        unquote(extra_opts),
         unquote(count),
         __MODULE__
       )
@@ -58,15 +56,14 @@ defmodule ALF.DSL do
     end
   end
 
-  defmacro stages_from(module, options \\ [opts: %{}, extra_opts: false, count: 1]) do
+  defmacro stages_from(module, options \\ [opts: %{}, count: 1]) do
     count = options[:count]
     opts = options[:opts]
-    extra_opts = options[:extra_opts]
 
     quote do
       unquote(module).alf_components
       |> ALF.DSL.set_pipeline_module(__MODULE__)
-      |> ALF.DSL.set_options(unquote(opts), unquote(extra_opts), unquote(count))
+      |> ALF.DSL.set_options(unquote(opts), unquote(count))
     end
   end
 
@@ -111,10 +108,17 @@ defmodule ALF.DSL do
     end)
   end
 
-  def set_options(stages, opts, extra_opts, count) do
+  def set_options(stages, opts, count) do
     Enum.map(stages, fn stage ->
-      %{stage | opts: opts || %{}, extra_opts: extra_opts, count: count || 1}
+      opts = merge_opts(stage.opts, opts)
+      %{stage | opts: opts, count: count || 1}
     end)
+  end
+
+  defp merge_opts(opts, new_opts) do
+    opts = if is_map(opts), do: Map.to_list(opts), else: opts
+    new_opts = if is_map(new_opts), do: Map.to_list(new_opts), else: new_opts
+    Keyword.merge(opts, new_opts)
   end
 
   defmacro __using__(opts) do
@@ -140,7 +144,7 @@ defmodule ALF.DSL do
     end
   end
 
-  def build_stage(atom, name, opts, extra_opts, count, current_module) do
+  def build_stage(atom, name, opts, count, current_module) do
     name = if name, do: name, else: atom
 
     if function_exported?(atom, :__info__, 1) do
@@ -151,7 +155,6 @@ defmodule ALF.DSL do
         module: atom,
         function: :call,
         opts: opts || %{},
-        extra_opts: extra_opts || false,
         count: count || 1
       }
     else
@@ -162,7 +165,6 @@ defmodule ALF.DSL do
         module: current_module,
         function: atom,
         opts: opts || %{},
-        extra_opts: extra_opts || false,
         count: count || 1
       }
     end

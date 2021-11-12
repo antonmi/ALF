@@ -70,10 +70,10 @@ defmodule ALF.DSLTest do
       assert %Goto{name: :goto, to: :goto_point} = goto
 
       assert [
-               %Stage{name: ModuleA, opts: %{foo: :bar}},
-               %Stage{name: :custom_name, opts: %{foo: :bar}},
-               %Stage{name: :just_function, opts: %{foo: :bar}},
-               %Stage{name: :custom_name, opts: %{foo: :bar}}
+               %Stage{name: ModuleA, opts: [foo: :bar]},
+               %Stage{name: :custom_name, opts: [foo: :bar]},
+               %Stage{name: :just_function, opts: [foo: :bar]},
+               %Stage{name: :custom_name, opts: [foo: :bar]}
              ] = [one, two, three, four]
     end
   end
