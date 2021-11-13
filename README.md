@@ -21,4 +21,5 @@ be found at [https://hexdocs.pm/alf](https://hexdocs.pm/alf).
 
 
 # TODOS
-- DSL validations for all the necessary attributes and functions presence and arity
+- Validations modules/functions presence and arity?
+- Switch rename partitions to branches

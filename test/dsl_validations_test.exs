@@ -1,8 +1,7 @@
-defmodule ALF.DSLTest do
+defmodule ALF.DSLValidationsTest do
   use ExUnit.Case, async: true
 
-  alias ALF.{Builder, DSLError}
-  alias ALF.Components.{Stage, Switch, Clone, DeadEnd, GotoPoint, Goto}
+  alias ALF.DSLError
 
   setup do
     sup_pid = Process.whereis(ALF.DynamicSupervisor)
@@ -12,7 +11,8 @@ defmodule ALF.DSLTest do
   describe "Stage validations" do
     test "wrong options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
-                   "Wrong options for the Elixir.ModuleA stage: [:bla]",
+                   "Wrong options for the Elixir.ModuleA stage: [:bla]. " <>
+                     "Available options are [:opts, :count, :name]",
                    fn ->
                      defmodule StageWithWrongOptions do
                        use ALF.DSL
@@ -36,14 +36,117 @@ defmodule ALF.DSLTest do
   end
 
   describe "Switch" do
-    test "build StageWithWrongOptions", %{sup_pid: sup_pid} do
+    test "required options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
-                   "Wrong options for the Elixir.ModuleA stage: [:bla]",
+                   "Not all the required options are given for the switch switch. " <>
+                     "You forgot specifying [:partitions, :cond]",
                    fn ->
-                     defmodule StageWithWrongOptions do
+                     defmodule SwitchWithoutRequiredOpts do
                        use ALF.DSL
 
-                       @components [stage(ModuleA, bla: :bla)]
+                       @components [switch(:switch, to: :b)]
+                     end
+                   end
+    end
+
+    test "invalid options", %{sup_pid: sup_pid} do
+      assert_raise DSLError,
+                   "Wrong options for the switch switch: [:foo]. " <>
+                     "Available options are [:partitions, :opts, :cond, :name]",
+                   fn ->
+                     defmodule SwitchWithWrongOpts do
+                       use ALF.DSL
+
+                       @components [switch(:switch, cond: :b, partitions: [], foo: :bar)]
+                     end
+                   end
+    end
+  end
+
+  describe "Clone" do
+    test "required options", %{sup_pid: sup_pid} do
+      assert_raise DSLError,
+                   "Not all the required options are given for the clone clone. " <>
+                     "You forgot specifying [:to]",
+                   fn ->
+                     defmodule CloneWithoutRequiredOpts do
+                       use ALF.DSL
+
+                       @components [clone(:clone, a: :b)]
+                     end
+                   end
+    end
+
+    test "invalid options", %{sup_pid: sup_pid} do
+      assert_raise DSLError,
+                   "Wrong options for the clone clone: [:foo]. " <>
+                     "Available options are [:to]",
+                   fn ->
+                     defmodule CloneWithWrongRequiredOpts do
+                       use ALF.DSL
+
+                       @components [clone(:clone, to: :b, foo: :bar)]
+                     end
+                   end
+    end
+  end
+
+  describe "Goto" do
+    test "required options", %{sup_pid: sup_pid} do
+      assert_raise DSLError,
+                   "Not all the required options are given for the goto goto. " <>
+                     "You forgot specifying [:if]",
+                   fn ->
+                     defmodule GotoWithoutRequiredOpts do
+                       use ALF.DSL
+
+                       @components [goto(:goto, to: :a)]
+                     end
+                   end
+    end
+
+    test "invalid options", %{sup_pid: sup_pid} do
+      assert_raise DSLError,
+                   "Wrong options for the goto goto: [:foo]. " <>
+                     "Available options are [:to, :if, :opts]",
+                   fn ->
+                     defmodule GotoWithWrongRequiredOpts do
+                       use ALF.DSL
+
+                       @components [goto(:goto, to: :b, if: :if, foo: :bar)]
+                     end
+                   end
+    end
+  end
+
+  describe "stages_from" do
+    defmodule PipelineToReuse do
+      use ALF.DSL
+
+      @components [stage(:stage)]
+    end
+
+    test "no such module", %{sup_pid: sup_pid} do
+      assert_raise DSLError,
+                   "There is no such module: NoSuchModule",
+                   fn ->
+                     defmodule GotoWithoutRequiredOpts do
+                       use ALF.DSL
+
+                       @components stages_from(NoSuchModule)
+                     end
+                   end
+    end
+
+    test "invalid options", %{sup_pid: sup_pid} do
+      assert_raise DSLError,
+                   "Wrong options are given for the stages_from macro: [:foo]. " <>
+                     "Available options are [:count, :opts]",
+                   fn ->
+                     defmodule GotoWithWrongRequiredOpts do
+                       use ALF.DSL
+
+                       @components stages_from(PipelineToReuse, foo: :bar)
                      end
                    end
     end

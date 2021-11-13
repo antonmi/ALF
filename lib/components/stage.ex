@@ -13,7 +13,9 @@ defmodule ALF.Components.Stage do
             subscribe_to: [],
             subscribers: []
 
-  alias ALF.{Manager, DoneStatement}
+  alias ALF.{Manager, DoneStatement, DSLError}
+
+  @dsl_options [:opts, :count, :name]
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
@@ -45,6 +47,20 @@ defmodule ALF.Components.Stage do
   def handle_events([%DoneStatement{ip: ip}], _from, %__MODULE__{} = state) do
     Manager.result_ready(ip.manager_name, ip)
     {:noreply, [], state}
+  end
+
+  def validate_options(atom, options) do
+    wrong_options = Keyword.keys(options) -- @dsl_options
+
+    unless is_atom(atom) do
+      raise DSLError, "Stage must be an atom: #{inspect(atom)}"
+    end
+
+    if Enum.any?(wrong_options) do
+      raise DSLError,
+            "Wrong options for the #{atom} stage: #{inspect(wrong_options)}. " <>
+              "Available options are #{inspect(@dsl_options)}"
+    end
   end
 
   defp process_ip(ip, state) do

@@ -10,15 +10,13 @@ defmodule ALF.DSL do
 
   alias ALF.DSLError
 
-  @stage_allowed_options [:opts, :count, :name]
-
   defmacro stage(atom, options \\ [opts: [], count: 1, name: nil]) do
     count = options[:count]
     opts = options[:opts]
     name = options[:name]
 
     quote do
-      validate_options(unquote(atom), unquote(options))
+      Stage.validate_options(unquote(atom), unquote(options))
 
       build_stage(
         unquote(atom),
@@ -50,12 +48,19 @@ defmodule ALF.DSL do
     end
   end
 
-  defmacro goto(name, to: to, if: condition) do
+  defmacro goto(name, options \\ [to: [], if: nil, opts: []]) do
+    to = options[:to]
+    iff = options[:if]
+    opts = options[:opts]
+
     quote do
+      Goto.validate_options(unquote(name), unquote(options))
+
       %Goto{
         name: unquote(name),
         to: unquote(to),
-        if: unquote(condition),
+        if: unquote(iff),
+        opts: unquote(opts),
         pipe_module: __MODULE__,
         pipeline_module: __MODULE__
       }
@@ -67,14 +72,32 @@ defmodule ALF.DSL do
     opts = options[:opts]
 
     quote do
+      validate_stages_from_options(unquote(module), unquote(options))
+
       unquote(module).alf_components
       |> ALF.DSL.set_pipeline_module(__MODULE__)
       |> ALF.DSL.set_options(unquote(opts), unquote(count))
     end
   end
 
+  def validate_stages_from_options(module, options) do
+    dsl_options = [:count, :opts]
+    wrong_options = Keyword.keys(options) -- dsl_options
+
+    unless module_exist?(module) do
+      raise DSLError, "There is no such module: #{inspect(module)}"
+    end
+
+    if Enum.any?(wrong_options) do
+      raise DSLError,
+            "Wrong options are given for the stages_from macro: #{inspect(wrong_options)}. " <>
+              "Available options are #{inspect(dsl_options)}"
+    end
+  end
+
   defmacro switch(name, options) do
     quote do
+      Switch.validate_options(unquote(name), unquote(options))
       partitions = ALF.DSL.build_partitions(unquote(options)[:partitions], __MODULE__)
 
       %Switch{
@@ -89,6 +112,7 @@ defmodule ALF.DSL do
 
   defmacro clone(name, options) do
     quote do
+      Clone.validate_options(unquote(name), unquote(options))
       stages = set_pipeline_module(unquote(options)[:to], __MODULE__)
 
       %Clone{
@@ -150,22 +174,10 @@ defmodule ALF.DSL do
     end
   end
 
-  def validate_options(atom, options) do
-    wrong_options = Keyword.keys(options) -- @stage_allowed_options
-
-    unless is_atom(atom) do
-      raise DSLError, "Stage must be an atom: #{inspect atom}"
-    end
-
-    if Enum.any?(wrong_options) do
-      raise DSLError, "Wrong options for the #{atom} stage: #{inspect(wrong_options)}"
-    end
-  end
-
   def build_stage(atom, name, opts, count, current_module) do
     name = if name, do: name, else: atom
 
-    if function_exported?(atom, :__info__, 1) do
+    if module_exist?(atom) do
       %Stage{
         pipe_module: current_module,
         pipeline_module: current_module,
@@ -187,4 +199,6 @@ defmodule ALF.DSL do
       }
     end
   end
+
+  def module_exist?(module), do: function_exported?(module, :__info__, 1)
 end

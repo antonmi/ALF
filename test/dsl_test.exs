@@ -28,7 +28,7 @@ defmodule ALF.DSLTest do
         },
         cond: :cond_function
       ),
-      goto(:goto, to: :goto_point, if: :function)
+      goto(:goto, to: :goto_point, if: :function, opts: [foo: :bar])
     ]
   end
 
@@ -67,7 +67,7 @@ defmodule ALF.DSLTest do
              } = switch
 
       assert %DeadEnd{name: :dead_end} = dead_end
-      assert %Goto{name: :goto, to: :goto_point} = goto
+      assert %Goto{name: :goto, to: :goto_point, opts: [foo: :bar]} = goto
 
       assert [
                %Stage{name: ModuleA, opts: [foo: :bar]},

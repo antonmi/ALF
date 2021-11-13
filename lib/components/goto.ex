@@ -5,7 +5,7 @@ defmodule ALF.Components.Goto do
             to: nil,
             to_pid: nil,
             if: true,
-            opts: %{},
+            opts: [],
             pipe_module: nil,
             pipeline_module: nil,
             pid: nil,
@@ -13,6 +13,11 @@ defmodule ALF.Components.Goto do
             subscribers: []
 
   alias ALF.Components.GotoPoint
+
+  alias ALF.DSLError
+
+  @dsl_options [:to, :if, :opts]
+  @dsl_requited_options [:to, :if]
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
@@ -56,6 +61,27 @@ defmodule ALF.Components.Goto do
 
       false ->
         {:noreply, [ip], state}
+    end
+  end
+
+  def validate_options(name, options) do
+    required_left = @dsl_requited_options -- Keyword.keys(options)
+    wrong_options = Keyword.keys(options) -- @dsl_options
+
+    unless is_atom(name) do
+      raise DSLError, "Goto name must be an atom: #{inspect(name)}"
+    end
+
+    if Enum.any?(required_left) do
+      raise DSLError,
+            "Not all the required options are given for the #{name} goto. " <>
+              "You forgot specifying #{inspect(required_left)}"
+    end
+
+    if Enum.any?(wrong_options) do
+      raise DSLError,
+            "Wrong options for the #{name} goto: #{inspect(wrong_options)}. " <>
+              "Available options are #{inspect(@dsl_options)}"
     end
   end
 
