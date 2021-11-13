@@ -77,21 +77,21 @@ defmodule ALF.Builder do
           goto_point = start_stage(goto_point, supervisor_pid, prev_stages)
           {[goto_point], stages ++ [goto_point]}
 
-        %Switch{partitions: partitions} = fork ->
-          fork = start_stage(fork, supervisor_pid, prev_stages)
+        %Switch{branches: branches} = switch ->
+          switch = start_stage(switch, supervisor_pid, prev_stages)
 
-          {last_stages, partitions} =
-            Enum.reduce(partitions, {[], %{}}, fn {key, inner_pipe_spec},
-                                                  {all_last_stages, partitions} ->
+          {last_stages, branches} =
+            Enum.reduce(branches, {[], %{}}, fn {key, inner_pipe_spec},
+                                                {all_last_stages, branches} ->
               {last_stages, final_stages} =
-                do_build_pipeline(inner_pipe_spec, [{fork, partition: key}], supervisor_pid, [])
+                do_build_pipeline(inner_pipe_spec, [{switch, partition: key}], supervisor_pid, [])
 
-              {all_last_stages ++ last_stages, Map.put(partitions, key, final_stages)}
+              {all_last_stages ++ last_stages, Map.put(branches, key, final_stages)}
             end)
 
-          fork = %{fork | partitions: partitions}
+          switch = %{switch | branches: branches}
 
-          {last_stages, stages ++ [fork]}
+          {last_stages, stages ++ [switch]}
 
         %Clone{to: pipe_stages} = clone ->
           clone = start_stage(clone, supervisor_pid, prev_stages)

@@ -14,9 +14,9 @@ defmodule ALF.Pipeline do
     Enum.reduce(components, list, fn stage, found ->
       found ++
         case stage do
-          %Switch{partitions: partitions} = stage ->
+          %Switch{branches: branches} = stage ->
             [stage] ++
-              Enum.reduce(partitions, [], fn {_key, partition_stages}, inner_found ->
+              Enum.reduce(branches, [], fn {_key, partition_stages}, inner_found ->
                 inner_found ++ do_stages_to_list(partition_stages, [])
               end)
 

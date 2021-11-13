@@ -39,7 +39,7 @@ defmodule ALF.DSLValidationsTest do
     test "required options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Not all the required options are given for the switch switch. " <>
-                     "You forgot specifying [:partitions, :cond]",
+                     "You forgot specifying [:branches, :cond]",
                    fn ->
                      defmodule SwitchWithoutRequiredOpts do
                        use ALF.DSL
@@ -52,12 +52,12 @@ defmodule ALF.DSLValidationsTest do
     test "invalid options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Wrong options for the switch switch: [:foo]. " <>
-                     "Available options are [:partitions, :opts, :cond, :name]",
+                     "Available options are [:branches, :opts, :cond, :name]",
                    fn ->
                      defmodule SwitchWithWrongOpts do
                        use ALF.DSL
 
-                       @components [switch(:switch, cond: :b, partitions: [], foo: :bar)]
+                       @components [switch(:switch, cond: :b, branches: [], foo: :bar)]
                      end
                    end
     end

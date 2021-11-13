@@ -51,7 +51,7 @@ defmodule ALF.BuilderTest do
       [
         %Switch{
           name: :switch,
-          partitions: %{
+          branches: %{
             part1: [%Stage{name: :stage_in_part1}],
             part2: [%Stage{name: :stage_in_part2}]
           },
@@ -69,7 +69,7 @@ defmodule ALF.BuilderTest do
                cond: :cond_function,
                name: :switch,
                pid: switch_pid,
-               partitions: partitions
+               branches: branches
              } = switch
 
       assert is_pid(switch_pid)
@@ -80,14 +80,14 @@ defmodule ALF.BuilderTest do
                  name: :stage_in_part1,
                  subscribe_to: [{^switch_pid, [max_demand: 1, partition: :part1]}]
                }
-             ] = partitions[:part1]
+             ] = branches[:part1]
 
       assert [
                %Stage{
                  name: :stage_in_part2,
                  subscribe_to: [{^switch_pid, [max_demand: 1, partition: :part2]}]
                }
-             ] = partitions[:part2]
+             ] = branches[:part2]
     end
   end
 

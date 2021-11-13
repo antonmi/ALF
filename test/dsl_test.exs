@@ -22,7 +22,7 @@ defmodule ALF.DSLTest do
       goto_point(:goto_point),
       clone(:clone, to: [stage(Mod1), dead_end(:dead_end)]),
       switch(:switch,
-        partitions: %{
+        branches: %{
           part1: stages_from(PipelineA, opts: %{foo: :bar}),
           part2: [stage(ModInPart2)]
         },
@@ -60,7 +60,7 @@ defmodule ALF.DSLTest do
 
       assert %Switch{
                name: :switch,
-               partitions: %{
+               branches: %{
                  part1: [one, two, three, four],
                  part2: [_stage_in_part2]
                }

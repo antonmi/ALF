@@ -18,7 +18,7 @@ defmodule ALF.Components.SwitchTest do
   def build_switch(cond_function, producer_pid) do
     %Switch{
       name: :switch,
-      partitions: %{
+      branches: %{
         part1: [],
         part2: []
       },

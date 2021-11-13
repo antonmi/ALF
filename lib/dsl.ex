@@ -98,11 +98,11 @@ defmodule ALF.DSL do
   defmacro switch(name, options) do
     quote do
       Switch.validate_options(unquote(name), unquote(options))
-      partitions = ALF.DSL.build_partitions(unquote(options)[:partitions], __MODULE__)
+      branches = ALF.DSL.build_branches(unquote(options)[:branches], __MODULE__)
 
       %Switch{
         name: unquote(name),
-        partitions: partitions,
+        branches: branches,
         cond: unquote(options)[:cond],
         pipe_module: __MODULE__,
         pipeline_module: __MODULE__
@@ -124,8 +124,8 @@ defmodule ALF.DSL do
     end
   end
 
-  def build_partitions(partitions, module) do
-    partitions
+  def build_branches(branches, module) do
+    branches
     |> Enum.reduce(%{}, fn {key, stages}, final_specs ->
       stages = set_pipeline_module(stages, module)
       Map.put(final_specs, key, stages)

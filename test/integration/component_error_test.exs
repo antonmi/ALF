@@ -83,7 +83,7 @@ defmodule ALF.ComponentErrorTest do
 
       @components [
         switch(:switch,
-          partitions: %{
+          branches: %{
             1 => [stage(:add_one)],
             2 => [stage(:mult_two)]
           },
