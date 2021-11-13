@@ -8,12 +8,18 @@ defmodule ALF.DSL do
     Goto
   }
 
+  alias ALF.DSLError
+
+  @stage_allowed_options [:opts, :count, :name]
+
   defmacro stage(atom, options \\ [opts: [], count: 1, name: nil]) do
     count = options[:count]
     opts = options[:opts]
     name = options[:name]
 
     quote do
+      validate_options(unquote(atom), unquote(options))
+
       build_stage(
         unquote(atom),
         unquote(name),
@@ -141,6 +147,18 @@ defmodule ALF.DSL do
   defmacro __before_compile__(_env) do
     quote do
       def alf_components, do: @components
+    end
+  end
+
+  def validate_options(atom, options) do
+    wrong_options = Keyword.keys(options) -- @stage_allowed_options
+
+    unless is_atom(atom) do
+      raise DSLError, "Stage must be an atom: #{inspect atom}"
+    end
+
+    if Enum.any?(wrong_options) do
+      raise DSLError, "Wrong options for the #{atom} stage: #{inspect(wrong_options)}"
     end
   end
 
