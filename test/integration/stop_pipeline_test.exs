@@ -43,7 +43,7 @@ defmodule ALF.StopPipelineTest do
     end
 
     test "with several streams" do
-      run_stop_task(30)
+      task = run_stop_task(30)
 
       stream = Manager.stream_to(0..9, SimplePipelineToStop)
 
@@ -53,6 +53,8 @@ defmodule ALF.StopPipelineTest do
         |> Task.await_many()
 
       assert Enum.count(result) < 10
+
+      Task.await(task)
     end
   end
 end

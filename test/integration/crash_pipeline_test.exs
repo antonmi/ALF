@@ -49,7 +49,7 @@ defmodule ALF.CrashPipelineTest do
     end
 
     test "with several streams", %{state: state} do
-      run_kill_task(state, 50)
+      task = run_kill_task(state, 50)
 
       assert capture_log(fn ->
                stream1 = Manager.stream_to(0..9, SimplePipelineToCrash)
@@ -65,6 +65,8 @@ defmodule ALF.CrashPipelineTest do
                assert Enum.sort(result2) == Enum.map(10..19, &"#{&1}-foo-bar-baz")
                assert Enum.sort(result3) == Enum.map(20..29, &"#{&1}-foo-bar-baz")
              end) =~ "Last message: {:DOWN, "
+
+      Task.await(task)
     end
   end
 end
