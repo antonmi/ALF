@@ -134,6 +134,8 @@ defmodule ALF.Manager do
   end
 
   defp is_pipeline_module?(module) when is_atom(module) do
-    function_exported?(module, :alf_components, 0)
+    is_list(module.alf_components())
+  rescue
+    _error -> false
   end
 end
