@@ -22,4 +22,3 @@ be found at [https://hexdocs.pm/alf](https://hexdocs.pm/alf).
 
 # TODOS
 - Validations modules/functions presence and arity?
-- Switch rename partitions to branches

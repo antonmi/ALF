@@ -8,7 +8,8 @@ defmodule ALF.Manager do
             components: [],
             pipeline_sup_pid: nil,
             sup_pid: nil,
-            registry: %{}
+            registry: %{},
+            status: nil
 
   use ALF.Manager.StreamTo
   use ALF.Manager.GraphEdges
@@ -43,6 +44,8 @@ defmodule ALF.Manager do
   end
 
   def terminate(:normal, state) do
+    #    IO.inspect("========================================================")
+    #  IO.inspect(state)
     GenServer.stop(state.pipeline_sup_pid)
   end
 
@@ -110,7 +113,11 @@ defmodule ALF.Manager do
   end
 
   def handle_call(:__state__, _from, state), do: {:reply, state, state}
-  def handle_call(:stop, _from, state), do: {:stop, :normal, state, state}
+
+  def handle_call(:stop, _from, state) do
+    state = %{state | status: :stopping}
+    {:stop, :normal, state, state}
+  end
 
   def handle_info({:DOWN, _ref, :process, _pid, :shutdown}, %__MODULE__{} = state) do
     state =

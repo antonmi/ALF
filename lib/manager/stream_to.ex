@@ -146,8 +146,12 @@ defmodule ALF.Manager.StreamTo do
         {:noreply, %{state | registry: new_registry}}
       end
 
-      defp flush_queue(name, stream_ref),
-        do: GenServer.call(name, {:flush_queue, stream_ref})
+      defp flush_queue(name, stream_ref) do
+        GenServer.call(name, {:flush_queue, stream_ref})
+      catch
+        :exit, {:normal, _details} ->
+          :done
+      end
 
       def handle_call({:flush_queue, stream_ref}, _from, state) do
         queue = state.registry[stream_ref][:queue]

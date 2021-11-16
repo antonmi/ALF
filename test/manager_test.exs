@@ -81,6 +81,26 @@ defmodule ALF.ManagerTest do
     end
   end
 
+  describe "stop/1" do
+    setup do
+      Manager.start(SimplePipeline)
+      state = Manager.__state__(SimplePipeline)
+      %{state: state}
+    end
+
+    test "just stop the pipeline", %{state: state} do
+      Manager.stop(SimplePipeline)
+      refute Process.alive?(state.pid)
+      refute Process.alive?(state.pipeline_sup_pid)
+
+      Enum.each(state.components, fn component ->
+        refute Process.alive?(component.pid)
+      end)
+
+      assert Process.alive?(state.sup_pid)
+    end
+  end
+
   describe "prepare gotos after initialization" do
     setup do
       Manager.start(GoToPipeline)
