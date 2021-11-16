@@ -8,8 +8,7 @@ defmodule ALF.Manager do
             components: [],
             pipeline_sup_pid: nil,
             sup_pid: nil,
-            registry: %{},
-            status: nil
+            registry: %{}
 
   use ALF.Manager.StreamTo
   use ALF.Manager.GraphEdges
@@ -115,7 +114,6 @@ defmodule ALF.Manager do
   def handle_call(:__state__, _from, state), do: {:reply, state, state}
 
   def handle_call(:stop, _from, state) do
-    state = %{state | status: :stopping}
     {:stop, :normal, state, state}
   end
 
