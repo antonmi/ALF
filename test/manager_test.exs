@@ -67,9 +67,23 @@ defmodule ALF.ManagerTest do
       assert consumer.name == :consumer
       assert consumer.subscribe_to == [{mult.pid, [max_demand: 1]}]
     end
+  end
+
+  test "start non-existing pipeline" do
+    assert_raise RuntimeError,
+                 "The Elixir.NoSuchPipeline doesn't implement any pipeline",
+                 fn -> Manager.start(NoSuchPipeline) end
+  end
+
+  describe "stop/1" do
+    setup do
+      Manager.start(SimplePipeline, :pipeline_to_stop)
+      state = Manager.__state__(:pipeline_to_stop)
+      %{state: state}
+    end
 
     test "stop pipeline" do
-      state = Manager.stop(SimplePipeline)
+      state = Manager.stop(:pipeline_to_stop)
 
       refute Process.alive?(state.pid)
       refute Process.alive?(state.pipeline_sup_pid)
@@ -81,36 +95,17 @@ defmodule ALF.ManagerTest do
     end
   end
 
-  describe "stop/1" do
-    setup do
-      Manager.start(SimplePipeline)
-      state = Manager.__state__(SimplePipeline)
-      %{state: state}
-    end
-
-    test "just stop the pipeline", %{state: state} do
-      Manager.stop(SimplePipeline)
-      refute Process.alive?(state.pid)
-      refute Process.alive?(state.pipeline_sup_pid)
-
-      Enum.each(state.components, fn component ->
-        refute Process.alive?(component.pid)
-      end)
-
-      assert Process.alive?(state.sup_pid)
-    end
-  end
-
   describe "prepare gotos after initialization" do
     setup do
       Manager.start(GoToPipeline)
+      Process.sleep(5)
+
       state = Manager.__state__(GoToPipeline)
       %{state: state}
     end
 
     test "set to_pid in goto component", %{state: state} do
       %Manager{components: [_producer, point, goto, _consumer]} = state
-
       assert is_pid(point.pid)
       assert goto.to_pid == point.pid
     end
@@ -119,7 +114,9 @@ defmodule ALF.ManagerTest do
   describe "stream_to/2" do
     def sample_stream, do: [1, 2, 3]
 
-    setup do: Manager.start(SimplePipeline)
+    setup do
+      Manager.start(SimplePipeline)
+    end
 
     test "run stream and check data" do
       results =
@@ -170,8 +167,8 @@ defmodule ALF.ManagerTest do
 
   describe "graph_edges/1" do
     setup do
-      :ok = Manager.start(GoToPipeline)
-      %{edges: Manager.graph_edges(GoToPipeline)}
+      :ok = Manager.start(GoToPipeline, :goto_pipeline_edges)
+      %{edges: Manager.graph_edges(:goto_pipeline_edges)}
     end
 
     test "check edges", %{edges: edges} do

@@ -26,12 +26,18 @@ defmodule ALF.Manager do
     {:ok, state, {:continue, :init_pipeline}}
   end
 
-  def start(module) when is_atom(module) do
+  def start(module, name \\ nil) when is_atom(module) and is_atom(name) do
+    unless is_pipeline_module?(module) do
+      raise "The #{module} doesn't implement any pipeline"
+    end
+
     sup_pid = Process.whereis(ALF.DynamicSupervisor)
+
+    name = if name, do: name, else: module
 
     case DynamicSupervisor.start_child(
            sup_pid,
-           {__MODULE__, %__MODULE__{sup_pid: sup_pid, name: module, pipeline_module: module}}
+           {__MODULE__, %__MODULE__{sup_pid: sup_pid, name: name, pipeline_module: module}}
          ) do
       {:ok, _manager_pid} -> :ok
       {:error, {:already_started, _pid}} -> :ok
@@ -40,12 +46,13 @@ defmodule ALF.Manager do
 
   def stop(module) when is_atom(module) do
     GenServer.call(module, :stop)
+  catch
+    :exit, {reason, details} ->
+      {:exit, {reason, details}}
   end
 
   def terminate(:normal, state) do
-    #    IO.inspect("========================================================")
-    #  IO.inspect(state)
-    GenServer.stop(state.pipeline_sup_pid)
+    Supervisor.stop(state.pipeline_sup_pid)
   end
 
   def __state__(name_or_pid) when is_atom(name_or_pid) or is_pid(name_or_pid) do
@@ -124,5 +131,9 @@ defmodule ALF.Manager do
       |> resend_packets()
 
     {:noreply, state}
+  end
+
+  defp is_pipeline_module?(module) when is_atom(module) do
+    function_exported?(module, :alf_components, 0)
   end
 end

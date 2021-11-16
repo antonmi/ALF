@@ -77,6 +77,9 @@ defmodule ALF.Manager.StreamTo do
         pipeline = __state__(name).pipeline
         ips = build_ips(data, stream_ref, name)
         GenServer.cast(pipeline.producer.pid, ips)
+      catch
+        :exit, {reason, details} ->
+          {:exit, {reason, details}}
       end
 
       defp resend_packets(%__MODULE__{} = state) do
@@ -149,7 +152,7 @@ defmodule ALF.Manager.StreamTo do
       defp flush_queue(name, stream_ref) do
         GenServer.call(name, {:flush_queue, stream_ref})
       catch
-        :exit, {:normal, _details} ->
+        :exit, {_reason, _details} ->
           :done
       end
 

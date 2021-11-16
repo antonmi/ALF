@@ -1,5 +1,5 @@
-defmodule ALF.CrashPipelineTest do
-  use ExUnit.Case, async: true
+defmodule ALF.StopPipelineTest do
+  use ExUnit.Case, async: false
 
   alias ALF.Manager
 
@@ -37,7 +37,7 @@ defmodule ALF.CrashPipelineTest do
     end)
   end
 
-  describe "kill stage" do
+  describe "stop the pipeline" do
     setup do
       Manager.start(SimplePipelineToStop)
     end
