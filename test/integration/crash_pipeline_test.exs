@@ -65,7 +65,6 @@ defmodule ALF.CrashPipelineTest do
                assert Enum.sort(result2) == Enum.map(10..19, &"#{&1}-foo-bar-baz")
                assert Enum.sort(result3) == Enum.map(20..29, &"#{&1}-foo-bar-baz")
              end) =~ "Last message: {:DOWN, "
-
       Task.await(task)
     end
   end
