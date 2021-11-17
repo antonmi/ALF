@@ -6,5 +6,6 @@ defmodule ALF.IP do
             ref: nil,
             datum: nil,
             history: [],
-            manager_name: nil
+            manager_name: nil,
+            plugs: %{}
 end

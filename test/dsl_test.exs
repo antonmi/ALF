@@ -2,7 +2,7 @@ defmodule ALF.DSLTest do
   use ExUnit.Case, async: true
 
   alias ALF.Builder
-  alias ALF.Components.{Stage, Switch, Clone, DeadEnd, GotoPoint, Goto}
+  alias ALF.Components.{Stage, Switch, Clone, DeadEnd, GotoPoint, Goto, Plug, Unplug}
 
   defmodule PipelineA do
     use ALF.DSL
@@ -29,6 +29,26 @@ defmodule ALF.DSLTest do
         cond: :cond_function
       ),
       goto(:goto, to: :goto_point, if: :function, opts: [foo: :bar])
+    ]
+  end
+
+  defmodule MyAdapterModule do
+    def init(opts), do: opts
+    def plug(datum, _opts), do: datum
+    def unplug(_datum, prev_datum, _opts), do: prev_datum
+  end
+
+  defmodule PipelineC do
+    use ALF.DSL
+
+    @components [
+      stage(ModuleA),
+      plug_with(MyAdapterModule) do
+        [stage(StageA1, name: :custom_name)]
+      end,
+      plug_with(MyAdapterModule, opts: [a: :b], name: :another_plug) do
+        stages_from(PipelineA)
+      end
     ]
   end
 
@@ -75,6 +95,45 @@ defmodule ALF.DSLTest do
                %Stage{name: :just_function, opts: [foo: :bar]},
                %Stage{name: :custom_name, opts: [foo: :bar]}
              ] = [one, two, three, four]
+    end
+  end
+
+  describe "PipelineC" do
+    test "build PipelineC", %{sup_pid: sup_pid} do
+      {:ok, pipeline} = Builder.build(PipelineC.alf_components(), sup_pid)
+
+      [stage, plug, stage_in_plug, unplug, another_plug, _, _, _, last_stage, another_unplug] =
+        pipeline.components
+
+      assert %Stage{pid: stage_pid, name: ModuleA} = stage
+
+      assert %Plug{
+               name: MyAdapterModule,
+               pid: plug_pid,
+               subscribe_to: [{^stage_pid, max_demand: 1}]
+             } = plug
+
+      assert %Stage{pid: stage_pid, subscribe_to: [{^plug_pid, max_demand: 1}]} = stage_in_plug
+
+      assert %Unplug{
+               name: MyAdapterModule,
+               pid: unplug_pid,
+               subscribe_to: [{^stage_pid, max_demand: 1}]
+             } = unplug
+
+      assert %Plug{
+               name: :another_plug,
+               pid: _plug_pid,
+               subscribe_to: [{^unplug_pid, max_demand: 1}]
+             } = another_plug
+
+      assert %Stage{pid: last_stage_pid, name: :custom_name} = last_stage
+
+      assert %Unplug{
+               name: :another_plug,
+               pid: _plug_pid,
+               subscribe_to: [{^last_stage_pid, max_demand: 1}]
+             } = another_unplug
     end
   end
 end

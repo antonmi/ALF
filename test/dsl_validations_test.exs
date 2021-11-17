@@ -130,7 +130,7 @@ defmodule ALF.DSLValidationsTest do
       assert_raise DSLError,
                    "There is no such module: NoSuchModule",
                    fn ->
-                     defmodule GotoWithoutRequiredOpts do
+                     defmodule StageFromWithNonExistingModule do
                        use ALF.DSL
 
                        @components stages_from(NoSuchModule)
@@ -147,6 +147,43 @@ defmodule ALF.DSLValidationsTest do
                        use ALF.DSL
 
                        @components stages_from(PipelineToReuse, foo: :bar)
+                     end
+                   end
+    end
+  end
+
+  describe "plug_with" do
+    defmodule MyAdapterModule do
+      def init(opts), do: opts
+      def plug(datum, _opts), do: datum
+      def unplug(_datum, prev_datum, _opts), do: prev_datum
+    end
+
+    test "no such module" do
+      assert_raise DSLError,
+                   "There is no such module: NoSuchModule",
+                   fn ->
+                     defmodule PlugWithNonExistingModule do
+                       use ALF.DSL
+
+                       @components (plug_with(NoSuchModule) do
+                         [stage(StageA1, name: :custom_name)]
+                        end)
+                     end
+                   end
+    end
+
+    test "invalid options" do
+      assert_raise DSLError,
+                   "Wrong options are given for the plug_with macro: [:foo]. " <>
+                   "Available options are [:module, :name, :opts]",
+                   fn ->
+                     defmodule PlugWithNonExistingModule do
+                       use ALF.DSL
+
+                       @components (plug_with(MyAdapterModule, foo: :bar) do
+                                      stages_from(PipelineToReuse, foo: :bar)
+                                    end)
                      end
                    end
     end

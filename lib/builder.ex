@@ -9,7 +9,9 @@ defmodule ALF.Builder do
     GotoPoint,
     Switch,
     Clone,
-    Consumer
+    Consumer,
+    Plug,
+    Unplug
   }
 
   def build(pipe_spec, supervisor_pid) when is_list(pipe_spec) do
@@ -102,6 +104,14 @@ defmodule ALF.Builder do
           clone = %{clone | to: final_stages}
 
           {last_stages ++ [clone], stages ++ [clone]}
+
+        %Plug{} = plug ->
+          plug = start_stage(plug, supervisor_pid, prev_stages)
+          {[plug], stages ++ [plug]}
+
+        %Unplug{} = unplug ->
+          unplug = start_stage(unplug, supervisor_pid, prev_stages)
+          {[unplug], stages ++ [unplug]}
       end
     end)
   end

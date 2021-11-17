@@ -5,7 +5,9 @@ defmodule ALF.DSL do
     Clone,
     DeadEnd,
     GotoPoint,
-    Goto
+    Goto,
+    Plug,
+    Unplug
   }
 
   alias ALF.DSLError
@@ -80,6 +82,31 @@ defmodule ALF.DSL do
     end
   end
 
+  defmacro plug_with(module, options \\ [opts: [], name: nil], do: block) do
+    name = options[:name]
+
+    quote do
+      validate_plug_with_options(unquote(module), unquote(options))
+      name = if unquote(name), do: unquote(name), else: unquote(module)
+
+      plug = %Plug{
+        name: name,
+        module: unquote(module),
+        pipe_module: __MODULE__,
+        pipeline_module: __MODULE__
+      }
+
+      unplug = %Unplug{
+        name: name,
+        module: unquote(module),
+        pipe_module: __MODULE__,
+        pipeline_module: __MODULE__
+      }
+
+      [plug] ++ unquote(block) ++ [unplug]
+    end
+  end
+
   def validate_stages_from_options(module, options) do
     dsl_options = [:count, :opts]
     wrong_options = Keyword.keys(options) -- dsl_options
@@ -92,6 +119,21 @@ defmodule ALF.DSL do
       raise DSLError,
             "Wrong options are given for the stages_from macro: #{inspect(wrong_options)}. " <>
               "Available options are #{inspect(dsl_options)}"
+    end
+  end
+
+  def validate_plug_with_options(module, options) do
+    dsl_options = [:module, :name, :opts]
+    wrong_options = Keyword.keys(options) -- dsl_options
+
+    unless module_exist?(module) do
+      raise DSLError, "There is no such module: #{inspect(module)}"
+    end
+
+    if Enum.any?(wrong_options) do
+      raise DSLError,
+            "Wrong options are given for the plug_with macro: #{inspect(wrong_options)}. " <>
+            "Available options are #{inspect(dsl_options)}"
     end
   end
 
@@ -170,7 +212,7 @@ defmodule ALF.DSL do
 
   defmacro __before_compile__(_env) do
     quote do
-      def alf_components, do: @components
+      def alf_components, do: List.flatten(@components)
     end
   end
 
