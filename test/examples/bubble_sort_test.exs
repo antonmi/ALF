@@ -44,6 +44,43 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
   end
 end
 
+defmodule ALF.Examples.BubbleSort.Pipeline2 do
+  use ALF.DSL
+
+  defstruct [:list, :new_list, :max, :ready]
+
+  alias ALF.Examples.BubbleSort.Pipeline
+
+  @components [
+    stage(:build_struct),
+    goto_point(:go_to_point),
+    stage(:find_max),
+    stage(:update_new_list, count: 10),
+    stage(:rebuild_list, count: 10),
+    clone(:logging, to: [stage(:report_step), dead_end(:after_report)]),
+    switch(:ready_or_not, branches: %{
+        ready: [stage(:format_output)],
+        not_ready: [goto(:the_loop, to: :go_to_point, if: true)],
+      },
+      cond: :ready_or_not
+    )
+  ]
+
+  defdelegate build_struct(datum, opts), to: Pipeline
+  defdelegate find_max(struct, opts), to: Pipeline
+  defdelegate update_new_list(struct, opts), to: Pipeline
+  defdelegate rebuild_list(struct, opts), to: Pipeline
+  defdelegate format_output(struct, opts), to: Pipeline
+
+  def ready_or_not(struct, _opts) do
+    if Enum.empty?(struct.list) do
+      :ready
+    else
+      :not_ready
+    end
+  end
+end
+
 defmodule ALF.Examples.BubbleSortTest do
   use ExUnit.Case, async: false
 
@@ -66,5 +103,25 @@ defmodule ALF.Examples.BubbleSortTest do
     Enum.each(results, fn(result) ->
       assert result == Enum.to_list(@range)
     end)
+  end
+end
+
+defmodule ALF.Examples.BubbleSort2Test do
+  use ExUnit.Case, async: false
+
+  alias ALF.Examples.BubbleSort.Pipeline2
+  alias ALF.Manager
+
+  @range 1..5
+
+  setup do: Manager.start(Pipeline2)
+
+  test "sort" do
+    [result] =
+      [Enum.shuffle(@range)]
+      |> Manager.stream_to(Pipeline2)
+      |> Enum.to_list()
+
+    assert result == Enum.to_list(@range)
   end
 end

@@ -85,6 +85,8 @@ defmodule ALF.Components.Goto do
     end
   end
 
+  defp call_condition_function(true, _datum, _pipeline_module, _opts), do: true
+
   defp call_condition_function(function, datum, pipeline_module, opts) when is_atom(function) do
     apply(pipeline_module, function, [datum, opts])
   rescue
