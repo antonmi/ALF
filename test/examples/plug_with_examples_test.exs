@@ -19,9 +19,7 @@ defmodule ALF.Examples.PlugWith.Pipeline do
 
   @components [
     stage(:build_struct),
-    plug_with(InputToName) do
-      [stage(HelloComponent)]
-    end,
+    plug_with(InputToName, do: [stage(HelloComponent)]),
     stage(:format_output)
   ]
 
@@ -37,7 +35,7 @@ defmodule ALF.Examples.PlugWithExamplesTest do
 
   setup do: Manager.start(Pipeline)
 
-  test "sort many lists" do
+  test "process input" do
     inputs = ["Anton", "Baton"]
 
     results =

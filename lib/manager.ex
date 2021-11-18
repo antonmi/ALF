@@ -26,6 +26,7 @@ defmodule ALF.Manager do
     {:ok, state, {:continue, :init_pipeline}}
   end
 
+  @spec start(atom, atom) :: :ok
   def start(module, name \\ nil) when is_atom(module) and is_atom(name) do
     unless is_pipeline_module?(module) do
       raise "The #{module} doesn't implement any pipeline"

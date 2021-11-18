@@ -10,12 +10,6 @@ defmodule ALF.Components.Unplug do
             subscribe_to: [],
             subscribers: []
 
-  alias ALF.Components.GotoPoint
-  alias ALF.DSLError
-
-  @dsl_options [:name, :function, :opts]
-  @dsl_requited_options [:function]
-
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end

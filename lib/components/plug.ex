@@ -10,10 +10,6 @@ defmodule ALF.Components.Plug do
             subscribe_to: [],
             subscribers: []
 
-  alias ALF.Components.GotoPoint
-
-  alias ALF.DSLError
-
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end

@@ -1,4 +1,4 @@
-defmodule ALF.Examples.BubbleSort.Pipeline do
+defmodule ALF.Examples.BubbleSortWithSwitch.Pipeline do
   use ALF.DSL
 
   defstruct [:list, :new_list, :max, :ready]
@@ -10,8 +10,13 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
     stage(:update_new_list, count: 10),
     stage(:rebuild_list, count: 10),
     clone(:logging, to: [stage(:report_step), dead_end(:after_report)]),
-    goto(:the_loop, to: :go_to_point, if: :go_to_condition),
-    stage(:format_output)
+    switch(:ready_or_not,
+      branches: %{
+        ready: [stage(:format_output)],
+        not_ready: [goto(:the_loop, to: :go_to_point, if: true)]
+      },
+      cond: :ready_or_not
+    )
   ]
 
   def build_struct(list, _opts) do
@@ -30,10 +35,6 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
     %{struct | list: struct.list -- [struct.max]}
   end
 
-  def go_to_condition(struct, _opts) do
-    !Enum.empty?(struct.list)
-  end
-
   def report_step(struct, _opts) do
     #    IO.inspect("Step: #{inspect struct}", charlists: :as_lists)
     struct
@@ -42,29 +43,33 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
   def format_output(struct, _opts) do
     struct.new_list
   end
+
+  def ready_or_not(struct, _opts) do
+    if Enum.empty?(struct.list) do
+      :ready
+    else
+      :not_ready
+    end
+  end
 end
 
-defmodule ALF.Examples.BubbleSortTest do
+
+defmodule ALF.ExamplesBubbleSortWithSwitchTest do
   use ExUnit.Case
 
-  alias ALF.Examples.BubbleSort.Pipeline
+  alias ALF.Examples.BubbleSortWithSwitch.Pipeline
   alias ALF.Manager
 
   @range 1..5
 
   setup do: Manager.start(Pipeline)
 
-  test "sort many lists" do
-    list_of_lists = Enum.map(1..5, fn _i -> Enum.shuffle(@range) end)
+  test "sort" do
+    [result] =
+      [Enum.shuffle(@range)]
+      |> Manager.stream_to(Pipeline)
+      |> Enum.to_list()
 
-    results =
-      list_of_lists
-      |> Enum.map(&Manager.stream_to([&1], Pipeline))
-      |> Enum.map(&Task.async(fn -> hd(Enum.to_list(&1)) end))
-      |> Task.await_many(:infinity)
-
-    Enum.each(results, fn result ->
-      assert result == Enum.to_list(@range)
-    end)
+    assert result == Enum.to_list(@range)
   end
 end

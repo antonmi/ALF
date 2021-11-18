@@ -15,6 +15,7 @@ defmodule ALF.Manager.StreamTo do
         end
       end
 
+      @spec stream_to(Enumerable.t(), atom(), map() | keyword()) :: Enumerable.t()
       def stream_to(stream, name, opts \\ %{}) when is_atom(name) do
         GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts)})
       end
