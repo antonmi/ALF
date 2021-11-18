@@ -7,21 +7,36 @@ defmodule Alf.MixProject do
       version: "0.1.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      description: description(),
+      package: package(),
+      deps: deps(),
+      source_url: "https://github.com/antonmi/alf"
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
       mod: {ALF.Application, []}
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:gen_stage, "~> 1.1"}
+      {:gen_stage, "~> 1.1"},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+    ]
+  end
+
+  defp description do
+    "Flow-Based Application Layer Framework"
+  end
+
+  defp package do
+    [
+      files: ~w(lib mix.exs README.md),
+      maintainers: ["Anton Mishchuk"],
+      licenses: ["MIT"],
+      links: %{"github" => "https://github.com/antonmi/alf"}
     ]
   end
 end

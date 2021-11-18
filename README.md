@@ -1,9 +1,9 @@
 # ALF
-
+[![Hex.pm](https://img.shields.io/hexpm/v/alf.svg?style=flat-square)](https://hex.pm/packages/alf)
 ## Flow-Based Application Layer Framework
 
-#### ALF is a set of abstractions built on top Elixir GenStage which allows writing program with [Flow-Based Programming](https://en.wikipedia.org/wiki/Flow-based_programming) paradigm.
-#### ALF is a successor of the [Flowex](https://github.com/antonmi/flowex) project. Check its Readme to get the general idea. ALF adds conditional branching, packet cloning, and goto statement functionalities. Therefore, one can create application trees (graphs) of arbitrary complexity 
+#### ALF is a set of abstractions built on top Elixir GenStage which allows writing program following [Flow-Based Programming](https://en.wikipedia.org/wiki/Flow-based_programming) approach.
+#### ALF is a successor of the [Flowex](https://github.com/antonmi/flowex) project. Check its Readme to get the general idea. ALF adds conditional branching, packet cloning, goto statement, and other functionalities. Therefore, one can create application trees (graphs) of arbitrary complexity. 
 
 ## Installation
 Just add `:alf` as dependency to the `mix.exs` file.
