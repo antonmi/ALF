@@ -3,14 +3,17 @@
 ## Flow-Based Application Layer Framework
 
 #### ALF is a set of abstractions built on top Elixir GenStage which allows writing program following [Flow-Based Programming](https://en.wikipedia.org/wiki/Flow-based_programming) approach.
-#### ALF is a successor of the [Flowex](https://github.com/antonmi/flowex) project. Check its Readme to get the general idea. ALF adds conditional branching, packet cloning, goto statement, and other functionalities. Therefore, one can create application trees (graphs) of arbitrary complexity. 
+#### ALF is a successor of the [Flowex](https://github.com/antonmi/flowex) project. Check its [README](https://github.com/antonmi/flowex#readme) to get the general idea. ALF adds conditional branching, packet cloning, goto statement, and other functionalities. Therefore, one can create application trees (graphs) of arbitrary complexity. 
 
 ## Installation
 Just add `:alf` as dependency to the `mix.exs` file.
-ALF starts its own supervisor (`ALF.DynamicSupervisor`). All the pipelines and managers are started under the supervisor
+
+ALF starts its own supervisor (`ALF.DynamicSupervisor`). 
+
+All the pipelines and managers are started under the supervisor
 
 ## Quick start
-Read a couple of sections of [Flowex README](https://github.com/antonmi/flowex#readme) to get the basic idea.
+Read a couple of sections of [Flowex README](https://github.com/antonmi/flowex#readme) to get the basic idea of how your code is put to GenStages.
 ### Define your pipeline
 ```elixir
 defmodule ThePipeline do
@@ -31,7 +34,7 @@ end
 ```elixir
 :ok = ALF.Manager.start(ThePipeline)
 ```
-This starts a manager (GenServer) with `ThePipeline` name. The manager starts all the components and puts them under another DynamicSupervisor supervision tree.
+This starts a manager (GenServer) with the `ThePipeline` name. The manager starts all the components and puts them under another supervision tree.
 
 ### Use the pipeline
 The only interface currently is the `stream_to` function (`stream_to/2` and `stream_to/3`).
