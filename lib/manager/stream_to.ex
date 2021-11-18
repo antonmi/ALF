@@ -8,10 +8,7 @@ defmodule ALF.Manager.StreamTo do
                   return_ips: false
 
         def new(map) when is_map(map) do
-          %__MODULE__{
-            chunk_every: Map.get(map, :chunk_every, %__MODULE__{}.chunk_every),
-            return_ips: Map.get(map, :return_ips, %__MODULE__{}.return_ips)
-          }
+          struct(__MODULE__, map)
         end
       end
 

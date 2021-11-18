@@ -18,18 +18,17 @@ defmodule ALF.Manager.GraphEdges do
                   "#{stage.pipe_module}-#{stage.name}"
               end
 
-            Map.put(acc, stage.pid, "#{String.replace(name, "Elixir.", "")}")
+            Map.put(acc, stage.pid, "#{String.replace(name, ~r/^Elixir\./, "")}")
           end)
 
         edges =
           state.components
-          |> Enum.reduce([], fn stage, acc ->
+          |> Enum.flat_map(fn stage ->
             target = Map.get(pid_to_name, stage.pid)
 
-            acc ++
-              Enum.map(stage.subscribe_to, fn {pid, _} ->
-                {Map.get(pid_to_name, pid), target}
-              end)
+            Enum.map(stage.subscribe_to, fn {pid, _} ->
+              {Map.get(pid_to_name, pid), target}
+            end)
           end)
 
         goto_edges =
