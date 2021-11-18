@@ -152,13 +152,13 @@ defmodule ALF.Manager.StreamTo do
       defp flush_queue(name, stream_ref) do
         GenServer.call(name, {:flush_queue, stream_ref})
       catch
-        :exit, {_reason, _details} ->
+        :exit, {:normal, _details} ->
           :done
       end
 
       def handle_call({:flush_queue, stream_ref}, _from, state) do
-        queue = state.registry[stream_ref][:queue]
-        inputs = state.registry[stream_ref][:inputs]
+        queue = get_in(state.registry, [stream_ref, :queue])
+        inputs = get_in(state.registry, [stream_ref, :inputs])
 
         data =
           case :queue.to_list(queue) do

@@ -37,10 +37,19 @@ defmodule ALF.Manager do
 
     case DynamicSupervisor.start_child(
            sup_pid,
-           {__MODULE__, %__MODULE__{sup_pid: sup_pid, name: name, pipeline_module: module}}
+           %{
+             id: __MODULE__,
+             start:
+               {__MODULE__, :start_link,
+                [%__MODULE__{sup_pid: sup_pid, name: name, pipeline_module: module}]},
+             restart: :transient
+           }
          ) do
-      {:ok, _manager_pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
+      {:ok, _manager_pid} ->
+        :ok
+
+      {:error, {:already_started, _pid}} ->
+        :ok
     end
   end
 
@@ -73,14 +82,12 @@ defmodule ALF.Manager do
 
   defp start_pipeline_supervisor(%__MODULE__{} = state) do
     pipeline_sup_pid =
-      case DynamicSupervisor.start_child(
-             state.sup_pid,
-             {PipelineDynamicSupervisor, %{name: :"#{state.name}_DynamicSupervisor"}}
-           ) do
+      case PipelineDynamicSupervisor.start_link(%{name: :"#{state.name}_DynamicSupervisor"}) do
         {:ok, pid} -> pid
         {:error, {:already_started, pid}} -> pid
       end
 
+    Process.unlink(pipeline_sup_pid)
     Process.monitor(pipeline_sup_pid)
     %{state | pipeline_sup_pid: pipeline_sup_pid}
   end

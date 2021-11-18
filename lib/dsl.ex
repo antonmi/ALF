@@ -133,7 +133,7 @@ defmodule ALF.DSL do
     if Enum.any?(wrong_options) do
       raise DSLError,
             "Wrong options are given for the plug_with macro: #{inspect(wrong_options)}. " <>
-            "Available options are #{inspect(dsl_options)}"
+              "Available options are #{inspect(dsl_options)}"
     end
   end
 

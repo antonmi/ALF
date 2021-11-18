@@ -58,9 +58,10 @@ defmodule ALF.Examples.BubbleSort.Pipeline2 do
     stage(:update_new_list, count: 10),
     stage(:rebuild_list, count: 10),
     clone(:logging, to: [stage(:report_step), dead_end(:after_report)]),
-    switch(:ready_or_not, branches: %{
+    switch(:ready_or_not,
+      branches: %{
         ready: [stage(:format_output)],
-        not_ready: [goto(:the_loop, to: :go_to_point, if: true)],
+        not_ready: [goto(:the_loop, to: :go_to_point, if: true)]
       },
       cond: :ready_or_not
     )
@@ -92,7 +93,7 @@ defmodule ALF.Examples.BubbleSortTest do
   setup do: Manager.start(Pipeline)
 
   test "sort many lists" do
-    list_of_lists = Enum.map((1..5), fn(_i) -> Enum.shuffle(@range) end)
+    list_of_lists = Enum.map(1..5, fn _i -> Enum.shuffle(@range) end)
 
     results =
       list_of_lists
@@ -100,7 +101,7 @@ defmodule ALF.Examples.BubbleSortTest do
       |> Enum.map(&Task.async(fn -> hd(Enum.to_list(&1)) end))
       |> Task.await_many(:infinity)
 
-    Enum.each(results, fn(result) ->
+    Enum.each(results, fn result ->
       assert result == Enum.to_list(@range)
     end)
   end

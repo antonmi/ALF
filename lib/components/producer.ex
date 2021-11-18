@@ -7,8 +7,7 @@ defmodule ALF.Components.Producer do
             pipeline_module: nil,
             subscribe_to: []
 
-  # TODO think about its state
-  def start_link(args) do
+  def start_link(_args) do
     GenStage.start_link(__MODULE__, nil)
   end
 
@@ -24,5 +23,9 @@ defmodule ALF.Components.Producer do
 
   def handle_cast([new_ip | new_ips], ips) do
     {:noreply, [new_ip], ips ++ new_ips}
+  end
+
+  def handle_cast([], ips) do
+    {:noreply, [], ips}
   end
 end

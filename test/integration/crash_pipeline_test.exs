@@ -1,5 +1,5 @@
 defmodule ALF.CrashPipelineTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   import ExUnit.CaptureLog
 
   alias ALF.Manager
@@ -44,12 +44,31 @@ defmodule ALF.CrashPipelineTest do
   describe "kill stage" do
     setup do
       Manager.start(SimplePipelineToCrash)
+
+      on_exit(fn ->
+        Manager.stop(SimplePipelineToCrash)
+        Process.sleep(50)
+      end)
+
       state = Manager.__state__(SimplePipelineToCrash)
       %{state: state}
     end
 
+    test "with one stream", %{state: state} do
+      run_kill_task(state, 10)
+
+      assert capture_log(fn ->
+               result =
+                 0..9
+                 |> Manager.stream_to(SimplePipelineToCrash)
+                 |> Enum.to_list()
+
+               assert Enum.sort(result) == Enum.map(0..9, &"#{&1}-foo-bar-baz")
+             end) =~ "Last message: {:DOWN, "
+    end
+
     test "with several streams", %{state: state} do
-      task = run_kill_task(state, 50)
+      run_kill_task(state, 50)
 
       assert capture_log(fn ->
                stream1 = Manager.stream_to(0..9, SimplePipelineToCrash)
@@ -61,11 +80,12 @@ defmodule ALF.CrashPipelineTest do
                  |> Enum.map(&Task.async(fn -> Enum.to_list(&1) end))
                  |> Task.await_many()
 
+               Process.sleep(1000)
+
                assert Enum.sort(result1) == Enum.map(0..9, &"#{&1}-foo-bar-baz")
                assert Enum.sort(result2) == Enum.map(10..19, &"#{&1}-foo-bar-baz")
                assert Enum.sort(result3) == Enum.map(20..29, &"#{&1}-foo-bar-baz")
              end) =~ "Last message: {:DOWN, "
-      Task.await(task)
     end
   end
 end

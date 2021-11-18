@@ -167,8 +167,8 @@ defmodule ALF.DSLValidationsTest do
                        use ALF.DSL
 
                        @components (plug_with(NoSuchModule) do
-                         [stage(StageA1, name: :custom_name)]
-                        end)
+                                      [stage(StageA1, name: :custom_name)]
+                                    end)
                      end
                    end
     end
@@ -176,7 +176,7 @@ defmodule ALF.DSLValidationsTest do
     test "invalid options" do
       assert_raise DSLError,
                    "Wrong options are given for the plug_with macro: [:foo]. " <>
-                   "Available options are [:module, :name, :opts]",
+                     "Available options are [:module, :name, :opts]",
                    fn ->
                      defmodule PlugWithNonExistingModule do
                        use ALF.DSL
