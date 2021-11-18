@@ -47,7 +47,6 @@ defmodule ALF.CrashPipelineTest do
 
       on_exit(fn ->
         Manager.stop(SimplePipelineToCrash)
-        Process.sleep(50)
       end)
 
       state = Manager.__state__(SimplePipelineToCrash)
@@ -79,8 +78,6 @@ defmodule ALF.CrashPipelineTest do
                  [stream1, stream2, stream3]
                  |> Enum.map(&Task.async(fn -> Enum.to_list(&1) end))
                  |> Task.await_many()
-
-               Process.sleep(1000)
 
                assert Enum.sort(result1) == Enum.map(0..9, &"#{&1}-foo-bar-baz")
                assert Enum.sort(result2) == Enum.map(10..19, &"#{&1}-foo-bar-baz")

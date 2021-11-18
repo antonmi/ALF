@@ -83,7 +83,7 @@ defmodule ALF.Examples.BubbleSort.Pipeline2 do
 end
 
 defmodule ALF.Examples.BubbleSortTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
 
   alias ALF.Examples.BubbleSort.Pipeline
   alias ALF.Manager
@@ -108,7 +108,7 @@ defmodule ALF.Examples.BubbleSortTest do
 end
 
 defmodule ALF.Examples.BubbleSort2Test do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
 
   alias ALF.Examples.BubbleSort.Pipeline2
   alias ALF.Manager
