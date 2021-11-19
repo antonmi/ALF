@@ -61,6 +61,7 @@ defmodule ALF.Manager.StreamTo do
           fn task ->
             case flush_queue(manager_name, stream_ref) do
               {:ok, ips} ->
+                Process.sleep(10)
                 format_output(ips, task, opts.return_ips)
 
               :done ->
@@ -185,6 +186,9 @@ defmodule ALF.Manager.StreamTo do
         GenServer.call(name, {:flush_queue, stream_ref})
       catch
         :exit, {:normal, _details} ->
+          :done
+
+        :exit, {:noproc, _details} ->
           :done
       end
 

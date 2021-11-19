@@ -1,9 +1,9 @@
 defmodule ALF.DecomposeRecomposeTest do
   use ExUnit.Case, async: false
 
-  alias ALF.{Manager, IP}
+  alias ALF.{Manager}
 
-  describe "done! in stage" do
+  describe "decompose an recompose" do
     defmodule Pipeline do
       use ALF.DSL
 
@@ -32,33 +32,13 @@ defmodule ALF.DecomposeRecomposeTest do
     end
 
     test "returns strings" do
-      #        ["foo", "bar", "baz", "anton", "baton", "a"]
-      results =
+      [ip1, ip2] =
         ["foo foo", "bar bar", "baz baz"]
         |> Manager.stream_to(Pipeline, %{return_ips: true})
         |> Enum.to_list()
-        |> IO.inspect()
 
-      Process.sleep(100)
-      state = Manager.__state__(Pipeline)
-      IO.inspect(state.registry)
-      #      assert [
-      #               %IP{
-      #                 datum: 2,
-      #                 history: [{{:add_one, 0}, 1}]
-      #               },
-      #               %IP{},
-      #               %IP{}
-      #             ] = results
+      assert ip1.datum == "foo foo bar"
+      assert ip2.datum == "bar baz baz"
     end
-
-    #    test "without the return_ips option" do
-    #      results =
-    #        [1, 2, 3]
-    #        |> Manager.stream_to(DoneInStagePipeline)
-    #        |> Enum.to_list()
-    #
-    #      assert results == [2, 3, 4]
-    #    end
   end
 end
