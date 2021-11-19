@@ -21,12 +21,11 @@ defmodule ALF.Examples.AddMultMinusTest do
   setup do: Manager.start(Pipeline)
 
   test "several inputs" do
-
     results =
-      [1,2,3]
+      [1, 2, 3]
       |> Manager.stream_to(Pipeline)
       |> Enum.to_list()
+
     assert results == [1, 3, 5]
   end
 end
-

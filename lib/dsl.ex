@@ -7,7 +7,9 @@ defmodule ALF.DSL do
     GotoPoint,
     Goto,
     Plug,
-    Unplug
+    Unplug,
+    Decomposer,
+    Recomposer
   }
 
   alias ALF.DSLError
@@ -62,6 +64,40 @@ defmodule ALF.DSL do
         name: unquote(name),
         to: unquote(to),
         if: unquote(iff),
+        opts: unquote(opts),
+        pipe_module: __MODULE__,
+        pipeline_module: __MODULE__
+      }
+    end
+  end
+
+  defmacro decomposer(name, options \\ [function: nil, opts: []]) do
+    function = options[:function]
+    opts = options[:opts] || []
+
+    quote do
+      Decomposer.validate_options(unquote(name), unquote(options))
+
+      %Decomposer{
+        name: unquote(name),
+        function: unquote(function),
+        opts: unquote(opts),
+        pipe_module: __MODULE__,
+        pipeline_module: __MODULE__
+      }
+    end
+  end
+
+  defmacro recomposer(name, options \\ [function: nil, opts: []]) do
+    function = options[:function]
+    opts = options[:opts] || []
+
+    quote do
+      Recomposer.validate_options(unquote(name), unquote(options))
+
+      %Recomposer{
+        name: unquote(name),
+        function: unquote(function),
         opts: unquote(opts),
         pipe_module: __MODULE__,
         pipeline_module: __MODULE__

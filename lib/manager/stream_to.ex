@@ -17,7 +17,7 @@ defmodule ALF.Manager.StreamTo do
         GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts)})
       end
 
-      def add_to_registry(name, ips, stream_ref) do
+      def add_to_registry(name, ips, stream_ref) when is_list(ips) do
         GenServer.call(name, {:add_to_registry, ips, stream_ref})
       end
 
@@ -27,7 +27,14 @@ defmodule ALF.Manager.StreamTo do
 
       def handle_call({:stream_to, stream, opts}, _from, %__MODULE__{} = state) do
         stream_ref = make_ref()
-        registry = Map.put(state.registry, stream_ref, %StreamRegistry{inputs: %{}, queue: :queue.new()})
+
+        registry =
+          Map.put(state.registry, stream_ref, %StreamRegistry{
+            inputs: %{},
+            queue: :queue.new(),
+            ref: stream_ref
+          })
+
         state = %{state | registry: registry}
 
         stream =
@@ -90,24 +97,30 @@ defmodule ALF.Manager.StreamTo do
       defp resend_packets(%__MODULE__{} = state) do
         new_registry =
           state.registry
-          |> Enum.each(fn {stream_ref, %StreamRegistry{inputs: inputs, queue: queue}} ->
+          |> Enum.reduce(%{}, fn {stream_ref,
+                                  %StreamRegistry{inputs: inputs, queue: queue, ref: ref}},
+                                 acc ->
             ips = build_ips(inputs, stream_ref, state.name)
             GenServer.cast(state.pipeline.producer.pid, ips)
+            # forget about composed and recomposed currently
+            Map.put(acc, stream_ref, %StreamRegistry{inputs: inputs, queue: queue, ref: ref})
           end)
 
-        state
+        %{state | registry: new_registry}
       end
 
       def build_ips(data, stream_ref, name) do
         Enum.map(
           data,
           fn datum ->
-            {reference, datum} = case datum do
-              {ref, dat} when is_reference(ref) ->
-                {ref, dat}
-              dat ->
-                {make_ref(), dat}
-            end
+            {reference, datum} =
+              case datum do
+                {ref, dat} when is_reference(ref) ->
+                  {ref, dat}
+
+                dat ->
+                  {make_ref(), dat}
+              end
 
             %IP{
               stream_ref: stream_ref,
@@ -122,59 +135,48 @@ defmodule ALF.Manager.StreamTo do
 
       def handle_call({:add_to_registry, ips, stream_ref}, _from, state) do
         stream_registry = state.registry[stream_ref]
+
         # TODO find better solution
         if Enum.count(stream_registry.inputs) + Enum.count(ips) > 1_000 do
           Process.sleep(1)
         end
 
-        inputs =
-          Enum.reduce(
-            ips,
-            stream_registry.inputs,
-            fn ip, inputs ->
-              Map.put(inputs, ip.ref, ip.datum)
-            end
-          )
-
-        stream_reg = %{stream_registry | inputs: inputs}
+        stream_reg = StreamRegistry.add_to_registry(stream_registry, ips)
         new_registry = Map.put(state.registry, stream_ref, stream_reg)
-
-        {:reply, ips, %{state | registry: new_registry}}
+        {:reply, new_registry, %{state | registry: new_registry}}
       end
 
       def handle_call({:remove_from_registry, ips, stream_ref}, _from, state) do
         stream_registry = state.registry[stream_ref]
 
-        inputs =
-          Enum.reduce(
-            ips,
-            stream_registry.inputs,
-            fn ip, inputs ->
-              Map.delete(inputs, ip.ref)
-            end
-          )
-
-        stream_reg = %{stream_registry | inputs: inputs}
+        stream_reg = StreamRegistry.remove_from_registry(stream_registry, ips)
         new_registry = Map.put(state.registry, stream_ref, stream_reg)
 
-        {:reply, ips, %{state | registry: new_registry}}
+        {:reply, new_registry, %{state | registry: new_registry}}
       end
 
-      def result_ready(name, ip) when is_atom(name),
-        do: GenServer.call(name, {:result_ready, ip})
+      def handle_cast({:remove_from_registry, ips, stream_ref}, state) do
+        stream_registry = state.registry[stream_ref]
+
+        stream_reg = StreamRegistry.remove_from_registry(stream_registry, ips)
+        new_registry = Map.put(state.registry, stream_ref, stream_reg)
+
+        {:noreply, %{state | registry: new_registry}}
+      end
+
+      def result_ready(name, ip) when is_atom(name) do
+        GenServer.call(name, {:result_ready, ip})
+      end
 
       def handle_call({:result_ready, ip}, _from, state) do
         stream_ref = ip.stream_ref
         stream_registry = state.registry[stream_ref]
-        queue = :queue.in(ip, stream_registry.queue)
-        inputs = Map.delete(stream_registry.inputs, ip.ref)
+        new_stream_registry = StreamRegistry.remove_from_registry(stream_registry, [ip])
+        queue = :queue.in(ip, new_stream_registry.queue)
 
-        new_registry =
-          Map.put(
-            state.registry,
-            stream_ref,
-            %StreamRegistry{queue: queue, inputs: inputs}
-          )
+        new_stream_registry = %{new_stream_registry | queue: queue}
+
+        new_registry = Map.put(state.registry, stream_ref, new_stream_registry)
 
         {:reply, :ok, %{state | registry: new_registry}}
       end
@@ -187,13 +189,14 @@ defmodule ALF.Manager.StreamTo do
       end
 
       def handle_call({:flush_queue, stream_ref}, _from, state) do
-        queue = state.registry[stream_ref].queue
-        inputs = state.registry[stream_ref].inputs
+        registry = state.registry[stream_ref]
+        queue = registry.queue
+        inputs = registry.inputs
 
         data =
           case :queue.to_list(queue) do
             [] ->
-              if Enum.empty?(inputs) do
+              if StreamRegistry.empty?(registry) do
                 :done
               else
                 {:ok, []}
@@ -207,7 +210,7 @@ defmodule ALF.Manager.StreamTo do
           Map.put(
             state.registry,
             stream_ref,
-            %StreamRegistry{queue: :queue.new(), inputs: inputs}
+            %{registry | queue: :queue.new(), inputs: inputs}
           )
 
         {:reply, data, %{state | registry: new_registry}}

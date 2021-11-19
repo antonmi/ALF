@@ -2,7 +2,19 @@ defmodule ALF.DSLTest do
   use ExUnit.Case, async: true
 
   alias ALF.Builder
-  alias ALF.Components.{Stage, Switch, Clone, DeadEnd, GotoPoint, Goto, Plug, Unplug}
+
+  alias ALF.Components.{
+    Stage,
+    Switch,
+    Clone,
+    DeadEnd,
+    GotoPoint,
+    Goto,
+    Plug,
+    Unplug,
+    Decomposer,
+    Recomposer
+  }
 
   defmodule PipelineA do
     use ALF.DSL
@@ -50,6 +62,29 @@ defmodule ALF.DSLTest do
         stages_from(PipelineA)
       end
     ]
+  end
+
+  defmodule PipelineCompose do
+    use ALF.DSL
+
+    @components [
+      decomposer(:decomposer, function: :decomposer_function, opts: [foo: :bar]),
+      recomposer(:recomposer, function: :recomposer_function, opts: [foo: :bar])
+    ]
+
+    def decomposer_function(datum, _opts) do
+      [datum + 1, datum + 2, datum + 3]
+    end
+
+    def recomposer_function(datum, prev_data, _opts) do
+      sum = Enum.reduce(prev_data, 0, &(&1 + &2)) + datum
+
+      if sum > 5 do
+        sum
+      else
+        :continue
+      end
+    end
   end
 
   setup do
@@ -134,6 +169,41 @@ defmodule ALF.DSLTest do
                pid: _plug_pid,
                subscribe_to: [{^last_stage_pid, max_demand: 1}]
              } = another_unplug
+    end
+  end
+
+  describe "PipelineCompose" do
+    test "build PipelineCompose", %{sup_pid: sup_pid} do
+      {:ok, pipeline} = Builder.build(PipelineCompose.alf_components(), sup_pid)
+
+      [decomposer, recomposer] = pipeline.components
+
+      assert %Decomposer{
+               function: :decomposer_function,
+               name: :decomposer,
+               opts: [foo: :bar],
+               pid: decomposer_pid,
+               pipe_module: ALF.DSLTest.PipelineCompose,
+               pipeline_module: ALF.DSLTest.PipelineCompose,
+               subscribe_to: [{producer_pid, [max_demand: 1]}],
+               subscribers: []
+             } = decomposer
+
+      assert is_pid(decomposer_pid)
+      assert is_pid(producer_pid)
+
+      assert %Recomposer{
+               function: :recomposer_function,
+               name: :recomposer,
+               opts: [foo: :bar],
+               pid: recomposer_pid,
+               pipe_module: ALF.DSLTest.PipelineCompose,
+               pipeline_module: ALF.DSLTest.PipelineCompose,
+               subscribe_to: [{^decomposer_pid, [max_demand: 1]}],
+               subscribers: []
+             } = recomposer
+
+      assert is_pid(recomposer_pid)
     end
   end
 end

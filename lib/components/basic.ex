@@ -38,7 +38,10 @@ defmodule ALF.Components.Basic do
           stream_ref: ip.stream_ref,
           error: error,
           stacktrace: stacktrace,
-          component: state
+          component: state,
+          decomposed: ip.decomposed,
+          recomposed: ip.recomposed,
+          plugs: ip.plugs
         }
       end
     end

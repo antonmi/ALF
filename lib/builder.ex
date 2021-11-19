@@ -11,7 +11,9 @@ defmodule ALF.Builder do
     Clone,
     Consumer,
     Plug,
-    Unplug
+    Unplug,
+    Decomposer,
+    Recomposer
   }
 
   def build(pipe_spec, supervisor_pid) when is_list(pipe_spec) do
@@ -112,6 +114,14 @@ defmodule ALF.Builder do
         %Unplug{} = unplug ->
           unplug = start_stage(unplug, supervisor_pid, prev_stages)
           {[unplug], stages ++ [unplug]}
+
+        %Decomposer{} = decomposer ->
+          decomposer = start_stage(decomposer, supervisor_pid, prev_stages)
+          {[decomposer], stages ++ [decomposer]}
+
+        %Recomposer{} = recomposer ->
+          recomposer = start_stage(recomposer, supervisor_pid, prev_stages)
+          {[recomposer], stages ++ [recomposer]}
       end
     end)
   end

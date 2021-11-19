@@ -7,5 +7,8 @@ defmodule ALF.ErrorIP do
             component: nil,
             manager_name: nil,
             ref: nil,
-            stream_ref: nil
+            stream_ref: nil,
+            decomposed: false,
+            recomposed: false,
+            plugs: %{}
 end

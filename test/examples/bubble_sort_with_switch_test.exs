@@ -53,7 +53,6 @@ defmodule ALF.Examples.BubbleSortWithSwitch.Pipeline do
   end
 end
 
-
 defmodule ALF.ExamplesBubbleSortWithSwitchTest do
   use ExUnit.Case
 
