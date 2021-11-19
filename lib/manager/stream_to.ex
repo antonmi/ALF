@@ -1,7 +1,7 @@
 defmodule ALF.Manager.StreamTo do
   defmacro __using__(_opts) do
     quote do
-      alias ALF.{IP, ErrorIP}
+      alias ALF.{IP, ErrorIP, Manager.StreamRegistry}
 
       defmodule ProcessingOptions do
         defstruct chunk_every: 10,
@@ -17,9 +17,17 @@ defmodule ALF.Manager.StreamTo do
         GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts)})
       end
 
+      def add_to_registry(name, ips, stream_ref) do
+        GenServer.call(name, {:add_to_registry, ips, stream_ref})
+      end
+
+      def remove_from_registry(name, ips, stream_ref) do
+        GenServer.call(name, {:remove_from_registry, ips, stream_ref})
+      end
+
       def handle_call({:stream_to, stream, opts}, _from, %__MODULE__{} = state) do
         stream_ref = make_ref()
-        registry = Map.put(state.registry, stream_ref, %{inputs: %{}, queue: :queue.new()})
+        registry = Map.put(state.registry, stream_ref, %StreamRegistry{inputs: %{}, queue: :queue.new()})
         state = %{state | registry: registry}
 
         stream =
@@ -34,7 +42,6 @@ defmodule ALF.Manager.StreamTo do
         stream
         |> Stream.chunk_every(opts.chunk_every)
         |> Stream.each(fn data ->
-          data = Enum.map(data, &{make_ref(), &1})
           send_data(manager_name, data, stream_ref)
         end)
       end
@@ -71,9 +78,9 @@ defmodule ALF.Manager.StreamTo do
       defp format_output([], task, return_ips), do: {[], task}
 
       defp send_data(name, data, stream_ref) when is_atom(name) and is_list(data) do
-        GenServer.call(name, {:put_data_to_registry, data, stream_ref})
-        pipeline = __state__(name).pipeline
         ips = build_ips(data, stream_ref, name)
+        add_to_registry(name, ips, stream_ref)
+        pipeline = __state__(name).pipeline
         GenServer.cast(pipeline.producer.pid, ips)
       catch
         :exit, {reason, details} ->
@@ -83,7 +90,7 @@ defmodule ALF.Manager.StreamTo do
       defp resend_packets(%__MODULE__{} = state) do
         new_registry =
           state.registry
-          |> Enum.each(fn {stream_ref, %{inputs: inputs, queue: queue}} ->
+          |> Enum.each(fn {stream_ref, %StreamRegistry{inputs: inputs, queue: queue}} ->
             ips = build_ips(inputs, stream_ref, state.name)
             GenServer.cast(state.pipeline.producer.pid, ips)
           end)
@@ -94,10 +101,17 @@ defmodule ALF.Manager.StreamTo do
       def build_ips(data, stream_ref, name) do
         Enum.map(
           data,
-          fn {ref, datum} ->
+          fn datum ->
+            {reference, datum} = case datum do
+              {ref, dat} when is_reference(ref) ->
+                {ref, dat}
+              dat ->
+                {make_ref(), dat}
+            end
+
             %IP{
               stream_ref: stream_ref,
-              ref: ref,
+              ref: reference,
               init_datum: datum,
               datum: datum,
               manager_name: name
@@ -106,45 +120,63 @@ defmodule ALF.Manager.StreamTo do
         )
       end
 
-      def handle_call({:put_data_to_registry, data, stream_ref}, _from, state) do
+      def handle_call({:add_to_registry, ips, stream_ref}, _from, state) do
         stream_registry = state.registry[stream_ref]
         # TODO find better solution
-        if Enum.count(stream_registry[:inputs]) + Enum.count(data) > 10_000 do
+        if Enum.count(stream_registry.inputs) + Enum.count(ips) > 1_000 do
           Process.sleep(1)
         end
 
         inputs =
           Enum.reduce(
-            data,
-            stream_registry[:inputs],
-            fn {ref, datum}, inputs ->
-              Map.put(inputs, ref, datum)
+            ips,
+            stream_registry.inputs,
+            fn ip, inputs ->
+              Map.put(inputs, ip.ref, ip.datum)
             end
           )
 
-        stream_reg = Map.put(stream_registry, :inputs, inputs)
+        stream_reg = %{stream_registry | inputs: inputs}
         new_registry = Map.put(state.registry, stream_ref, stream_reg)
 
-        {:reply, data, %{state | registry: new_registry}}
+        {:reply, ips, %{state | registry: new_registry}}
+      end
+
+      def handle_call({:remove_from_registry, ips, stream_ref}, _from, state) do
+        stream_registry = state.registry[stream_ref]
+
+        inputs =
+          Enum.reduce(
+            ips,
+            stream_registry.inputs,
+            fn ip, inputs ->
+              Map.delete(inputs, ip.ref)
+            end
+          )
+
+        stream_reg = %{stream_registry | inputs: inputs}
+        new_registry = Map.put(state.registry, stream_ref, stream_reg)
+
+        {:reply, ips, %{state | registry: new_registry}}
       end
 
       def result_ready(name, ip) when is_atom(name),
-        do: GenServer.cast(name, {:result_ready, ip})
+        do: GenServer.call(name, {:result_ready, ip})
 
-      def handle_cast({:result_ready, ip}, state) do
+      def handle_call({:result_ready, ip}, _from, state) do
         stream_ref = ip.stream_ref
         stream_registry = state.registry[stream_ref]
-        queue = :queue.in(ip, stream_registry[:queue])
-        inputs = Map.delete(stream_registry[:inputs], ip.ref)
+        queue = :queue.in(ip, stream_registry.queue)
+        inputs = Map.delete(stream_registry.inputs, ip.ref)
 
         new_registry =
           Map.put(
             state.registry,
             stream_ref,
-            %{queue: queue, inputs: inputs}
+            %StreamRegistry{queue: queue, inputs: inputs}
           )
 
-        {:noreply, %{state | registry: new_registry}}
+        {:reply, :ok, %{state | registry: new_registry}}
       end
 
       defp flush_queue(name, stream_ref) do
@@ -155,8 +187,8 @@ defmodule ALF.Manager.StreamTo do
       end
 
       def handle_call({:flush_queue, stream_ref}, _from, state) do
-        queue = get_in(state.registry, [stream_ref, :queue])
-        inputs = get_in(state.registry, [stream_ref, :inputs])
+        queue = state.registry[stream_ref].queue
+        inputs = state.registry[stream_ref].inputs
 
         data =
           case :queue.to_list(queue) do
@@ -175,7 +207,7 @@ defmodule ALF.Manager.StreamTo do
           Map.put(
             state.registry,
             stream_ref,
-            %{queue: :queue.new(), inputs: inputs}
+            %StreamRegistry{queue: :queue.new(), inputs: inputs}
           )
 
         {:reply, data, %{state | registry: new_registry}}
