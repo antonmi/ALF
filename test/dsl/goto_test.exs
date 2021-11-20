@@ -1,70 +1,111 @@
-# defmodule ALF.DSL.GotoTest do
-#  use ExUnit.Case, async: true
-#
-#  alias ALF.Builder
-#
-#  alias ALF.Components.{
-#    Stage,
-#    Switch,
-#    Clone,
-#    DeadEnd,
-#    GotoPoint,
-#    Goto,
-#    Plug,
-#    Unplug,
-#    Decomposer,
-#    Recomposer
-#    }
-#
-#
-#  setup do
-#    sup_pid = Process.whereis(ALF.DynamicSupervisor)
-#    %{sup_pid: sup_pid}
-#  end
-#
-#  describe "Switch with function as a name" do
-#    defmodule PipelineSwitch1 do
-#      use ALF.DSL
-#
-#      @components [
-#        goto_point(:goto_point),
-#        clone(:clone, to: [stage(Mod1), dead_end(:dead_end)]),
-#        switch(:switch,
-#          branches: %{
-#            part1: stages_from(PipelineA, opts: %{foo: :bar}),
-#            part2: [stage(ModInPart2)]
-#          },
-#          function: :cond_function
-#        ),
-#        goto(:goto, to: :goto_point, function: :function, opts: [foo: :bar])
-#      ]
-#    end
-#
-#    test "build PipelineSwitch1", %{sup_pid: sup_pid} do
-#      {:ok, pipeline} = Builder.build(PipelineSwitch1.alf_components(), sup_pid)
-#
-#      [goto_point, clone, switch, goto] = pipeline.components
-#
-#      assert %GotoPoint{name: :goto_point} = goto_point
-#      assert %Clone{name: :clone, to: [_stage_mod1, dead_end]} = clone
-#
-#      assert %Switch{
-#               name: :switch,
-#               branches: %{
-#                 part1: [one, two, three, four],
-#                 part2: [_stage_in_part2]
-#               }
-#             } = switch
-#
-#      assert %DeadEnd{name: :dead_end} = dead_end
-#      assert %Goto{name: :goto, to: :goto_point, opts: [foo: :bar]} = goto
-#
-#      assert [
-#               %Stage{name: ModuleA, opts: [foo: :bar]},
-#               %Stage{name: :custom_name, opts: [foo: :bar]},
-#               %Stage{name: :just_function, opts: [foo: :bar]},
-#               %Stage{name: :custom_name, opts: [foo: :bar]}
-#             ] = [one, two, three, four]
-#    end
-#  end
-# end
+defmodule ALF.DSL.GotoTest do
+  use ExUnit.Case, async: true
+
+  alias ALF.Builder
+
+  alias ALF.Components.{
+    GotoPoint,
+    Goto
+  }
+
+  setup do
+    sup_pid = Process.whereis(ALF.DynamicSupervisor)
+    %{sup_pid: sup_pid}
+  end
+
+  describe "Goto with function as a name" do
+    defmodule PipelineGoto1 do
+      use ALF.DSL
+
+      @components [
+        goto_point(:goto_point),
+        goto(:goto, to: :goto_point, opts: [foo: :bar])
+      ]
+    end
+
+    test "build PipelineGoto1", %{sup_pid: sup_pid} do
+      {:ok, pipeline} = Builder.build(PipelineGoto1.alf_components(), sup_pid)
+
+      [point, goto] = pipeline.components
+
+      assert %GotoPoint{
+               name: :goto_point,
+               pid: point_pid,
+               pipe_module: PipelineGoto1,
+               pipeline_module: PipelineGoto1
+             } = point
+
+      assert %Goto{
+               name: :goto,
+               module: PipelineGoto1,
+               function: :goto,
+               to: :goto_point,
+               opts: [foo: :bar],
+               pipe_module: PipelineGoto1,
+               pipeline_module: PipelineGoto1,
+               subscribe_to: [{^point_pid, [max_demand: 1]}]
+             } = goto
+    end
+  end
+
+  describe "Goto with module as a name" do
+    defmodule PipelineGoto2 do
+      use ALF.DSL
+
+      defmodule GotoModule do
+        def init(opts), do: Keyword.put(opts, :baz, :qux)
+
+        def call(_datum, _opts), do: true
+      end
+
+      @components [
+        goto_point(:goto_point),
+        goto(GotoModule, to: :goto_point, opts: [foo: :bar])
+      ]
+    end
+
+    test "build PipelineGoto2", %{sup_pid: sup_pid} do
+      {:ok, pipeline} = Builder.build(PipelineGoto2.alf_components(), sup_pid)
+
+      [_point, goto] = pipeline.components
+      goto = Goto.__state__(goto.pid)
+
+      assert %Goto{
+               name: PipelineGoto2.GotoModule,
+               module: PipelineGoto2.GotoModule,
+               function: :call,
+               to: :goto_point,
+               opts: [baz: :qux, foo: :bar],
+               pipe_module: PipelineGoto2,
+               pipeline_module: PipelineGoto2,
+             } = goto
+    end
+  end
+
+  describe "Goto with custom name" do
+    defmodule PipelineGoto3 do
+      use ALF.DSL
+
+      @components [
+        goto_point(:goto_point),
+        goto(:goto, to: :goto_point, opts: [foo: :bar], name: :custom_name)
+      ]
+    end
+
+    test "build PipelineGoto1", %{sup_pid: sup_pid} do
+      {:ok, pipeline} = Builder.build(PipelineGoto3.alf_components(), sup_pid)
+
+      [_point, goto] = pipeline.components
+
+      assert %Goto{
+               name: :custom_name,
+               module: PipelineGoto3,
+               function: :goto,
+               to: :goto_point,
+               opts: [foo: :bar],
+               pipe_module: PipelineGoto3,
+               pipeline_module: PipelineGoto3
+             } = goto
+    end
+  end
+end

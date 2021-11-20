@@ -4,6 +4,7 @@ defmodule ALF.Components.Goto do
   defstruct name: nil,
             to: nil,
             to_pid: nil,
+            module: nil,
             function: true,
             opts: [],
             pipe_module: nil,
@@ -16,15 +17,17 @@ defmodule ALF.Components.Goto do
 
   alias ALF.DSLError
 
-  @dsl_options [:to, :function, :opts]
-  @dsl_requited_options [:to, :function]
+  @dsl_options [:to, :opts, :name]
+  @dsl_requited_options [:to]
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
   def init(state) do
-    {:producer_consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
+    state = %{state | pid: self(), opts: init_opts(state.module, state.opts)}
+
+    {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
   def find_where_to_go(pid, components) do
@@ -51,7 +54,7 @@ defmodule ALF.Components.Goto do
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{} = state) do
     ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
 
-    case call_condition_function(state.function, ip.datum, state.pipeline_module, state.opts) do
+    case call_function(state.module, state.function, ip.datum, state.opts) do
       {:error, error, stacktrace} ->
         {:noreply, [build_error_ip(ip, error, stacktrace, state)], state}
 
@@ -64,38 +67,31 @@ defmodule ALF.Components.Goto do
     end
   end
 
-  def validate_options(name, options) do
+  def validate_options(atom, options) do
     required_left = @dsl_requited_options -- Keyword.keys(options)
     wrong_options = Keyword.keys(options) -- @dsl_options
 
-    unless is_atom(name) do
-      raise DSLError, "Goto name must be an atom: #{inspect(name)}"
+    unless is_atom(atom) do
+      raise DSLError, "Goto name must be an atom: #{inspect(atom)}"
     end
 
     if Enum.any?(required_left) do
       raise DSLError,
-            "Not all the required options are given for the #{name} goto. " <>
+            "Not all the required options are given for the #{atom} goto. " <>
               "You forgot specifying #{inspect(required_left)}"
     end
 
     if Enum.any?(wrong_options) do
       raise DSLError,
-            "Wrong options for the #{name} goto: #{inspect(wrong_options)}. " <>
+            "Wrong options for the #{atom} goto: #{inspect(wrong_options)}. " <>
               "Available options are #{inspect(@dsl_options)}"
     end
   end
 
-  defp call_condition_function(true, _datum, _pipeline_module, _opts), do: true
+  defp call_function(_module, true, _datum, _opts), do: true
 
-  defp call_condition_function(function, datum, pipeline_module, opts) when is_atom(function) do
-    apply(pipeline_module, function, [datum, opts])
-  rescue
-    error ->
-      {:error, error, __STACKTRACE__}
-  end
-
-  defp call_condition_function(hash, datum, _pipeline_module, opts) when is_function(hash) do
-    hash.(datum, opts)
+  defp call_function(module, function, datum, opts) when is_atom(module) and is_atom(function) do
+    apply(module, function, [datum, opts])
   rescue
     error ->
       {:error, error, __STACKTRACE__}

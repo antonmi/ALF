@@ -131,10 +131,10 @@ defmodule ALF.ComponentErrorTest do
       @components [
         goto_point(:goto_point),
         stage(:add_one),
-        goto(:goto, to: :goto_point, function: :function)
+        goto(:goto_function, to: :goto_point)
       ]
 
-      def function(_datum, _opts) do
+      def goto_function(_datum, _opts) do
         raise "Error in :goto"
       end
 
@@ -153,7 +153,7 @@ defmodule ALF.ComponentErrorTest do
 
       assert [
                %ErrorIP{
-                 component: %ALF.Components.Goto{name: :goto},
+                 component: %ALF.Components.Goto{name: :goto_function},
                  ip: %IP{} = ip,
                  error: %RuntimeError{message: "Error in :goto"}
                },
@@ -161,7 +161,7 @@ defmodule ALF.ComponentErrorTest do
                %ErrorIP{}
              ] = results
 
-      assert [{:goto, _}, {{:add_one, 0}, _}, {:goto_point, _}] = ip.history
+      assert [{:goto_function, _}, {{:add_one, 0}, _}, {:goto_point, _}] = ip.history
     end
   end
 end

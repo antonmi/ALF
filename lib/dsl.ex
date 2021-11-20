@@ -71,6 +71,27 @@ defmodule ALF.DSL do
     end
   end
 
+  defmacro goto(atom, options \\ [name: nil, opts: []]) do
+    to = options[:to]
+    opts = options[:opts]
+    name = options[:name]
+
+    quote do
+      Goto.validate_options(unquote(atom), unquote(options))
+
+      goto =
+        Basic.build_component(
+          Goto,
+          unquote(atom),
+          unquote(name),
+          unquote(opts),
+          __MODULE__
+        )
+
+      %{goto | to: unquote(to)}
+    end
+  end
+
   defmacro goto_point(name) do
     quote do
       %GotoPoint{
@@ -85,25 +106,6 @@ defmodule ALF.DSL do
     quote do
       %DeadEnd{
         name: unquote(name),
-        pipe_module: __MODULE__,
-        pipeline_module: __MODULE__
-      }
-    end
-  end
-
-  defmacro goto(name, options \\ [to: [], function: nil, opts: []]) do
-    to = options[:to]
-    function = options[:function]
-    opts = options[:opts]
-
-    quote do
-      Goto.validate_options(unquote(name), unquote(options))
-
-      %Goto{
-        name: unquote(name),
-        to: unquote(to),
-        function: unquote(function),
-        opts: unquote(opts),
         pipe_module: __MODULE__,
         pipeline_module: __MODULE__
       }

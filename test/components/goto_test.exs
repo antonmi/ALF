@@ -22,6 +22,7 @@ defmodule ALF.Components.GotoTest do
   def build_goto(stage_pid, goto_point_pid, function) do
     %Goto{
       name: :goto,
+      module: __MODULE__,
       function: function,
       pipeline_module: __MODULE__,
       opts: %{max: 2},
@@ -71,18 +72,6 @@ defmodule ALF.Components.GotoTest do
            ]
   end
 
-  describe "with function as function" do
-    setup %{producer_pid: producer_pid} do
-      consumer_pid = setup_pipeline(producer_pid, &if_function/2)
-
-      %{consumer_pid: consumer_pid}
-    end
-
-    test "test clone", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
-      do_run_test(producer_pid, consumer_pid)
-    end
-  end
-
   describe "with function as atom" do
     setup %{producer_pid: producer_pid} do
       consumer_pid = setup_pipeline(producer_pid, :if_function)
@@ -90,7 +79,7 @@ defmodule ALF.Components.GotoTest do
       %{consumer_pid: consumer_pid}
     end
 
-    test "test clone", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
+    test "test goto", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
       do_run_test(producer_pid, consumer_pid)
     end
   end

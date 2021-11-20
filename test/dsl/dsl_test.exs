@@ -39,7 +39,7 @@ defmodule ALF.DSLTest do
           part2: [stage(ModInPart2)]
         }
       ),
-      goto(:goto, to: :goto_point, function: :function, opts: [foo: :bar])
+      goto(:goto, to: :goto_point, opts: [foo: :bar])
     ]
   end
 

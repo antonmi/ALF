@@ -95,12 +95,12 @@ defmodule ALF.DSL.ValidationsTest do
     test "required options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Not all the required options are given for the goto goto. " <>
-                     "You forgot specifying [:function]",
+                     "You forgot specifying [:to]",
                    fn ->
                      defmodule GotoWithoutRequiredOpts do
                        use ALF.DSL
 
-                       @components [goto(:goto, to: :a)]
+                       @components [goto(:goto)]
                      end
                    end
     end
@@ -108,12 +108,12 @@ defmodule ALF.DSL.ValidationsTest do
     test "invalid options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Wrong options for the goto goto: [:foo]. " <>
-                     "Available options are [:to, :function, :opts]",
+                     "Available options are [:to, :opts, :name]",
                    fn ->
                      defmodule GotoWithWrongRequiredOpts do
                        use ALF.DSL
 
-                       @components [goto(:goto, to: :b, function: :function, foo: :bar)]
+                       @components [goto(:goto, to: :b, foo: :bar)]
                      end
                    end
     end
