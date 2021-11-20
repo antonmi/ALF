@@ -28,7 +28,7 @@ defmodule Alf.MixProject do
   end
 
   defp description do
-    "Flow-Based Application Layer Framework"
+    "Flow-based Application Layer Framework"
   end
 
   defp package do
