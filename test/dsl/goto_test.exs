@@ -77,7 +77,7 @@ defmodule ALF.DSL.GotoTest do
                to: :goto_point,
                opts: [baz: :qux, foo: :bar],
                pipe_module: PipelineGoto2,
-               pipeline_module: PipelineGoto2,
+               pipeline_module: PipelineGoto2
              } = goto
     end
   end

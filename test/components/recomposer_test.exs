@@ -29,7 +29,8 @@ defmodule ALF.Components.RecomposerTest do
   def build_recomposer(producer_pid) do
     %Recomposer{
       name: :recomposer,
-      function: &recomposer_function/3,
+      module: __MODULE__,
+      function: :recomposer_function,
       pipeline_module: __MODULE__,
       subscribe_to: [{producer_pid, max_demand: 1}]
     }

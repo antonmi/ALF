@@ -112,37 +112,37 @@ defmodule ALF.DSL do
     end
   end
 
-  defmacro decomposer(name, options \\ [function: nil, opts: []]) do
-    function = options[:function]
-    opts = options[:opts] || []
+  defmacro decomposer(atom, options \\ [opts: [], name: nil]) do
+    opts = options[:opts]
+    name = options[:name]
 
     quote do
-      Decomposer.validate_options(unquote(name), unquote(options))
+      Decomposer.validate_options(unquote(atom), unquote(options))
 
-      %Decomposer{
-        name: unquote(name),
-        function: unquote(function),
-        opts: unquote(opts),
-        pipe_module: __MODULE__,
-        pipeline_module: __MODULE__
-      }
+      Basic.build_component(
+        Decomposer,
+        unquote(atom),
+        unquote(name),
+        unquote(opts),
+        __MODULE__
+      )
     end
   end
 
-  defmacro recomposer(name, options \\ [function: nil, opts: []]) do
-    function = options[:function]
-    opts = options[:opts] || []
+  defmacro recomposer(atom, options \\ [opts: [], name: nil]) do
+    opts = options[:opts]
+    name = options[:name]
 
     quote do
-      Recomposer.validate_options(unquote(name), unquote(options))
+      Recomposer.validate_options(unquote(atom), unquote(options))
 
-      %Recomposer{
-        name: unquote(name),
-        function: unquote(function),
-        opts: unquote(opts),
-        pipe_module: __MODULE__,
-        pipeline_module: __MODULE__
-      }
+      Basic.build_component(
+        Recomposer,
+        unquote(atom),
+        unquote(name),
+        unquote(opts),
+        __MODULE__
+      )
     end
   end
 

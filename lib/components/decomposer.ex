@@ -3,6 +3,7 @@ defmodule ALF.Components.Decomposer do
 
   defstruct name: nil,
             pid: nil,
+            module: nil,
             function: nil,
             opts: [],
             subscribe_to: [],
@@ -12,19 +13,20 @@ defmodule ALF.Components.Decomposer do
 
   alias ALF.{DSLError, Manager}
 
-  @dsl_options [:function, :opts]
-  @dsl_requited_options [:function]
+  @dsl_options [:opts, :name]
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
   def init(state) do
-    {:producer_consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
+    state = %{state | pid: self(), opts: init_opts(state.module, state.opts)}
+
+    {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
   def handle_events([ip], _from, state) do
-    case call_function(state.function, ip.datum, state.pipeline_module, state.opts) do
+    case call_function(state.module, state.function, ip.datum, state.opts) do
       {:ok, data} when is_list(data) ->
         Manager.remove_from_registry(ip.manager_name, [ip], ip.stream_ref)
 
@@ -56,17 +58,10 @@ defmodule ALF.Components.Decomposer do
   end
 
   def validate_options(name, options) do
-    required_left = @dsl_requited_options -- Keyword.keys(options)
     wrong_options = Keyword.keys(options) -- @dsl_options
 
     unless is_atom(name) do
       raise DSLError, "Decomposer name must be an atom: #{inspect(name)}"
-    end
-
-    if Enum.any?(required_left) do
-      raise DSLError,
-            "Not all the required options are given for the #{name} decomposer. " <>
-              "You forgot specifying #{inspect(required_left)}"
     end
 
     if Enum.any?(wrong_options) do
@@ -76,15 +71,8 @@ defmodule ALF.Components.Decomposer do
     end
   end
 
-  defp call_function(function, datum, pipeline_module, opts) when is_atom(function) do
-    {:ok, apply(pipeline_module, function, [datum, opts])}
-  rescue
-    error ->
-      {:error, error, __STACKTRACE__}
-  end
-
-  defp call_function(function, datum, _pipeline_module, opts) when is_function(function) do
-    {:ok, function.(datum, opts)}
+  defp call_function(module, function, datum, opts) when is_atom(module) and is_atom(function) do
+    {:ok, apply(module, function, [datum, opts])}
   rescue
     error ->
       {:error, error, __STACKTRACE__}

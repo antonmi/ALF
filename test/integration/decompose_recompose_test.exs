@@ -8,8 +8,8 @@ defmodule ALF.DecomposeRecomposeTest do
       use ALF.DSL
 
       @components [
-        decomposer(:decomposer, function: :decomposer_function),
-        recomposer(:recomposer, function: :recomposer_function)
+        decomposer(:decomposer_function),
+        recomposer(:recomposer_function)
       ]
 
       def decomposer_function(datum, _opts) do

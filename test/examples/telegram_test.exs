@@ -2,8 +2,8 @@ defmodule ALF.Examples.Telegram.Pipeline do
   use ALF.DSL
 
   @components [
-    decomposer(:split_to_words, function: :split_to_words),
-    recomposer(:create_lines, function: :create_lines)
+    decomposer(:split_to_words),
+    recomposer(:create_lines)
   ]
 
   @length_limit 50

@@ -23,7 +23,8 @@ defmodule ALF.Components.DecomposerTest do
   def build_decomposer(producer_pid) do
     %Decomposer{
       name: :decomposer,
-      function: &decomposer_function/2,
+      module: __MODULE__,
+      function: :decomposer_function,
       pipeline_module: __MODULE__,
       subscribe_to: [{producer_pid, max_demand: 1}]
     }

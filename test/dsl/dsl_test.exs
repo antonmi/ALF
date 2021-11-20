@@ -67,8 +67,8 @@ defmodule ALF.DSLTest do
     use ALF.DSL
 
     @components [
-      decomposer(:decomposer, function: :decomposer_function, opts: [foo: :bar]),
-      recomposer(:recomposer, function: :recomposer_function, opts: [foo: :bar])
+      decomposer(:decomposer_function, opts: [foo: :bar]),
+      recomposer(:recomposer_function, opts: [foo: :bar])
     ]
 
     def decomposer_function(datum, _opts) do
@@ -178,8 +178,9 @@ defmodule ALF.DSLTest do
       [decomposer, recomposer] = pipeline.components
 
       assert %Decomposer{
+               module: PipelineCompose,
                function: :decomposer_function,
-               name: :decomposer,
+               name: :decomposer_function,
                opts: [foo: :bar],
                pid: decomposer_pid,
                pipe_module: ALF.DSLTest.PipelineCompose,
@@ -192,8 +193,9 @@ defmodule ALF.DSLTest do
       assert is_pid(producer_pid)
 
       assert %Recomposer{
+               module: PipelineCompose,
                function: :recomposer_function,
-               name: :recomposer,
+               name: :recomposer_function,
                opts: [foo: :bar],
                pid: recomposer_pid,
                pipe_module: ALF.DSLTest.PipelineCompose,
