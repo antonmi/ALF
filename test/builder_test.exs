@@ -55,7 +55,7 @@ defmodule ALF.BuilderTest do
             part1: [%Stage{name: :stage_in_part1}],
             part2: [%Stage{name: :stage_in_part2}]
           },
-          cond: :cond_function
+          function: :cond_function
         }
       ]
     end
@@ -66,7 +66,7 @@ defmodule ALF.BuilderTest do
       switch = hd(pipeline.components)
 
       assert %Switch{
-               cond: :cond_function,
+               function: :cond_function,
                name: :switch,
                pid: switch_pid,
                branches: branches

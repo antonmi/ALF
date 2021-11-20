@@ -87,7 +87,7 @@ defmodule ALF.ComponentErrorTest do
             1 => [stage(:add_one)],
             2 => [stage(:mult_two)]
           },
-          cond: :switch_cond
+          function: :switch_cond
         ),
         stage(:ok)
       ]
@@ -132,10 +132,10 @@ defmodule ALF.ComponentErrorTest do
       @components [
         goto_point(:goto_point),
         stage(:add_one),
-        goto(:goto, to: :goto_point, if: :if_func)
+        goto(:goto, to: :goto_point, function: :function)
       ]
 
-      def if_func(_datum, _opts) do
+      def function(_datum, _opts) do
         raise "Error in :goto"
       end
 

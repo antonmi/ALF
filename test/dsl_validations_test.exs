@@ -39,7 +39,7 @@ defmodule ALF.DSLValidationsTest do
     test "required options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Not all the required options are given for the switch switch. " <>
-                     "You forgot specifying [:branches, :cond]",
+                     "You forgot specifying [:branches, :function]",
                    fn ->
                      defmodule SwitchWithoutRequiredOpts do
                        use ALF.DSL
@@ -52,12 +52,12 @@ defmodule ALF.DSLValidationsTest do
     test "invalid options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Wrong options for the switch switch: [:foo]. " <>
-                     "Available options are [:branches, :opts, :cond, :name]",
+                     "Available options are [:branches, :opts, :function, :name]",
                    fn ->
                      defmodule SwitchWithWrongOpts do
                        use ALF.DSL
 
-                       @components [switch(:switch, cond: :b, branches: [], foo: :bar)]
+                       @components [switch(:switch, function: :b, branches: [], foo: :bar)]
                      end
                    end
     end
@@ -95,7 +95,7 @@ defmodule ALF.DSLValidationsTest do
     test "required options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Not all the required options are given for the goto goto. " <>
-                     "You forgot specifying [:if]",
+                     "You forgot specifying [:function]",
                    fn ->
                      defmodule GotoWithoutRequiredOpts do
                        use ALF.DSL
@@ -108,12 +108,12 @@ defmodule ALF.DSLValidationsTest do
     test "invalid options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Wrong options for the goto goto: [:foo]. " <>
-                     "Available options are [:to, :if, :opts]",
+                     "Available options are [:to, :function, :opts]",
                    fn ->
                      defmodule GotoWithWrongRequiredOpts do
                        use ALF.DSL
 
-                       @components [goto(:goto, to: :b, if: :if, foo: :bar)]
+                       @components [goto(:goto, to: :b, function: :function, foo: :bar)]
                      end
                    end
     end

@@ -24,7 +24,7 @@ defmodule ALF.Components.SwitchTest do
       },
       pipeline_module: __MODULE__,
       subscribe_to: [{producer_pid, max_demand: 1}],
-      cond: cond_function,
+      function: cond_function,
       opts: %{add: 1}
     }
   end
@@ -43,7 +43,7 @@ defmodule ALF.Components.SwitchTest do
     {consumer1_pid, consumer2_pid}
   end
 
-  describe "with cond as &function/2" do
+  describe "with function as &function/2" do
     setup %{producer_pid: producer_pid} do
       {:ok, pid} = Switch.start_link(build_switch(&cond_function/2, producer_pid))
 
@@ -76,7 +76,7 @@ defmodule ALF.Components.SwitchTest do
     end
   end
 
-  describe "with cond function" do
+  describe "with function function" do
     setup %{producer_pid: producer_pid} do
       {:ok, pid} = Switch.start_link(build_switch(:cond_function, producer_pid))
 

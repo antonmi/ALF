@@ -13,9 +13,9 @@ defmodule ALF.Examples.BubbleSortWithSwitch.Pipeline do
     switch(:ready_or_not,
       branches: %{
         ready: [stage(:format_output)],
-        not_ready: [goto(:the_loop, to: :go_to_point, if: true)]
+        not_ready: [goto(:the_loop, to: :go_to_point, function: true)]
       },
-      cond: :ready_or_not
+      function: :ready_or_not
     )
   ]
 

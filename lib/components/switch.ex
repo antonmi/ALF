@@ -8,13 +8,13 @@ defmodule ALF.Components.Switch do
             branches: %{},
             pipe_module: nil,
             pipeline_module: nil,
-            cond: nil,
+            function: nil,
             opts: %{}
 
   alias ALF.DSLError
 
-  @dsl_options [:branches, :opts, :cond, :name]
-  @dsl_requited_options [:branches, :cond]
+  @dsl_options [:branches, :opts, :function, :name]
+  @dsl_requited_options [:branches, :function]
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
@@ -23,10 +23,10 @@ defmodule ALF.Components.Switch do
   def init(state) do
     branches = Map.keys(state.branches)
 
-    cond = fn ip ->
+    hash = fn ip ->
       ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
 
-      case call_cond_function(state.cond, ip.datum, state.pipeline_module, state.opts) do
+      case call_cond_function(state.function, ip.datum, state.pipeline_module, state.opts) do
         {:error, error, stacktrace} ->
           {build_error_ip(ip, error, stacktrace, state), hd(branches)}
 
@@ -36,7 +36,7 @@ defmodule ALF.Components.Switch do
     end
 
     {:producer_consumer, %{state | pid: self()},
-     dispatcher: {GenStage.PartitionDispatcher, partitions: branches, hash: cond},
+     dispatcher: {GenStage.PartitionDispatcher, partitions: branches, hash: hash},
      subscribe_to: state.subscribe_to}
   end
 
@@ -72,8 +72,8 @@ defmodule ALF.Components.Switch do
       {:error, error, __STACKTRACE__}
   end
 
-  defp call_cond_function(cond, datum, _pipeline_module, opts) when is_function(cond) do
-    cond.(datum, opts)
+  defp call_cond_function(function, datum, _pipeline_module, opts) when is_function(function) do
+    function.(datum, opts)
   rescue
     error ->
       {:error, error, __STACKTRACE__}

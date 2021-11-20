@@ -19,10 +19,10 @@ defmodule ALF.Components.GotoTest do
     datum < opts[:max]
   end
 
-  def build_goto(stage_pid, goto_point_pid, if_function) do
+  def build_goto(stage_pid, goto_point_pid, function) do
     %Goto{
       name: :goto,
-      if: if_function,
+      function: function,
       pipeline_module: __MODULE__,
       opts: %{max: 2},
       to_pid: goto_point_pid,
@@ -71,7 +71,7 @@ defmodule ALF.Components.GotoTest do
            ]
   end
 
-  describe "with if as function" do
+  describe "with function as function" do
     setup %{producer_pid: producer_pid} do
       consumer_pid = setup_pipeline(producer_pid, &if_function/2)
 
@@ -83,7 +83,7 @@ defmodule ALF.Components.GotoTest do
     end
   end
 
-  describe "with if as atom" do
+  describe "with function as atom" do
     setup %{producer_pid: producer_pid} do
       consumer_pid = setup_pipeline(producer_pid, :if_function)
 

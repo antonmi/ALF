@@ -4,7 +4,7 @@ defmodule ALF.Components.Goto do
   defstruct name: nil,
             to: nil,
             to_pid: nil,
-            if: true,
+            function: true,
             opts: [],
             pipe_module: nil,
             pipeline_module: nil,
@@ -16,8 +16,8 @@ defmodule ALF.Components.Goto do
 
   alias ALF.DSLError
 
-  @dsl_options [:to, :if, :opts]
-  @dsl_requited_options [:to, :if]
+  @dsl_options [:to, :function, :opts]
+  @dsl_requited_options [:to, :function]
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
@@ -51,7 +51,7 @@ defmodule ALF.Components.Goto do
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{} = state) do
     ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
 
-    case call_condition_function(state.if, ip.datum, state.pipeline_module, state.opts) do
+    case call_condition_function(state.function, ip.datum, state.pipeline_module, state.opts) do
       {:error, error, stacktrace} ->
         {:noreply, [build_error_ip(ip, error, stacktrace, state)], state}
 

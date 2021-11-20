@@ -10,7 +10,7 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
     stage(:update_new_list, count: 10),
     stage(:rebuild_list, count: 10),
     clone(:logging, to: [stage(:report_step), dead_end(:after_report)]),
-    goto(:the_loop, to: :go_to_point, if: :go_to_condition),
+    goto(:the_loop, to: :go_to_point, function: :go_to_condition),
     stage(:format_output)
   ]
 

@@ -77,11 +77,11 @@ switch(:my_switch,
           part1: [stage(:foo)],
           part2: [stage(:bar)]
         },
-        cond: :cond_function
+        function: :cond_function
         opts: [foo: :bar]
       )
 ```
-The `cond` function is 2-arity function that must return the key of the branch:
+The `function` function is 2-arity function that must return the key of the branch:
 ```elixir
 def cond_function(datum, opts) do
   if datum == opts[:foo], do: :part1, else: part: 2
@@ -97,9 +97,9 @@ clone(:my_clone, to: [stage(:foo), dead_end(:dead_end)])
 ### Goto
 Send packet to a given `goto_point`
 ```elixir
-goto(:my_goto, to: :my_goto_point, if: :goto_function, opts: [foo: :bar])
+goto(:my_goto, to: :my_goto_point, function: :goto_function, opts: [foo: :bar])
 ```
-The `if` function is 2-arity function that must return `true` of `false`
+The `function` function is 2-arity function that must return `true` of `false`
 ```elixir
 def goto_function(datum, opts) do
   datum == opts[:foo]

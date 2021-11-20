@@ -38,9 +38,9 @@ defmodule ALF.DSLTest do
           part1: stages_from(PipelineA, opts: %{foo: :bar}),
           part2: [stage(ModInPart2)]
         },
-        cond: :cond_function
+        function: :cond_function
       ),
-      goto(:goto, to: :goto_point, if: :function, opts: [foo: :bar])
+      goto(:goto, to: :goto_point, function: :function, opts: [foo: :bar])
     ]
   end
 

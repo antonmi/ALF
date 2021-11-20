@@ -20,7 +20,7 @@ defmodule ALF.ManagerTest do
 
     @components [
       goto_point(:point),
-      goto(:goto, to: :point, if: :goto_if)
+      goto(:goto, to: :point, function: :goto_function)
     ]
   end
 

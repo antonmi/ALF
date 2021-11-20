@@ -52,9 +52,9 @@ defmodule ALF.DSL do
     end
   end
 
-  defmacro goto(name, options \\ [to: [], if: nil, opts: []]) do
+  defmacro goto(name, options \\ [to: [], function: nil, opts: []]) do
     to = options[:to]
-    iff = options[:if]
+    function = options[:function]
     opts = options[:opts]
 
     quote do
@@ -63,7 +63,7 @@ defmodule ALF.DSL do
       %Goto{
         name: unquote(name),
         to: unquote(to),
-        if: unquote(iff),
+        function: unquote(function),
         opts: unquote(opts),
         pipe_module: __MODULE__,
         pipeline_module: __MODULE__
@@ -181,7 +181,7 @@ defmodule ALF.DSL do
       %Switch{
         name: unquote(name),
         branches: branches,
-        cond: unquote(options)[:cond],
+        function: unquote(options)[:function],
         pipe_module: __MODULE__,
         pipeline_module: __MODULE__
       }
