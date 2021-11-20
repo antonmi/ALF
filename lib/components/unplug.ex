@@ -35,14 +35,6 @@ defmodule ALF.Components.Unplug do
     end
   end
 
-  def init_opts(module, opts) do
-    if function_exported?(module, :init, 1) do
-      apply(module, :init, [opts])
-    else
-      opts
-    end
-  end
-
   defp call_unplug_function(module, datum, prev_datum, opts) do
     apply(module, :unplug, [datum, prev_datum, opts])
   rescue

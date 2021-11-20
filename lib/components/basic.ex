@@ -1,4 +1,30 @@
 defmodule ALF.Components.Basic do
+  def build_component(component_module, atom, name, opts, current_module) do
+    name = if name, do: name, else: atom
+
+    if module_exist?(atom) do
+      struct(component_module, %{
+        pipe_module: current_module,
+        pipeline_module: current_module,
+        name: name,
+        module: atom,
+        function: :call,
+        opts: opts || []
+      })
+    else
+      struct(component_module, %{
+        pipe_module: current_module,
+        pipeline_module: current_module,
+        name: name,
+        module: current_module,
+        function: atom,
+        opts: opts || []
+      })
+    end
+  end
+
+  defp module_exist?(module), do: function_exported?(module, :__info__, 1)
+
   defmacro __using__(_opts) do
     quote do
       use GenStage
@@ -9,16 +35,24 @@ defmodule ALF.Components.Basic do
         GenStage.call(pid, :__state__)
       end
 
-      def handle_call(:__state__, _from, state) do
-        {:reply, state, [], state}
-      end
-
       def subscribers(pid) do
         GenStage.call(pid, :subscribers)
       end
 
+      def init_opts(module, opts) do
+        if function_exported?(module, :init, 1) do
+          apply(module, :init, [opts])
+        else
+          opts
+        end
+      end
+
       def handle_call(:subscribers, _form, state) do
         {:reply, state.subscribers, [], state}
+      end
+
+      def handle_call(:__state__, _from, state) do
+        {:reply, state, [], state}
       end
 
       def handle_subscribe(:consumer, subscription_options, from, state) do

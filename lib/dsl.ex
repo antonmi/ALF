@@ -1,5 +1,6 @@
 defmodule ALF.DSL do
   alias ALF.Components.{
+    Basic,
     Stage,
     Switch,
     Clone,
@@ -22,13 +23,51 @@ defmodule ALF.DSL do
     quote do
       Stage.validate_options(unquote(atom), unquote(options))
 
-      build_stage(
-        unquote(atom),
-        unquote(name),
-        unquote(opts),
-        unquote(count),
-        __MODULE__
-      )
+      stage =
+        Basic.build_component(
+          Stage,
+          unquote(atom),
+          unquote(name),
+          unquote(opts),
+          __MODULE__
+        )
+
+      %{stage | count: unquote(count) || 1}
+    end
+  end
+
+  defmacro switch(atom, options \\ [opts: [], name: nil]) do
+    opts = options[:opts]
+    name = options[:name]
+
+    quote do
+      Switch.validate_options(unquote(atom), unquote(options))
+      branches = ALF.DSL.build_branches(unquote(options)[:branches], __MODULE__)
+
+      switch =
+        Basic.build_component(
+          Switch,
+          unquote(atom),
+          unquote(name),
+          unquote(opts),
+          __MODULE__
+        )
+
+      %{switch | branches: branches}
+    end
+  end
+
+  defmacro clone(name, options) do
+    quote do
+      Clone.validate_options(unquote(name), unquote(options))
+      stages = set_pipeline_module(unquote(options)[:to], __MODULE__)
+
+      %Clone{
+        name: unquote(name),
+        to: stages,
+        pipe_module: __MODULE__,
+        pipeline_module: __MODULE__
+      }
     end
   end
 
@@ -173,35 +212,6 @@ defmodule ALF.DSL do
     end
   end
 
-  defmacro switch(name, options) do
-    quote do
-      Switch.validate_options(unquote(name), unquote(options))
-      branches = ALF.DSL.build_branches(unquote(options)[:branches], __MODULE__)
-
-      %Switch{
-        name: unquote(name),
-        branches: branches,
-        function: unquote(options)[:function],
-        pipe_module: __MODULE__,
-        pipeline_module: __MODULE__
-      }
-    end
-  end
-
-  defmacro clone(name, options) do
-    quote do
-      Clone.validate_options(unquote(name), unquote(options))
-      stages = set_pipeline_module(unquote(options)[:to], __MODULE__)
-
-      %Clone{
-        name: unquote(name),
-        to: stages,
-        pipe_module: __MODULE__,
-        pipeline_module: __MODULE__
-      }
-    end
-  end
-
   def build_branches(branches, module) do
     branches
     |> Enum.reduce(%{}, fn {key, stages}, final_specs ->
@@ -252,31 +262,5 @@ defmodule ALF.DSL do
     end
   end
 
-  def build_stage(atom, name, opts, count, current_module) do
-    name = if name, do: name, else: atom
-
-    if module_exist?(atom) do
-      %Stage{
-        pipe_module: current_module,
-        pipeline_module: current_module,
-        name: name,
-        module: atom,
-        function: :call,
-        opts: opts || %{},
-        count: count || 1
-      }
-    else
-      %Stage{
-        pipe_module: current_module,
-        pipeline_module: current_module,
-        name: name,
-        module: current_module,
-        function: atom,
-        opts: opts || %{},
-        count: count || 1
-      }
-    end
-  end
-
-  def module_exist?(module), do: function_exported?(module, :__info__, 1)
+  defp module_exist?(module), do: function_exported?(module, :__info__, 1)
 end

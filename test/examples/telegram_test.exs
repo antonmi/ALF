@@ -3,7 +3,7 @@ defmodule ALF.Examples.Telegram.Pipeline do
 
   @components [
     decomposer(:split_to_words, function: :split_to_words),
-    recomposer(:create_lines, function: :create_lines),
+    recomposer(:create_lines, function: :create_lines)
   ]
 
   @length_limit 50
@@ -16,13 +16,13 @@ defmodule ALF.Examples.Telegram.Pipeline do
 
   def create_lines(word, words, _opts) do
     string = Enum.join(words, " ")
+
     if String.length(string <> " " <> word) > @length_limit do
       string
     else
       :continue
     end
   end
-
 end
 
 defmodule ALF.Examples.TelegramTest do

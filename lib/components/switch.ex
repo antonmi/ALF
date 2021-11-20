@@ -3,18 +3,19 @@ defmodule ALF.Components.Switch do
 
   defstruct name: nil,
             pid: nil,
+            module: nil,
+            function: nil,
+            opts: %{},
             subscribe_to: [],
             subscribers: [],
             branches: %{},
             pipe_module: nil,
-            pipeline_module: nil,
-            function: nil,
-            opts: %{}
+            pipeline_module: nil
 
   alias ALF.DSLError
 
-  @dsl_options [:branches, :opts, :function, :name]
-  @dsl_requited_options [:branches, :function]
+  @dsl_options [:branches, :opts, :name]
+  @dsl_requited_options [:branches]
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
@@ -26,7 +27,7 @@ defmodule ALF.Components.Switch do
     hash = fn ip ->
       ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
 
-      case call_cond_function(state.function, ip.datum, state.pipeline_module, state.opts) do
+      case call_function(state.module, state.function, ip.datum, state.opts) do
         {:error, error, stacktrace} ->
           {build_error_ip(ip, error, stacktrace, state), hd(branches)}
 
@@ -35,7 +36,9 @@ defmodule ALF.Components.Switch do
       end
     end
 
-    {:producer_consumer, %{state | pid: self()},
+    state = %{state | pid: self(), opts: init_opts(state.module, state.opts)}
+
+    {:producer_consumer, state,
      dispatcher: {GenStage.PartitionDispatcher, partitions: branches, hash: hash},
      subscribe_to: state.subscribe_to}
   end
@@ -65,14 +68,15 @@ defmodule ALF.Components.Switch do
     end
   end
 
-  defp call_cond_function(function, datum, pipeline_module, opts) when is_atom(function) do
-    apply(pipeline_module, function, [datum, opts])
+  defp call_function(module, function, datum, opts) when is_atom(module) and is_atom(function) do
+    apply(module, function, [datum, opts])
   rescue
     error ->
       {:error, error, __STACKTRACE__}
   end
 
-  defp call_cond_function(function, datum, _pipeline_module, opts) when is_function(function) do
+  defp call_function(module, function, datum, opts)
+       when is_atom(module) and is_function(function) do
     function.(datum, opts)
   rescue
     error ->

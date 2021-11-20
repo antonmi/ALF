@@ -22,7 +22,7 @@ defmodule ALF.Components.SwitchTest do
         part1: [],
         part2: []
       },
-      pipeline_module: __MODULE__,
+      module: __MODULE__,
       subscribe_to: [{producer_pid, max_demand: 1}],
       function: cond_function,
       opts: %{add: 1}
@@ -58,7 +58,7 @@ defmodule ALF.Components.SwitchTest do
     } do
       ip = %IP{datum: 0}
       GenServer.cast(producer_pid, [ip])
-      Process.sleep(1)
+      Process.sleep(5)
       assert [%IP{datum: 0}] = TestConsumer.ips(consumer1_pid)
       assert [] = TestConsumer.ips(consumer2_pid)
     end
@@ -70,13 +70,13 @@ defmodule ALF.Components.SwitchTest do
     } do
       ip = %IP{datum: 1}
       GenServer.cast(producer_pid, [ip])
-      Process.sleep(1)
+      Process.sleep(5)
       assert [] = TestConsumer.ips(consumer1_pid)
       assert [%IP{datum: 1}] = TestConsumer.ips(consumer2_pid)
     end
   end
 
-  describe "with function function" do
+  describe "with function as atom" do
     setup %{producer_pid: producer_pid} do
       {:ok, pid} = Switch.start_link(build_switch(:cond_function, producer_pid))
 
@@ -91,7 +91,7 @@ defmodule ALF.Components.SwitchTest do
     } do
       ip = %IP{datum: 0}
       GenServer.cast(producer_pid, [ip])
-      Process.sleep(1)
+      Process.sleep(5)
       assert [%IP{datum: 0}] = TestConsumer.ips(consumer1_pid)
       assert [] = TestConsumer.ips(consumer2_pid)
     end
@@ -103,7 +103,7 @@ defmodule ALF.Components.SwitchTest do
     } do
       ip = %IP{datum: 1}
       GenServer.cast(producer_pid, [ip])
-      Process.sleep(1)
+      Process.sleep(5)
       assert [] = TestConsumer.ips(consumer1_pid)
       assert [%IP{datum: 1}] = TestConsumer.ips(consumer2_pid)
     end

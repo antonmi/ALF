@@ -27,14 +27,6 @@ defmodule ALF.Components.Stage do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
-  def init_opts(module, opts) do
-    if function_exported?(module, :init, 1) do
-      apply(module, :init, [opts])
-    else
-      opts
-    end
-  end
-
   def handle_events([%IP{} = ip], _from, %__MODULE__{} = state) do
     {:noreply, [process_ip(ip, state)], state}
   end

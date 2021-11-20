@@ -33,12 +33,11 @@ defmodule ALF.DSLTest do
     @components [
       goto_point(:goto_point),
       clone(:clone, to: [stage(Mod1), dead_end(:dead_end)]),
-      switch(:switch,
+      switch(:cond_function,
         branches: %{
           part1: stages_from(PipelineA, opts: %{foo: :bar}),
           part2: [stage(ModInPart2)]
-        },
-        function: :cond_function
+        }
       ),
       goto(:goto, to: :goto_point, function: :function, opts: [foo: :bar])
     ]
@@ -114,7 +113,7 @@ defmodule ALF.DSLTest do
       assert %Clone{name: :clone, to: [_stage_mod1, dead_end]} = clone
 
       assert %Switch{
-               name: :switch,
+               name: :cond_function,
                branches: %{
                  part1: [one, two, three, four],
                  part2: [_stage_in_part2]

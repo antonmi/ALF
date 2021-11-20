@@ -1,4 +1,4 @@
-defmodule ALF.DSLValidationsTest do
+defmodule ALF.DSL.ValidationsTest do
   use ExUnit.Case, async: true
 
   alias ALF.DSLError
@@ -39,7 +39,7 @@ defmodule ALF.DSLValidationsTest do
     test "required options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Not all the required options are given for the switch switch. " <>
-                     "You forgot specifying [:branches, :function]",
+                     "You forgot specifying [:branches]",
                    fn ->
                      defmodule SwitchWithoutRequiredOpts do
                        use ALF.DSL
@@ -52,12 +52,12 @@ defmodule ALF.DSLValidationsTest do
     test "invalid options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Wrong options for the switch switch: [:foo]. " <>
-                     "Available options are [:branches, :opts, :function, :name]",
+                     "Available options are [:branches, :opts, :name]",
                    fn ->
                      defmodule SwitchWithWrongOpts do
                        use ALF.DSL
 
-                       @components [switch(:switch, function: :b, branches: [], foo: :bar)]
+                       @components [switch(:switch, branches: [], foo: :bar)]
                      end
                    end
     end

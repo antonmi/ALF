@@ -82,12 +82,11 @@ defmodule ALF.ComponentErrorTest do
       use ALF.DSL
 
       @components [
-        switch(:switch,
+        switch(:switch_cond,
           branches: %{
             1 => [stage(:add_one)],
             2 => [stage(:mult_two)]
-          },
-          function: :switch_cond
+          }
         ),
         stage(:ok)
       ]
@@ -113,7 +112,7 @@ defmodule ALF.ComponentErrorTest do
 
       assert [
                %ErrorIP{
-                 component: %ALF.Components.Switch{name: :switch},
+                 component: %ALF.Components.Switch{name: :switch_cond},
                  ip: %IP{} = ip,
                  error: %RuntimeError{message: "Error in :switch"}
                },
@@ -121,7 +120,7 @@ defmodule ALF.ComponentErrorTest do
                %ErrorIP{}
              ] = results
 
-      assert [switch: _datum] = ip.history
+      assert [switch_cond: _datum] = ip.history
     end
   end
 
