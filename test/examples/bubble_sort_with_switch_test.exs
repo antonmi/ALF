@@ -5,7 +5,7 @@ defmodule ALF.Examples.BubbleSortWithSwitch.Pipeline do
 
   @components [
     stage(:build_struct),
-    goto_point(:go_to_point),
+    goto_point(:goto_point),
     stage(:find_max),
     stage(:update_new_list, count: 10),
     stage(:rebuild_list, count: 10),
@@ -13,7 +13,7 @@ defmodule ALF.Examples.BubbleSortWithSwitch.Pipeline do
     switch(:ready_or_not,
       branches: %{
         ready: [stage(:format_output)],
-        not_ready: [goto(true, to: :go_to_point, name: :just_go)]
+        not_ready: [goto(true, to: :goto_point, name: :just_go)]
       }
     )
   ]

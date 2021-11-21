@@ -5,12 +5,12 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
 
   @components [
     stage(:build_struct),
-    goto_point(:go_to_point),
+    goto_point(:goto_point),
     stage(:find_max),
     stage(:update_new_list, count: 10),
     stage(:rebuild_list, count: 10),
     clone(:logging, to: [stage(:report_step), dead_end(:after_report)]),
-    goto(:go_to_condition, to: :go_to_point),
+    goto(:goto_if, to: :goto_point),
     stage(:format_output)
   ]
 
@@ -30,7 +30,7 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
     %{struct | list: struct.list -- [struct.max]}
   end
 
-  def go_to_condition(struct, _opts) do
+  def goto_if(struct, _opts) do
     !Enum.empty?(struct.list)
   end
 
