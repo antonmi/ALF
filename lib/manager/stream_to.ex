@@ -39,17 +39,17 @@ defmodule ALF.Manager.StreamTo do
 
         stream =
           stream
-          |> build_input_stream(stream_ref, opts, state.name)
+          |> build_input_stream(stream_ref, opts, state.name, state.producer_pid)
           |> build_output_stream(stream_ref, opts, state.name)
 
         {:reply, stream, state}
       end
 
-      defp build_input_stream(stream, stream_ref, opts, manager_name) do
+      defp build_input_stream(stream, stream_ref, opts, manager_name, producer_pid) do
         stream
         |> Stream.chunk_every(opts.chunk_every)
         |> Stream.each(fn data ->
-          send_data(manager_name, data, stream_ref)
+          send_data(manager_name, data, stream_ref, producer_pid)
         end)
       end
 
@@ -85,11 +85,10 @@ defmodule ALF.Manager.StreamTo do
       defp format_output([%ErrorIP{} | _] = ips, task, _return_ips), do: {ips, task}
       defp format_output([], task, return_ips), do: {[], task}
 
-      defp send_data(name, data, stream_ref) when is_atom(name) and is_list(data) do
+      defp send_data(name, data, stream_ref, producer_pid) when is_atom(name) and is_list(data) do
         ips = build_ips(data, stream_ref, name)
         add_to_registry(name, ips, stream_ref)
-        pipeline = __state__(name).pipeline
-        Producer.load_ips(pipeline.producer.pid, ips)
+        Producer.load_ips(producer_pid, ips)
       catch
         :exit, {reason, details} ->
           {:exit, {reason, details}}
@@ -102,7 +101,7 @@ defmodule ALF.Manager.StreamTo do
                                   %StreamRegistry{inputs: inputs, queue: queue, ref: ref}},
                                  acc ->
             ips = build_ips(inputs, stream_ref, state.name)
-            Producer.load_ips(state.pipeline.producer.pid, ips)
+            Producer.load_ips(state.producer_pid, ips)
             # forget about in_progress, composed and recomposed currently
             Map.put(acc, stream_ref, %StreamRegistry{inputs: inputs, queue: queue, ref: ref})
           end)

@@ -107,7 +107,7 @@ defmodule ALF.Manager do
         state.name
       )
 
-    %{state | pipeline: pipeline}
+    %{state | pipeline: pipeline, producer_pid: pipeline.producer.pid}
   end
 
   defp save_stages_states(%__MODULE__{} = state) do
