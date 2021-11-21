@@ -8,7 +8,8 @@ defmodule ALF.Manager do
             components: [],
             pipeline_sup_pid: nil,
             sup_pid: nil,
-            registry: %{}
+            registry: %{},
+            registry_dump: %{}
 
   use ALF.Manager.StreamTo
   use ALF.Manager.GraphEdges
@@ -144,9 +145,14 @@ defmodule ALF.Manager do
     state =
       state
       |> start_pipeline()
+      |> copy_registry_to_dump()
       |> resend_packets()
 
     {:noreply, state}
+  end
+
+  defp copy_registry_to_dump(state) do
+    %{state | registry_dump: state.registry}
   end
 
   defp is_pipeline_module?(module) when is_atom(module) do

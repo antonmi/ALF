@@ -7,6 +7,7 @@ defmodule ALF.IP do
             datum: nil,
             history: [],
             manager_name: nil,
+            in_progress: false,
             decomposed: false,
             recomposed: false,
             plugs: %{}

@@ -57,12 +57,14 @@ defmodule ALF.CrashPipelineTest do
       run_kill_task(state, 10)
 
       assert capture_log(fn ->
-               result =
+               results =
                  0..9
                  |> Manager.stream_to(SimplePipelineToCrash)
                  |> Enum.to_list()
 
-               assert Enum.sort(result) == Enum.map(0..9, &"#{&1}-foo-bar-baz")
+               state = Manager.__state__(SimplePipelineToCrash)
+               in_progress = hd(Map.values(state.registry_dump)).in_progress
+               assert Enum.count(in_progress) + Enum.count(results) == 10
              end) =~ "Last message: {:DOWN, "
     end
 
@@ -79,9 +81,16 @@ defmodule ALF.CrashPipelineTest do
                  |> Enum.map(&Task.async(fn -> Enum.to_list(&1) end))
                  |> Task.await_many()
 
-               assert Enum.sort(result1) == Enum.map(0..9, &"#{&1}-foo-bar-baz")
-               assert Enum.sort(result2) == Enum.map(10..19, &"#{&1}-foo-bar-baz")
-               assert Enum.sort(result3) == Enum.map(20..29, &"#{&1}-foo-bar-baz")
+               state = Manager.__state__(SimplePipelineToCrash)
+
+               [in_progress1, in_progress2, in_progress3] =
+                 state.registry_dump
+                 |> Map.values()
+                 |> Enum.map(& &1.in_progress)
+
+               assert Enum.count(in_progress1) + Enum.count(result1) == 10
+               assert Enum.count(in_progress2) + Enum.count(result2) == 10
+               assert Enum.count(in_progress3) + Enum.count(result3) == 10
              end) =~ "Last message: {:DOWN, "
     end
   end

@@ -1,7 +1,7 @@
 defmodule ALF.Manager.StreamTo do
   defmacro __using__(_opts) do
     quote do
-      alias ALF.{IP, ErrorIP, Manager.StreamRegistry}
+      alias ALF.{IP, ErrorIP, Manager.StreamRegistry, Components.Producer}
 
       defmodule ProcessingOptions do
         defstruct chunk_every: 10,
@@ -89,7 +89,7 @@ defmodule ALF.Manager.StreamTo do
         ips = build_ips(data, stream_ref, name)
         add_to_registry(name, ips, stream_ref)
         pipeline = __state__(name).pipeline
-        GenServer.cast(pipeline.producer.pid, ips)
+        Producer.load_ips(pipeline.producer.pid, ips)
       catch
         :exit, {reason, details} ->
           {:exit, {reason, details}}
@@ -102,8 +102,8 @@ defmodule ALF.Manager.StreamTo do
                                   %StreamRegistry{inputs: inputs, queue: queue, ref: ref}},
                                  acc ->
             ips = build_ips(inputs, stream_ref, state.name)
-            GenServer.cast(state.pipeline.producer.pid, ips)
-            # forget about composed and recomposed currently
+            Producer.load_ips(state.pipeline.producer.pid, ips)
+            # forget about in_progress, composed and recomposed currently
             Map.put(acc, stream_ref, %StreamRegistry{inputs: inputs, queue: queue, ref: ref})
           end)
 
@@ -137,9 +137,8 @@ defmodule ALF.Manager.StreamTo do
       def handle_call({:add_to_registry, ips, stream_ref}, _from, state) do
         stream_registry = state.registry[stream_ref]
 
-        # TODO find better solution
         if Enum.count(stream_registry.inputs) + Enum.count(ips) > 1_000 do
-          Process.sleep(1)
+          Process.sleep(10)
         end
 
         stream_reg = StreamRegistry.add_to_registry(stream_registry, ips)
