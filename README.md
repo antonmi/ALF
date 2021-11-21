@@ -52,7 +52,7 @@ Check [test/examples](https://github.com/antonmi/ALF/tree/main/test/examples) fo
 
 ### The main idea behind ALF DSL
 User's code that is evaluated inside components may be defined either as a 2-arity function or as a module with the `call/2` function.
-The name of the function/module goes as a first argument in DSL and the name also become the components name.
+The name of the function/module goes as a first argument in DSL. And the name also become the component's name.
 
 ```elixir
   stage(:my_fun)
@@ -84,6 +84,9 @@ Check `@dsl_options` in [lib/components](https://github.com/antonmi/ALF/tree/mai
 
 ## Components overview
 ![alt text](images/all_components.png "All the components")
+
+### Producer and Consumer
+Nothing special to know, these are internal components that put at the beginning and at the end of your pipeline.
 
 ### Stage
 Stage is the main component where one puts a piece of application logic. It might be a simple 2-arity function or a module with `call/2` function:
