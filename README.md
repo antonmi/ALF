@@ -6,15 +6,14 @@
 #### ALF is a successor of the [Flowex](https://github.com/antonmi/flowex) project. Check its [README](https://github.com/antonmi/flowex#readme) to get the general idea. ALF adds conditional branching, packet cloning, goto statement, and other functionalities. Therefore, one can create application trees (graphs) of arbitrary complexity. 
 
 ## Installation
-Just add `:alf` as dependency to the `mix.exs` file.
+Just add `:alf` as dependency to your `mix.exs` file.
 
-ALF starts its own supervisor (`ALF.DynamicSupervisor`). 
-
-All the pipelines and managers are started under the supervisor
+ALF starts its own supervisor (`ALF.DynamicSupervisor`). All the pipelines and managers are started under the supervisor
 
 ## Quick start
 Read a couple of sections of [Flowex README](https://github.com/antonmi/flowex#readme) to get the basic idea of how your code is put to GenStages.
 ### Define your pipeline
+A pipeline is a list of components defined in the `@components` module variable.
 ```elixir
 defmodule ThePipeline do
   use ALF.DSL
@@ -118,11 +117,24 @@ switch(:my_switch_function,
         },
         opts: [foo: :bar]
       )
+# or with module
+switch(MySwitchModule, ...)
 ```
-The `function` function is 2-arity function that must return the key of the branch:
+The `my_switch_function` function is 2-arity function that must return the key of the branch:
 ```elixir
 def my_switch_function(datum, opts) do
-  if datum == opts[:foo], do: :part1, else: part: 2
+  if datum == opts[:foo], do: :part1, else: :part2
+end
+
+# or
+
+defmodule MySwitchModule do
+  # optional
+  def init(opts), do: %{opts | baz: :qux}
+
+  def call(datum, opts) do
+    if datum == opts[:foo], do: :part1, else: :part2
+  end
 end
 ```
 
@@ -136,6 +148,8 @@ clone(:my_clone, to: [stage(:foo), dead_end(:dead_end)])
 Send packet to a given `goto_point`
 ```elixir
 goto(:my_goto_function, to: :my_goto_point, opts: [foo: :bar])
+# or
+goto(:MyGotoModule, to: :my_goto_point, opts: [foo: :bar])
 ```
 The `function` function is 2-arity function that must return `true` of `false`
 ```elixir
@@ -155,11 +169,15 @@ IP won't propagate further. It's used alongside with the `Clone` component to av
 dead_end(:dead_end)
 ```
 
+### Plug and Unplug
+Plug and Unplug are used for transforming data before and after reusable parts of a pipeline.
+The components can not be used directly and are generated automatically when one use `plug_with` macro. See below.
+
+### Decomposer and Recomposer
+These components transform IPs. Decomposer creates several IPs based on one input IP. Recomposer does the opposite - creates a single IP based on a list of previously received IPs.
 
 
 ## Components / Pipeline reusing
-
-
 ### `stages_from` macro
 One can easily include components from another pipeline:
 ```elixir
@@ -200,7 +218,7 @@ def AdapterModuleBaz do
   
   def plug(datum, _opts) do
     # the function is called inside the `Plug` component 
-    # `datum` will be put on the "AdapterModuleBaz" until IP has reached the "unplug"
+    # `datum` will be put on the "AdapterModuleBaz" until IP has reached the "unplug" component
     # the function must return `new_datum` with the structure expected by the following component
     new_datum
   end
