@@ -36,6 +36,8 @@ end
 ```
 This starts a manager (GenServer) with the `ThePipeline` name. The manager starts all the components and puts them under another supervision tree.
 
+![alt text](images/add_mult_minus_pipeline.png "Your first simple pipeline")
+
 ### Use the pipeline
 The only interface currently is the `stream_to` function (`stream_to/2` and `stream_to/3`).
 It receives a stream or `Enumerable.t` and returns another stream where results will be streamed.
@@ -48,13 +50,47 @@ Enum.to_list(output_stream) # it returns [1, 3, 5]
 Check [test/examples](https://github.com/antonmi/ALF/tree/main/test/examples) folder for more examples
 
 
+### The main idea behind ALF DSL
+User's code that is evaluated inside components may be defined either as a 2-arity function or as a module with the `call/2` function.
+The name of the function/module goes as a first argument in DSL and the name also become the components name.
+
+```elixir
+  stage(:my_fun)
+  # or
+  stage(MyComponent)
+```
+where `MyComponent` is
+```elixir
+defmodule MyComponent do
+  # optional
+  def init(opts), do: %{opts | foo: :bar}
+  
+  def call(datum, opts) do
+    # logic is here
+    new_datum
+  end
+end
+```
+One can specify a custom name:
+```elixir
+  stage(:my_fun, name: :my_custom_name)
+```
+Most of the components accept the `opts` argument, the options will be passed as a second argument to the corresponding function.
+```elixir
+  stage(MyComponent, opts: [foo: :bar])
+```
+
+Check `@dsl_options` in [lib/components](https://github.com/antonmi/ALF/tree/main/lib/componenets) for available options. 
+
 ## Components overview
+![alt text](images/all_components.png "All the components")
+
 ### Stage
 Stage is the main component where one puts a piece of application logic. It might be a simple 2-arity function or a module with `call/2` function:
 ```elixir
   stage(:my_fun, opts: %{foo: bar})
   # or
-  stage(:MyComponent, opts: %{})
+  stage(MyComponent, opts: %{})
 ```
 where `MyComponent` is
 ```elixir
@@ -72,18 +108,17 @@ end
 ### Switch
 Switch allows to forward IP (information packets) to different branches:
 ```elixir
-switch(:my_switch,
+switch(:my_switch_function,
         branches: %{
           part1: [stage(:foo)],
           part2: [stage(:bar)]
         },
-        function: :cond_function
         opts: [foo: :bar]
       )
 ```
 The `function` function is 2-arity function that must return the key of the branch:
 ```elixir
-def cond_function(datum, opts) do
+def my_switch_function(datum, opts) do
   if datum == opts[:foo], do: :part1, else: part: 2
 end
 ```
@@ -97,11 +132,11 @@ clone(:my_clone, to: [stage(:foo), dead_end(:dead_end)])
 ### Goto
 Send packet to a given `goto_point`
 ```elixir
-goto(:my_goto, to: :my_goto_point, function: :goto_function, opts: [foo: :bar])
+goto(:my_goto_function, to: :my_goto_point, opts: [foo: :bar])
 ```
 The `function` function is 2-arity function that must return `true` of `false`
 ```elixir
-def goto_function(datum, opts) do
+def my_goto_function(datum, opts) do
   datum == opts[:foo]
 end
 ```
