@@ -28,7 +28,8 @@ defmodule ALF.Components.Unplug do
 
     case call_unplug_function(state.module, ip.datum, prev_datum, state.opts) do
       {:error, error, stacktrace} ->
-        {:noreply, [build_error_ip(ip, error, stacktrace, state)], state}
+        send_error_result(ip, error, stacktrace, state)
+        {:noreply, [], state}
 
       new_datum ->
         {:noreply, [%{ip | datum: new_datum}], state}

@@ -59,9 +59,10 @@ defmodule ALF.Manager.StreamTo do
             Task.async(fn -> Stream.run(input_stream) end)
           end,
           fn task ->
+            Process.sleep(10)
+
             case flush_queue(manager_name, stream_ref) do
               {:ok, ips} ->
-                Process.sleep(10)
                 format_output(ips, task, opts.return_ips)
 
               :done ->
@@ -72,7 +73,9 @@ defmodule ALF.Manager.StreamTo do
                 end
             end
           end,
-          fn _ -> :ok end
+          fn _ ->
+            :ok
+          end
         )
       end
 
@@ -193,7 +196,6 @@ defmodule ALF.Manager.StreamTo do
       def handle_call({:flush_queue, stream_ref}, _from, state) do
         registry = state.registry[stream_ref]
         queue = registry.queue
-        inputs = registry.inputs
 
         data =
           case :queue.to_list(queue) do
@@ -212,7 +214,7 @@ defmodule ALF.Manager.StreamTo do
           Map.put(
             state.registry,
             stream_ref,
-            %{registry | queue: :queue.new(), inputs: inputs}
+            %{registry | queue: :queue.new()}
           )
 
         {:reply, data, %{state | registry: new_registry}}

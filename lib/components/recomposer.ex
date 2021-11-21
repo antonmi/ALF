@@ -26,7 +26,7 @@ defmodule ALF.Components.Recomposer do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
-  def handle_events([ip], _from, state) do
+  def handle_events([%ALF.IP{} = ip], _from, state) do
     collected_data = Enum.map(state.collected_ips, & &1.datum)
 
     case call_function(
@@ -64,7 +64,8 @@ defmodule ALF.Components.Recomposer do
         {:noreply, [ip], %{state | collected_ips: []}}
 
       {:error, error, stacktrace} ->
-        {:noreply, [build_error_ip(ip, error, stacktrace, state)], state}
+        send_error_result(ip, error, stacktrace, state)
+        {:noreply, [], state}
     end
   end
 

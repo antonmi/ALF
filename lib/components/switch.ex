@@ -12,7 +12,7 @@ defmodule ALF.Components.Switch do
             pipe_module: nil,
             pipeline_module: nil
 
-  alias ALF.DSLError
+  alias ALF.{DSLError}
 
   @dsl_options [:branches, :opts, :name]
   @dsl_requited_options [:branches]
@@ -29,7 +29,8 @@ defmodule ALF.Components.Switch do
 
       case call_function(state.module, state.function, ip.datum, state.opts) do
         {:error, error, stacktrace} ->
-          {build_error_ip(ip, error, stacktrace, state), hd(branches)}
+          send_error_result(ip, error, stacktrace, state)
+          :none
 
         partition ->
           {ip, partition}
@@ -43,7 +44,7 @@ defmodule ALF.Components.Switch do
      subscribe_to: state.subscribe_to}
   end
 
-  def handle_events([ip], _from, state) do
+  def handle_events([%ALF.IP{} = ip], _from, state) do
     {:noreply, [ip], state}
   end
 

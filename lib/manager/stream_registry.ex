@@ -8,6 +8,7 @@ defmodule ALF.Manager.StreamRegistry do
 
   def empty?(%__MODULE__{} = registry) do
     Enum.empty?(registry.inputs) and
+      Enum.empty?(registry.in_progress) and
       Enum.empty?(registry.decomposed) and
       Enum.empty?(registry.recomposed)
   end

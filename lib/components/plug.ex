@@ -26,7 +26,8 @@ defmodule ALF.Components.Plug do
 
     case call_plug_function(state.module, ip.datum, state.opts) do
       {:error, error, stacktrace} ->
-        {:noreply, [build_error_ip(ip, error, stacktrace, state)], state}
+        send_error_result(ip, error, stacktrace, state)
+        {:noreply, [], state}
 
       new_datum ->
         {:noreply, [%{ip | datum: new_datum}], state}

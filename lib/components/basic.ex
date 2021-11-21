@@ -29,7 +29,7 @@ defmodule ALF.Components.Basic do
     quote do
       use GenStage
 
-      alias ALF.{IP, ErrorIP}
+      alias ALF.{IP, ErrorIP, Manager}
 
       def __state__(pid) when is_pid(pid) do
         GenStage.call(pid, :__state__)
@@ -45,6 +45,11 @@ defmodule ALF.Components.Basic do
         else
           opts
         end
+      end
+
+      def send_error_result(ip, error, stacktrace, state) do
+        error_ip = build_error_ip(ip, error, stacktrace, state)
+        Manager.result_ready(error_ip.manager_name, error_ip)
       end
 
       def handle_call(:subscribers, _form, state) do
@@ -75,6 +80,7 @@ defmodule ALF.Components.Basic do
           component: state,
           decomposed: ip.decomposed,
           recomposed: ip.recomposed,
+          in_progress: ip.in_progress,
           plugs: ip.plugs
         }
       end

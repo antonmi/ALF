@@ -25,7 +25,7 @@ defmodule ALF.Components.Decomposer do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
-  def handle_events([ip], _from, state) do
+  def handle_events([%ALF.IP{} = ip], _from, state) do
     case call_function(state.module, state.function, ip.datum, state.opts) do
       {:ok, data} when is_list(data) ->
         Manager.remove_from_registry(ip.manager_name, [ip], ip.stream_ref)
@@ -45,7 +45,8 @@ defmodule ALF.Components.Decomposer do
         {:noreply, ips ++ [ip], state}
 
       {:error, error, stacktrace} ->
-        {:noreply, [build_error_ip(ip, error, stacktrace, state)], state}
+        send_error_result(ip, error, stacktrace, state)
+        {:noreply, [], state}
     end
   end
 

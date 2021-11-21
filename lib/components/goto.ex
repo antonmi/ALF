@@ -15,7 +15,7 @@ defmodule ALF.Components.Goto do
 
   alias ALF.Components.GotoPoint
 
-  alias ALF.DSLError
+  alias ALF.{DSLError}
 
   @dsl_options [:to, :opts, :name]
   @dsl_requited_options [:to]
@@ -56,7 +56,8 @@ defmodule ALF.Components.Goto do
 
     case call_function(state.module, state.function, ip.datum, state.opts) do
       {:error, error, stacktrace} ->
-        {:noreply, [build_error_ip(ip, error, stacktrace, state)], state}
+        send_error_result(ip, error, stacktrace, state)
+        {:noreply, [], state}
 
       true ->
         :ok = GenStage.call(state.to_pid, {:goto, ip})

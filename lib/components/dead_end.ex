@@ -16,7 +16,7 @@ defmodule ALF.Components.DeadEnd do
     {:consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
   end
 
-  def handle_events([_ip], _from, state) do
+  def handle_events([%ALF.IP{} = _ip], _from, state) do
     {:noreply, [], state}
   end
 end

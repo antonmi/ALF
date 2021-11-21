@@ -28,17 +28,13 @@ defmodule ALF.Components.Stage do
   end
 
   def handle_events([%IP{} = ip], _from, %__MODULE__{} = state) do
-    {:noreply, [process_ip(ip, state)], state}
-  end
+    case process_ip(ip, state) do
+      %IP{} = ip ->
+        {:noreply, [ip], state}
 
-  def handle_events([%ErrorIP{} = error_ip], _from, %__MODULE__{} = state) do
-    Manager.result_ready(error_ip.manager_name, error_ip)
-    {:noreply, [], state}
-  end
-
-  def handle_events([%DoneStatement{ip: ip}], _from, %__MODULE__{} = state) do
-    Manager.result_ready(ip.manager_name, ip)
-    {:noreply, [], state}
+      nil ->
+        {:noreply, [], state}
+    end
   end
 
   def validate_options(atom, options) do
@@ -62,12 +58,14 @@ defmodule ALF.Components.Stage do
       {:ok, new_datum} ->
         %{ip | datum: new_datum}
 
-      {:error, %DoneStatement{datum: datum} = done, _stacktrace} ->
+      {:error, %DoneStatement{datum: datum}, _stacktrace} ->
         ip = %{ip | datum: datum}
-        %{done | ip: ip}
+        Manager.result_ready(ip.manager_name, ip)
+        nil
 
       {:error, error, stacktrace} ->
-        build_error_ip(ip, error, stacktrace, state)
+        send_error_result(ip, error, stacktrace, state)
+        nil
     end
   end
 

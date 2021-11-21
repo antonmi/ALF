@@ -23,7 +23,7 @@ defmodule ALF.Components.Clone do
      dispatcher: GenStage.BroadcastDispatcher, subscribe_to: state.subscribe_to}
   end
 
-  def handle_events([ip], _from, state) do
+  def handle_events([%ALF.IP{} = ip], _from, state) do
     ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
     {:noreply, [ip], state}
   end

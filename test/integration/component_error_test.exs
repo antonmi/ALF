@@ -95,8 +95,14 @@ defmodule ALF.ComponentErrorTest do
         raise "Error in :switch"
       end
 
-      def add_one(_datum, _opts), do: raise("Error in :add_one")
-      def mult_two(datum, _opts), do: datum * 2
+      def add_one(datum, _opts) do
+        datum + 1
+      end
+
+      def mult_two(datum, _opts) do
+        datum * 2
+      end
+
       def ok(datum, _opts), do: datum
     end
 
@@ -106,7 +112,7 @@ defmodule ALF.ComponentErrorTest do
 
     test "error results" do
       results =
-        [1, 2, 3]
+        [1, 2]
         |> Manager.stream_to(ErrorInSwitchPipeline, %{return_ips: true})
         |> Enum.to_list()
 
@@ -116,7 +122,6 @@ defmodule ALF.ComponentErrorTest do
                  ip: %IP{} = ip,
                  error: %RuntimeError{message: "Error in :switch"}
                },
-               %ErrorIP{},
                %ErrorIP{}
              ] = results
 
