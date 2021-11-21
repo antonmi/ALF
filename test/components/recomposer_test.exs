@@ -26,23 +26,24 @@ defmodule ALF.Components.RecomposerTest do
     end
   end
 
-  def build_recomposer(producer_pid) do
+  def recomposer_function_tuple(datum, prev_data, _opts) do
+    sum = Enum.reduce(prev_data, 0, &(&1 + &2)) + datum
+
+    if sum > 5 do
+      {sum, [hd(prev_data)]}
+    else
+      :continue
+    end
+  end
+
+  def build_recomposer(producer_pid, function) do
     %Recomposer{
       name: :recomposer,
       module: __MODULE__,
-      function: :recomposer_function,
+      function: function,
       pipeline_module: __MODULE__,
       subscribe_to: [{producer_pid, max_demand: 1}]
     }
-  end
-
-  setup %{producer_pid: producer_pid} do
-    {:ok, pid} = Recomposer.start_link(build_recomposer(producer_pid))
-
-    {:ok, consumer_pid} =
-      TestConsumer.start_link(%TestConsumer{subscribe_to: [{pid, max_demand: 1}]})
-
-    %{pid: pid, consumer_pid: consumer_pid}
   end
 
   def test_ips(stream_ref) do
@@ -71,12 +72,7 @@ defmodule ALF.Components.RecomposerTest do
     ]
   end
 
-  test "test recomposer", %{
-    state: state,
-    producer_pid: producer_pid,
-    consumer_pid: consumer_pid
-  } do
-    stream_ref = make_ref()
+  def run_and_wait(state, producer_pid, consumer_pid, stream_ref) do
     ips = test_ips(stream_ref)
     decomposed = Enum.reduce(ips, %{}, &Map.put(&2, &1.ref, &1.datum))
     new_state = %{state | registry: %{stream_ref => %StreamRegistry{decomposed: decomposed}}}
@@ -85,23 +81,97 @@ defmodule ALF.Components.RecomposerTest do
     GenServer.cast(producer_pid, ips)
     Process.sleep(20)
 
-    [ip] = TestConsumer.ips(consumer_pid)
+    TestConsumer.ips(consumer_pid)
+  end
 
-    assert %ALF.IP{
-             datum: 6,
-             decomposed: false,
-             history: [recomposer: 3],
-             init_datum: 6,
-             manager_name: EmptyPipeline,
-             recomposed: true,
-             ref: ref,
-             stream_ref: ^stream_ref
-           } = ip
+  describe "when function returns an ip" do
+    setup %{producer_pid: producer_pid} do
+      {:ok, pid} = Recomposer.start_link(build_recomposer(producer_pid, :recomposer_function))
 
-    assert is_reference(ref)
+      {:ok, consumer_pid} =
+        TestConsumer.start_link(%TestConsumer{subscribe_to: [{pid, max_demand: 1}]})
 
-    state = Manager.__state__(EmptyPipeline)
-    assert state.registry[stream_ref].decomposed == %{}
-    assert state.registry[stream_ref].recomposed[ref] == 6
+      %{pid: pid, consumer_pid: consumer_pid}
+    end
+
+    test "test recomposer", %{
+      state: state,
+      producer_pid: producer_pid,
+      consumer_pid: consumer_pid
+    } do
+      stream_ref = make_ref()
+      [ip] = run_and_wait(state, producer_pid, consumer_pid, stream_ref)
+
+      assert %ALF.IP{
+               datum: 6,
+               decomposed: false,
+               history: [recomposer: 3],
+               init_datum: 6,
+               manager_name: EmptyPipeline,
+               recomposed: true,
+               ref: ref,
+               stream_ref: ^stream_ref
+             } = ip
+
+      assert is_reference(ref)
+
+      state = Manager.__state__(EmptyPipeline)
+      assert state.registry[stream_ref].decomposed == %{}
+      assert state.registry[stream_ref].recomposed[ref] == 6
+    end
+  end
+
+  describe "when function returns a tuple" do
+    setup %{producer_pid: producer_pid} do
+      {:ok, pid} =
+        Recomposer.start_link(build_recomposer(producer_pid, :recomposer_function_tuple))
+
+      {:ok, consumer_pid} =
+        TestConsumer.start_link(%TestConsumer{subscribe_to: [{pid, max_demand: 1}]})
+
+      %{pid: pid, consumer_pid: consumer_pid}
+    end
+
+    test "test recomposer", %{
+      state: state,
+      producer_pid: producer_pid,
+      consumer_pid: consumer_pid,
+      pid: pid
+    } do
+      stream_ref = make_ref()
+      [ip] = run_and_wait(state, producer_pid, consumer_pid, stream_ref)
+
+      assert %ALF.IP{
+               datum: 6,
+               decomposed: false,
+               history: [recomposer: 3],
+               init_datum: 6,
+               manager_name: EmptyPipeline,
+               recomposed: true,
+               ref: ref,
+               stream_ref: ^stream_ref
+             } = ip
+
+      assert is_reference(ref)
+
+      state = Manager.__state__(EmptyPipeline)
+      assert state.registry[stream_ref].decomposed == %{}
+      assert state.registry[stream_ref].recomposed[ref] == 6
+
+      state = Recomposer.__state__(pid)
+      [collected_ip] = state.collected_ips
+
+      assert %ALF.IP{
+               datum: 1,
+               decomposed: false,
+               history: [recomposer: 6, recomposer: 3],
+               init_datum: 1,
+               manager_name: ALF.Components.RecomposerTest.EmptyPipeline,
+               plugs: %{},
+               recomposed: true,
+               ref: _ref,
+               stream_ref: ^stream_ref
+             } = collected_ip
+    end
   end
 end

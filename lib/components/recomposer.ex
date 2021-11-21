@@ -40,6 +40,20 @@ defmodule ALF.Components.Recomposer do
         collected_ips = state.collected_ips ++ [ip]
         {:noreply, [], %{state | collected_ips: collected_ips}}
 
+      {:ok, {datum, data}} ->
+        Manager.remove_from_registry(ip.manager_name, [ip | state.collected_ips], ip.stream_ref)
+
+        ip =
+          build_ip(datum, ip.stream_ref, ip.manager_name, [{state.name, ip.datum} | ip.history])
+
+        collected =
+          Enum.map(data, fn datum ->
+            build_ip(datum, ip.stream_ref, ip.manager_name, [{state.name, ip.datum} | ip.history])
+          end)
+
+        Manager.add_to_registry(ip.manager_name, [ip], ip.stream_ref)
+        {:noreply, [ip], %{state | collected_ips: collected}}
+
       {:ok, datum} ->
         Manager.remove_from_registry(ip.manager_name, [ip | state.collected_ips], ip.stream_ref)
 

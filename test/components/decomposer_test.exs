@@ -48,7 +48,8 @@ defmodule ALF.Components.DecomposerTest do
 
   describe "with list as return value" do
     setup %{producer_pid: producer_pid} do
-      {:ok, pid} = Decomposer.start_link(build_decomposer(producer_pid, :decomposer_function_list))
+      {:ok, pid} =
+        Decomposer.start_link(build_decomposer(producer_pid, :decomposer_function_list))
 
       {:ok, consumer_pid} =
         TestConsumer.start_link(%TestConsumer{subscribe_to: [{pid, max_demand: 1}]})
@@ -87,7 +88,8 @@ defmodule ALF.Components.DecomposerTest do
 
   describe "with tuple as return value" do
     setup %{producer_pid: producer_pid} do
-      {:ok, pid} = Decomposer.start_link(build_decomposer(producer_pid, :decomposer_function_tuple))
+      {:ok, pid} =
+        Decomposer.start_link(build_decomposer(producer_pid, :decomposer_function_tuple))
 
       {:ok, consumer_pid} =
         TestConsumer.start_link(%TestConsumer{subscribe_to: [{pid, max_demand: 1}]})
