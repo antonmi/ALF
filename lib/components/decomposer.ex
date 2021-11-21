@@ -29,14 +29,14 @@ defmodule ALF.Components.Decomposer do
     case call_function(state.module, state.function, ip.datum, state.opts) do
       {:ok, data} when is_list(data) ->
         Manager.remove_from_registry(ip.manager_name, [ip], ip.stream_ref)
-
-        ips =
-          build_ips(data, ip.stream_ref, ip.manager_name, [{state.name, ip.datum} | ip.history])
-
+        ips = build_ips(data, ip.stream_ref, ip.manager_name, [{state.name, ip.datum} | ip.history])
         Manager.add_to_registry(ip.manager_name, ips, ip.stream_ref)
-
         {:noreply, ips, state}
-
+      {:ok, {data, datum}} when is_list(data) ->
+        ips = build_ips(data, ip.stream_ref, ip.manager_name, [{state.name, ip.datum} | ip.history])
+        ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
+        Manager.add_to_registry(ip.manager_name, ips, ip.stream_ref)
+        {:noreply, ips ++ [ip], state}
       {:error, error, stacktrace} ->
         {:noreply, [build_error_ip(ip, error, stacktrace, state)], state}
     end
