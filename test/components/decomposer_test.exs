@@ -21,7 +21,7 @@ defmodule ALF.Components.DecomposerTest do
   end
 
   def decomposer_function_tuple(datum, _opts) do
-    {[datum + 1, datum + 2, datum + 3], datum}
+    {[datum + 1, datum + 2, datum + 3], datum + 100}
   end
 
   def build_decomposer(producer_pid, function) do
@@ -127,7 +127,7 @@ defmodule ALF.Components.DecomposerTest do
       original_ip = List.last(ips)
 
       assert %ALF.IP{
-               datum: 1,
+               datum: 101,
                decomposed: false,
                history: [decomposer: 1],
                manager_name: EmptyPipeline,

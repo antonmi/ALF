@@ -40,7 +40,7 @@ defmodule ALF.Components.Decomposer do
         ips =
           build_ips(data, ip.stream_ref, ip.manager_name, [{state.name, ip.datum} | ip.history])
 
-        ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
+        ip = %{ip | datum: datum, history: [{state.name, ip.datum} | ip.history]}
         Manager.add_to_registry(ip.manager_name, ips, ip.stream_ref)
         {:noreply, ips ++ [ip], state}
 
