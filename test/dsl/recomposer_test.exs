@@ -22,7 +22,8 @@ defmodule ALF.DSL.RecomposerTest do
     end
 
     test "build PipelineRecomposer1", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineRecomposer1.alf_components(), sup_pid)
+      {:ok, pipeline} =
+        Builder.build(PipelineRecomposer1.alf_components(), sup_pid, :manager_name)
 
       [recomposer] = pipeline.components
 
@@ -53,7 +54,8 @@ defmodule ALF.DSL.RecomposerTest do
     end
 
     test "build PipelineRecomposer2", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineRecomposer2.alf_components(), sup_pid)
+      {:ok, pipeline} =
+        Builder.build(PipelineRecomposer2.alf_components(), sup_pid, :manager_name)
 
       [recomposer] = pipeline.components
       recomposer = Recomposer.__state__(recomposer.pid)
@@ -79,7 +81,8 @@ defmodule ALF.DSL.RecomposerTest do
     end
 
     test "build PipelineRecomposer3", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineRecomposer3.alf_components(), sup_pid)
+      {:ok, pipeline} =
+        Builder.build(PipelineRecomposer3.alf_components(), sup_pid, :manager_name)
 
       [recomposer] = pipeline.components
 

@@ -8,6 +8,7 @@ defmodule ALF.Manager do
             components: [],
             pipeline_sup_pid: nil,
             sup_pid: nil,
+            producer_pid: nil,
             registry: %{},
             registry_dump: %{}
 
@@ -99,7 +100,13 @@ defmodule ALF.Manager do
   end
 
   defp build_pipeline(%__MODULE__{} = state) do
-    {:ok, pipeline} = Builder.build(state.pipeline_module.alf_components, state.pipeline_sup_pid)
+    {:ok, pipeline} =
+      Builder.build(
+        state.pipeline_module.alf_components,
+        state.pipeline_sup_pid,
+        state.name
+      )
+
     %{state | pipeline: pipeline}
   end
 

@@ -16,26 +16,28 @@ defmodule ALF.Builder do
     Recomposer
   }
 
-  def build(pipe_spec, supervisor_pid) when is_list(pipe_spec) do
-    producer = start_producer(supervisor_pid)
+  def build(pipe_spec, supervisor_pid, manager_name) when is_list(pipe_spec) do
+    producer = start_producer(supervisor_pid, manager_name)
     {last_stages, final_stages} = do_build_pipeline(pipe_spec, [producer], supervisor_pid, [])
-    consumer = start_consumer(supervisor_pid, last_stages)
+    consumer = start_consumer(supervisor_pid, last_stages, manager_name)
 
     {producer, consumer} = set_modules({producer, consumer}, last_stages)
     pipeline = %Pipeline{producer: producer, consumer: consumer, components: final_stages}
     {:ok, pipeline}
   end
 
-  defp start_producer(supervisor_pid) do
-    {:ok, producer_pid} = DynamicSupervisor.start_child(supervisor_pid, {Producer, %{}})
-    %Producer{pid: producer_pid}
+  defp start_producer(supervisor_pid, manager_name) do
+    producer = %Producer{manager_name: manager_name}
+    {:ok, producer_pid} = DynamicSupervisor.start_child(supervisor_pid, {Producer, producer})
+    %{producer | pid: producer_pid}
   end
 
-  defp start_consumer(supervisor_pid, last_stages) do
+  defp start_consumer(supervisor_pid, last_stages, manager_name) do
     subscribe_to = subscribe_to_opts(last_stages)
-    opts = %Consumer{subscribe_to: subscribe_to}
-    {:ok, consumer_pid} = DynamicSupervisor.start_child(supervisor_pid, {Consumer, opts})
+    consumer = %Consumer{subscribe_to: subscribe_to, manager_name: manager_name}
+    {:ok, consumer_pid} = DynamicSupervisor.start_child(supervisor_pid, {Consumer, consumer})
     %Consumer{pid: consumer_pid, subscribe_to: subscribe_to}
+    %{consumer | pid: consumer_pid}
   end
 
   defp set_modules({producer, consumer}, last_stages) do
