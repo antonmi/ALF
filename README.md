@@ -50,7 +50,7 @@ Check [test/examples](https://github.com/antonmi/ALF/tree/main/test/examples) fo
 
 
 ### The main idea behind ALF DSL
-User's code that is evaluated inside components may be defined either as a 2-arity function or as a module with the `call/2` function.
+User's code that is evaluated inside components must be defined either as a 2-arity function or as a module with the `call/2` function.
 The name of the function/module goes as a first argument in DSL. And the name also become the component's name.
 
 ```elixir
