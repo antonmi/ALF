@@ -79,7 +79,7 @@ Most of the components accept the `opts` argument, the options will be passed as
   stage(MyComponent, opts: [foo: :bar])
 ```
 
-Check `@dsl_options` in [lib/components](https://github.com/antonmi/ALF/tree/main/lib/componenets) for available options. 
+Check `@dsl_options` in [lib/components](https://github.com/antonmi/ALF/tree/main/lib/components) for available options. 
 
 ## Components overview
 ![alt text](images/all_components.png "All the components")
