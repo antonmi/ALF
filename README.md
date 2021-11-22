@@ -2,8 +2,21 @@
 [![Hex.pm](https://img.shields.io/hexpm/v/alf.svg?style=flat-square)](https://hex.pm/packages/alf)
 ## Flow-based Application Layer Framework
 
-#### ALF is a set of abstractions built on top Elixir GenStage which allows writing program following [Flow-Based Programming](https://en.wikipedia.org/wiki/Flow-based_programming) approach.
+#### ALF is a set of abstractions built on top Elixir GenStage which allows writing program following [Flow-Based Programming (FBP)](https://en.wikipedia.org/wiki/Flow-based_programming) approach.
 #### ALF is a successor of the [Flowex](https://github.com/antonmi/flowex) project. Check its [README](https://github.com/antonmi/flowex#readme) to get the general idea. ALF adds conditional branching, packet cloning, goto statement, and other functionalities. Therefore, one can create application trees (graphs) of arbitrary complexity. 
+
+### Broadway, Flow?
+The common question I have is "What the difference between ALF and [Broadway](https://github.com/dashbitco/broadway) or [Flow](https://github.com/dashbitco/flow)?".
+
+The short answer is: Broadway and Flow are tools for processing streams of data while ALF is a framework for writing general business logic.
+
+The three libraries are build on top of the GenStage library, so some internals are similar - there are GenStages where you can put your own code. But the focus is completely different.
+
+Flow focuses on "computations on collections, similar to the Enum and Stream modules", it's a quite low-level tool for processing large collections of data.
+
+Broadway is about "data ingestion and data processing pipelines". The main abstraction is "data processor", there are lots of adapters to different data sources and so on.
+
+ALF is NOT about data-processing (although you can easily do it with ALF). It's about a FBP-way you build your application layer logic.
 
 ## Installation
 Just add `:alf` as dependency to your `mix.exs` file.
