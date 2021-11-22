@@ -45,7 +45,19 @@ inputs = [1,2,3]
 output_stream =  Manager.stream_to(inputs, Pipeline)
 Enum.to_list(output_stream) # it returns [1, 3, 5]
 ```
+### Parallel processing of several streams
+The ALF pipeline can handle arbitrary amount of data streams in parallel.
+For example:
+```elixir
+ stream1 = Manager.stream_to(0..9, Pipeline)
+ stream2 = Manager.stream_to(10..19, Pipeline)
+ stream3 = Manager.stream_to(20..29, Pipeline)
 
+ [result1, result2, result3] =
+   [stream1, stream2, stream3]
+   |> Enum.map(&Task.async(fn -> Enum.to_list(&1) end))
+   |> Task.await_many()
+```
 Check [test/examples](https://github.com/antonmi/ALF/tree/main/test/examples) folder for more examples
 
 
