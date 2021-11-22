@@ -230,11 +230,13 @@ def AdapterModuleBaz do
 end
 ```
 
-
-
-
-
-
+## Diagrams
+The amazing thing with the FBP approach is that one can easily visualize the application logic.
+Below there are several ALF-diagrams for the examples in [test/examples](https://github.com/antonmi/ALF/tree/main/test/examples).
+### Bubble sort
+![alt text](images/bubble_sort.png "Bubble sort")
+### Bubble sort with Switch
+![alt text](images/bubble_sort_with_switch.png "Bubble sort with Switch")
 
 
 
