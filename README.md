@@ -14,7 +14,7 @@ The three libraries are build on top of the GenStage library, so some internals 
 
 Flow focuses on "computations on collections, similar to the Enum and Stream modules", it's a quite low-level tool for processing large collections of data.
 
-Broadway is about "data ingestion and data processing pipelines". The main abstraction is "data processor", there are lots of adapters to different data sources and so on.
+Broadway is about "data ingestion and data processing pipelines". The main abstraction are "data processors", there are lots of adapters to different data sources and so on.
 
 ALF is NOT about data-processing (although you can easily do it with ALF). It's about a FBP-way you build your application layer logic.
 
