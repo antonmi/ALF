@@ -6,7 +6,7 @@
 #### ALF is a successor of the [Flowex](https://github.com/antonmi/flowex) project. Check its [README](https://github.com/antonmi/flowex#readme) to get the general idea. ALF adds conditional branching, packet cloning, goto statement, and other functionalities. Therefore, one can create application trees (graphs) of arbitrary complexity. 
 
 ### Broadway, Flow?
-The common question I have is "What the difference between ALF and [Broadway](https://github.com/dashbitco/broadway) or [Flow](https://github.com/dashbitco/flow)?".
+What the difference between ALF and [Broadway](https://github.com/dashbitco/broadway) or [Flow](https://github.com/dashbitco/flow)?
 
 The short answer is: Broadway and Flow are tools for processing streams of data while ALF is a framework for writing general business logic.
 
@@ -200,7 +200,48 @@ The components can not be used directly and are generated automatically when one
 
 ### Decomposer and Recomposer
 These components transform IPs. Decomposer creates several IPs based on one input IP. Recomposer does the opposite - creates a single IP based on a list of previously received IPs.
+Decomposer must implement a 2-arity function (or a module with the `call` function) that return either a list of new data:
+```elixir
+def decomposer_function(datum, _opts) do
+  [datum + 1, datum + 2, datum + 3]
+end
+```
+or the the `{list(datum), datum}` tuple:
+```elixir
+def decomposer_function(datum, _opts) do
+  {[datum + 1, datum + 2, datum + 3], datum * 100}
+end
+```
+In the first case the initial IP will disappear and a list of new IPs will be created based on athe returned data.
+In the second case, the `datum` of original IP will be replaced by the datum from the second value in the tuple.
 
+Recomposer is a bit more tricky. It is a 3-arity function (module with the `call` function). The first argument is incoming `datum`, the second one is a list of previously accumulated data, and the last one is `opts`
+The function must return `datum`, `{datum, list(datum)}` or `:continue` atom.
+For example:
+```elixir
+  def recomposer_function(datum, prev_data, _opts) do
+    sum = Enum.reduce(prev_data, 0, &(&1 + &2)) + datum
+
+    case sum > 5 do
+      true -> sum
+      false -> :continue
+    end
+  end
+```
+The component will return one datum (`sum`) if the sum of previously received data is more than 5. If no, the data are just store in the component.
+`{datum, list(datum)}` tuple allows to return a datum and also specify what to store till another call.
+```elixir
+def recomposer_function_tuple(datum, prev_data, _opts) do
+  sum = Enum.reduce(prev_data, 0, &(&1 + &2)) + datum
+
+  case sum > 5 do
+    true -> {sum, [hd(prev_data)]}
+    false -> :continue
+  end  
+end
+```
+In that case, the sum will be returned and the first `datum` from `prev_data` will be stored.
+See the [telegram_test.exs](https://github.com/antonmi/ALF/tree/main/test/examples/telegram_test.exs) example which solves the famous "Telegram Problem".
 
 ## Components / Pipeline reusing
 ### `stages_from` macro
