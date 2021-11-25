@@ -4,6 +4,7 @@
 
 #### ALF is a set of abstractions built on top Elixir GenStage which allow writing program following [Flow-Based Programming (FBP)](https://en.wikipedia.org/wiki/Flow-based_programming) approach.
 #### ALF is a framework for your application (business-logic) layer, it's provide a simple and expressive way of presenting the logic as sequential processing of "information packets" (IPs) (or, simply, messages or events).
+#### ALF is NOT a general-purpose "language", so implementing a complex domain logic with it might be questionable (although is possible).
 #### ALF is a successor of the [Flowex](https://github.com/antonmi/flowex) project. Check its [README](https://github.com/antonmi/flowex#readme) to get the general idea. ALF adds conditional branching, packet cloning, goto statement, decomposer/recomposer and other functionalities. Therefore, one can create application trees (graphs) of arbitrary complexity. 
 
 ### Broadway, Flow?
