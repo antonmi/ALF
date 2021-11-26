@@ -24,7 +24,8 @@ defmodule ALF.DSL.GotoTest do
     end
 
     test "build PipelineGoto1", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineGoto1.alf_components(), sup_pid, :manager_name)
+      {:ok, pipeline} =
+        Builder.build(PipelineGoto1.alf_components(), sup_pid, :manager, :pipeline)
 
       [point, goto] = pipeline.components
 
@@ -65,7 +66,8 @@ defmodule ALF.DSL.GotoTest do
     end
 
     test "build PipelineGoto2", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineGoto2.alf_components(), sup_pid, :manager_name)
+      {:ok, pipeline} =
+        Builder.build(PipelineGoto2.alf_components(), sup_pid, :manager, :pipeline)
 
       [_point, goto] = pipeline.components
       goto = Goto.__state__(goto.pid)
@@ -93,7 +95,8 @@ defmodule ALF.DSL.GotoTest do
     end
 
     test "build PipelineGoto1", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineGoto3.alf_components(), sup_pid, :manager_name)
+      {:ok, pipeline} =
+        Builder.build(PipelineGoto3.alf_components(), sup_pid, :manager, :pipeline)
 
       [_point, goto] = pipeline.components
 

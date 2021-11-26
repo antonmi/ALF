@@ -23,6 +23,7 @@ defmodule Alf.MixProject do
   defp deps do
     [
       {:gen_stage, "~> 1.1"},
+      {:telemetry, "~> 1.0"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end

@@ -104,7 +104,8 @@ defmodule ALF.Manager do
       Builder.build(
         state.pipeline_module.alf_components,
         state.pipeline_sup_pid,
-        state.name
+        state.name,
+        state.pipeline_module
       )
 
     %{state | pipeline: pipeline, producer_pid: pipeline.producer.pid}

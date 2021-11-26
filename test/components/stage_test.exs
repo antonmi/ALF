@@ -31,6 +31,7 @@ defmodule ALF.Components.StageTest do
     stage = %Stage{
       name: :test_stage,
       module: Component,
+      pipeline_module: __MODULE__,
       function: :call,
       opts: %{foo: "foo"},
       subscribe_to: [{producer_pid, max_demand: 1}]
@@ -47,7 +48,7 @@ defmodule ALF.Components.StageTest do
   test "call component", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
     ip = %IP{datum: "baz"}
     GenServer.cast(producer_pid, [ip])
-    Process.sleep(1)
+    Process.sleep(10)
     [ip] = TestConsumer.ips(consumer_pid)
     assert ip.datum == "bazfoobar"
     assert ip.history == [{{:test_stage, 0}, "baz"}]

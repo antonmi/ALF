@@ -1,4 +1,6 @@
 defmodule ALF.Components.Basic do
+  alias ALF.IP
+
   def build_component(component_module, atom, name, opts, current_module) do
     name = if name, do: name, else: atom
 
@@ -21,6 +23,28 @@ defmodule ALF.Components.Basic do
         opts: opts || []
       })
     end
+  end
+
+  def telemetry_enabled? do
+    Application.get_env(:alf, :telemetry_enabled, false)
+  end
+
+  def telemetry_data(%IP{} = ip, state) do
+    %{ip: ip_telemetry_data(ip), component: component_telemetry_data(state)}
+  end
+
+  def telemetry_data([%IP{} | _] = ips, state) do
+    %{ips: Enum.map(ips, &ip_telemetry_data/1), component: component_telemetry_data(state)}
+  end
+
+  def telemetry_data(nil, state) do
+    %{ip: nil, component: component_telemetry_data(state)}
+  end
+
+  defp ip_telemetry_data(ip), do: Map.take(ip, [:datum])
+
+  defp component_telemetry_data(state) do
+    Map.take(state, [:name, :number, :pipeline_module])
   end
 
   defp module_exist?(module), do: function_exported?(module, :__info__, 1)
@@ -68,6 +92,10 @@ defmodule ALF.Components.Basic do
       def handle_subscribe(:producer, subscription_options, from, state) do
         {:automatic, state}
       end
+
+      def telemetry_enabled?, do: ALF.Components.Basic.telemetry_enabled?()
+
+      def telemetry_data(ip, state), do: ALF.Components.Basic.telemetry_data(ip, state)
 
       defp build_error_ip(ip, error, stacktrace, state) do
         %ErrorIP{

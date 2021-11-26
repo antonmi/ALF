@@ -11,7 +11,8 @@ defmodule ALF.Components.Stage do
             opts: %{},
             pid: nil,
             subscribe_to: [],
-            subscribers: []
+            subscribers: [],
+            telemetry_enabled: false
 
   alias ALF.{Manager, DoneStatement, DSLError}
 
@@ -22,12 +23,37 @@ defmodule ALF.Components.Stage do
   end
 
   def init(state) do
-    state = %{state | pid: self(), opts: init_opts(state.module, state.opts)}
+    state = %{
+      state
+      | pid: self(),
+        opts: init_opts(state.module, state.opts),
+        telemetry_enabled: telemetry_enabled?()
+    }
 
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
-  def handle_events([%IP{} = ip], _from, %__MODULE__{} = state) do
+  def handle_events([%IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        case do_handle_event(ip, state) do
+          {:noreply, [ip], state} = result ->
+            {result, telemetry_data(ip, state)}
+
+          {:noreply, [], state} = result ->
+            {result, telemetry_data(nil, state)}
+        end
+      end
+    )
+  end
+
+  def handle_events([%IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
+    do_handle_event(ip, state)
+  end
+
+  defp do_handle_event(ip, state) do
     case process_ip(ip, state) do
       %IP{} = ip ->
         {:noreply, [ip], state}

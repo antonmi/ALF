@@ -10,7 +10,8 @@ defmodule ALF.Components.Switch do
             subscribers: [],
             branches: %{},
             pipe_module: nil,
-            pipeline_module: nil
+            pipeline_module: nil,
+            telemetry_enabled: false
 
   alias ALF.{DSLError}
 
@@ -37,14 +38,29 @@ defmodule ALF.Components.Switch do
       end
     end
 
-    state = %{state | pid: self(), opts: init_opts(state.module, state.opts)}
+    state = %{
+      state
+      | pid: self(),
+        opts: init_opts(state.module, state.opts),
+        telemetry_enabled: telemetry_enabled?()
+    }
 
     {:producer_consumer, state,
      dispatcher: {GenStage.PartitionDispatcher, partitions: branches, hash: hash},
      subscribe_to: state.subscribe_to}
   end
 
-  def handle_events([%ALF.IP{} = ip], _from, state) do
+  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        {{:noreply, [ip], state}, telemetry_data(ip, state)}
+      end
+    )
+  end
+
+  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
     {:noreply, [ip], state}
   end
 

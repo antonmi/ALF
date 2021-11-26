@@ -39,8 +39,8 @@ defmodule ALF.Examples.AddMultMinusTest do
       |> Enum.map(&Task.async(fn -> Enum.to_list(&1) end))
       |> Task.await_many()
 
-    assert result1 == Enum.map(0..9, fn(n) -> (n+1)*2-3 end)
-    assert result2 == Enum.map(10..19, fn(n) -> (n+1)*2-3 end)
-    assert result3 == Enum.map(20..29, fn(n) -> (n+1)*2-3 end)
+    assert result1 == Enum.map(0..9, fn n -> (n + 1) * 2 - 3 end)
+    assert result2 == Enum.map(10..19, fn n -> (n + 1) * 2 - 3 end)
+    assert result3 == Enum.map(20..29, fn n -> (n + 1) * 2 - 3 end)
   end
 end

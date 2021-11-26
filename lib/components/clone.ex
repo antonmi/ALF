@@ -7,7 +7,8 @@ defmodule ALF.Components.Clone do
             subscribe_to: [],
             pipe_module: nil,
             pipeline_module: nil,
-            subscribers: []
+            subscribers: [],
+            telemetry_enabled: false
 
   alias ALF.DSLError
 
@@ -19,11 +20,30 @@ defmodule ALF.Components.Clone do
   end
 
   def init(state) do
-    {:producer_consumer, %{state | pid: self()},
+    {:producer_consumer, %{state | pid: self(), telemetry_enabled: telemetry_enabled?()},
      dispatcher: GenStage.BroadcastDispatcher, subscribe_to: state.subscribe_to}
   end
 
-  def handle_events([%ALF.IP{} = ip], _from, state) do
+  def handle_events(
+        [%ALF.IP{} = ip],
+        _from,
+        %__MODULE__{telemetry_enabled: true} = state
+      ) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        {:noreply, [ip], state} = do_handle_event(ip, state)
+        {{:noreply, [ip], state}, telemetry_data(ip, state)}
+      end
+    )
+  end
+
+  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
+    do_handle_event(ip, state)
+  end
+
+  defp do_handle_event(ip, state) do
     ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
     {:noreply, [ip], state}
   end

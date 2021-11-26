@@ -41,7 +41,7 @@ defmodule ALF.Components.CloneTest do
   } do
     ip = %IP{datum: 1}
     GenServer.cast(producer_pid, [ip])
-    Process.sleep(1)
+    Process.sleep(10)
     assert [%IP{datum: 1}] = TestConsumer.ips(consumer1_pid)
     assert [%IP{datum: 1}] = TestConsumer.ips(consumer2_pid)
   end

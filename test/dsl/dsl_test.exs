@@ -93,7 +93,7 @@ defmodule ALF.DSLTest do
 
   describe "PipelineA" do
     test "build PipelineA", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineA.alf_components(), sup_pid, :manager_name)
+      {:ok, pipeline} = Builder.build(PipelineA.alf_components(), sup_pid, :manager, :pipeline)
 
       [one, two, three, four] = pipeline.components
       assert %Stage{name: ModuleA} = one
@@ -105,7 +105,7 @@ defmodule ALF.DSLTest do
 
   describe "PipelineB" do
     test "build PipelineB", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineB.alf_components(), sup_pid, :manager_name)
+      {:ok, pipeline} = Builder.build(PipelineB.alf_components(), sup_pid, :manager, :pipeline)
 
       [goto_point, clone, switch, goto] = pipeline.components
 
@@ -134,7 +134,7 @@ defmodule ALF.DSLTest do
 
   describe "PipelineC" do
     test "build PipelineC", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineC.alf_components(), sup_pid, :manager_name)
+      {:ok, pipeline} = Builder.build(PipelineC.alf_components(), sup_pid, :manager, :pipeline)
 
       [stage, plug, stage_in_plug, unplug, another_plug, _, _, _, last_stage, another_unplug] =
         pipeline.components
@@ -173,7 +173,8 @@ defmodule ALF.DSLTest do
 
   describe "PipelineCompose" do
     test "build PipelineCompose", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineCompose.alf_components(), sup_pid, :manager_name)
+      {:ok, pipeline} =
+        Builder.build(PipelineCompose.alf_components(), sup_pid, :manager, :pipeline)
 
       [decomposer, recomposer] = pipeline.components
 

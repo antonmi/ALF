@@ -23,7 +23,7 @@ defmodule ALF.BuilderTest do
     end
 
     test "build simple pipeline", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(spec_simple(), sup_pid, :manager_name)
+      {:ok, pipeline} = Builder.build(spec_simple(), sup_pid, :manager, :pipeline)
 
       components = pipeline.components
       stage = hd(components)
@@ -61,7 +61,7 @@ defmodule ALF.BuilderTest do
     end
 
     test "build pipeline with switch", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(spec_with_switch(), sup_pid, :manager_name)
+      {:ok, pipeline} = Builder.build(spec_with_switch(), sup_pid, :manager, :pipeline)
 
       switch = hd(pipeline.components)
 
@@ -113,7 +113,7 @@ defmodule ALF.BuilderTest do
     end
 
     test "build pipeline with clone", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(spec_with_clone(), sup_pid, :manager_name)
+      {:ok, pipeline} = Builder.build(spec_with_clone(), sup_pid, :manager, :pipeline)
 
       [clone | [stage2]] = pipeline.components
 
@@ -132,7 +132,8 @@ defmodule ALF.BuilderTest do
     end
 
     test "build pipeline with clone and dead_end", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(spec_with_clone_and_dead_end(), sup_pid, :manager_name)
+      {:ok, pipeline} =
+        Builder.build(spec_with_clone_and_dead_end(), sup_pid, :manager, :pipeline)
 
       [clone | [stage2]] = pipeline.components
 
