@@ -10,14 +10,14 @@ defmodule ALF.Components.PlugTest do
       Keyword.put(opts, :init, true)
     end
 
-    def plug(datum, opts) do
+    def plug(event, opts) do
       assert opts[:init]
-      datum.number + opts[:foo]
+      event.number + opts[:foo]
     end
 
-    def unplug(datum, prev_datum, opts) do
+    def unplug(event, prev_event, opts) do
       assert opts[:init]
-      Map.put(prev_datum, :number, datum)
+      Map.put(prev_event, :number, event)
     end
   end
 
@@ -48,8 +48,8 @@ defmodule ALF.Components.PlugTest do
     }
   end
 
-  def stage_function(datum, _opts) do
-    datum + 100
+  def stage_function(event, _opts) do
+    event + 100
   end
 
   setup do
@@ -68,7 +68,7 @@ defmodule ALF.Components.PlugTest do
     consumer_pid
   end
 
-  describe "datum transformation" do
+  describe "event transformation" do
     setup %{producer_pid: producer_pid} do
       consumer_pid = setup_pipeline(producer_pid)
 
@@ -76,30 +76,30 @@ defmodule ALF.Components.PlugTest do
     end
 
     test "test plug/unplug with map", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
-      ip = %IP{datum: %{number: 1, other: :data}}
+      ip = %IP{event: %{number: 1, other: :events}}
       GenServer.cast(producer_pid, [ip])
       Process.sleep(20)
       [ip] = TestConsumer.ips(consumer_pid)
-      assert ip.datum == %{number: 102, other: :data}
+      assert ip.event == %{number: 102, other: :events}
 
       assert ip.history == [
                {ALF.Components.PlugTest.PlugAdapter, 102},
                {{:test_stage, 0}, 2},
-               {ALF.Components.PlugTest.PlugAdapter, %{number: 1, other: :data}}
+               {ALF.Components.PlugTest.PlugAdapter, %{number: 1, other: :events}}
              ]
     end
 
     test "test plug/unplug with struct", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
-      ip = %IP{datum: %__MODULE__{number: 1, other: :data}}
+      ip = %IP{event: %__MODULE__{number: 1, other: :events}}
       GenServer.cast(producer_pid, [ip])
       Process.sleep(20)
       [ip] = TestConsumer.ips(consumer_pid)
-      assert ip.datum == %__MODULE__{number: 102, other: :data}
+      assert ip.event == %__MODULE__{number: 102, other: :events}
 
       assert ip.history == [
                {ALF.Components.PlugTest.PlugAdapter, 102},
                {{:test_stage, 0}, 2},
-               {ALF.Components.PlugTest.PlugAdapter, %__MODULE__{number: 1, other: :data}}
+               {ALF.Components.PlugTest.PlugAdapter, %__MODULE__{number: 1, other: :events}}
              ]
     end
   end

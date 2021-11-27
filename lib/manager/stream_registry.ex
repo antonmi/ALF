@@ -21,16 +21,16 @@ defmodule ALF.Manager.StreamRegistry do
         fn ip, {inputs, in_progress, decomposed, recomposed} ->
           cond do
             ip.in_progress ->
-              {inputs, Map.put(in_progress, ip.ref, ip.datum), decomposed, recomposed}
+              {inputs, Map.put(in_progress, ip.ref, ip.event), decomposed, recomposed}
 
             ip.decomposed ->
-              {inputs, in_progress, Map.put(decomposed, ip.ref, ip.datum), recomposed}
+              {inputs, in_progress, Map.put(decomposed, ip.ref, ip.event), recomposed}
 
             ip.recomposed ->
-              {inputs, in_progress, decomposed, Map.put(recomposed, ip.ref, ip.datum)}
+              {inputs, in_progress, decomposed, Map.put(recomposed, ip.ref, ip.event)}
 
             true ->
-              {Map.put(inputs, ip.ref, ip.datum), in_progress, decomposed, recomposed}
+              {Map.put(inputs, ip.ref, ip.event), in_progress, decomposed, recomposed}
           end
         end
       )

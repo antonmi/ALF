@@ -78,14 +78,14 @@ defmodule ALF.Components.Stage do
   end
 
   defp process_ip(ip, state) do
-    ip = %{ip | history: [{{state.name, state.number}, ip.datum} | ip.history]}
+    ip = %{ip | history: [{{state.name, state.number}, ip.event} | ip.history]}
 
-    case try_apply(ip.datum, {state.module, state.function, state.opts}) do
+    case try_apply(ip.event, {state.module, state.function, state.opts}) do
       {:ok, new_datum} ->
-        %{ip | datum: new_datum}
+        %{ip | event: new_datum}
 
-      {:error, %DoneStatement{datum: datum}, _stacktrace} ->
-        ip = %{ip | datum: datum}
+      {:error, %DoneStatement{event: event}, _stacktrace} ->
+        ip = %{ip | event: event}
         Manager.result_ready(ip.manager_name, ip)
         nil
 
@@ -95,8 +95,8 @@ defmodule ALF.Components.Stage do
     end
   end
 
-  defp try_apply(datum, {module, function, opts}) do
-    new_datum = apply(module, function, [datum, opts])
+  defp try_apply(event, {module, function, opts}) do
+    new_datum = apply(module, function, [event, opts])
     {:ok, new_datum}
   rescue
     error ->

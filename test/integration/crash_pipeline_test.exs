@@ -15,19 +15,19 @@ defmodule ALF.CrashPipelineTest do
       stage(:baz)
     ]
 
-    def foo(datum, _opts) do
+    def foo(event, _opts) do
       Process.sleep(@sleep)
-      "#{datum}-foo"
+      "#{event}-foo"
     end
 
-    def bar(datum, _opts) do
+    def bar(event, _opts) do
       Process.sleep(@sleep)
-      "#{datum}-bar"
+      "#{event}-bar"
     end
 
-    def baz(datum, _opts) do
+    def baz(event, _opts) do
       Process.sleep(@sleep)
-      "#{datum}-baz"
+      "#{event}-baz"
     end
   end
 

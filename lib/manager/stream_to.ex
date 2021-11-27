@@ -48,8 +48,8 @@ defmodule ALF.Manager.StreamTo do
       defp build_input_stream(stream, stream_ref, opts, manager_name, producer_pid) do
         stream
         |> Stream.chunk_every(opts.chunk_every)
-        |> Stream.each(fn data ->
-          send_data(manager_name, data, stream_ref, producer_pid)
+        |> Stream.each(fn events ->
+          send_events(manager_name, events, stream_ref, producer_pid)
         end)
       end
 
@@ -82,14 +82,15 @@ defmodule ALF.Manager.StreamTo do
       defp format_output([%IP{} | _] = ips, task, true), do: {ips, task}
 
       defp format_output([%IP{} | _] = ips, task, false) do
-        {Enum.map(ips, & &1.datum), task}
+        {Enum.map(ips, & &1.event), task}
       end
 
       defp format_output([%ErrorIP{} | _] = ips, task, _return_ips), do: {ips, task}
       defp format_output([], task, return_ips), do: {[], task}
 
-      defp send_data(name, data, stream_ref, producer_pid) when is_atom(name) and is_list(data) do
-        ips = build_ips(data, stream_ref, name)
+      defp send_events(name, events, stream_ref, producer_pid)
+           when is_atom(name) and is_list(events) do
+        ips = build_ips(events, stream_ref, name)
         add_to_registry(name, ips, stream_ref)
         Producer.load_ips(producer_pid, ips)
       catch
@@ -112,12 +113,12 @@ defmodule ALF.Manager.StreamTo do
         %{state | registry: new_registry}
       end
 
-      def build_ips(data, stream_ref, name) do
+      def build_ips(events, stream_ref, name) do
         Enum.map(
-          data,
-          fn datum ->
-            {reference, datum} =
-              case datum do
+          events,
+          fn event ->
+            {reference, event} =
+              case event do
                 {ref, dat} when is_reference(ref) ->
                   {ref, dat}
 
@@ -128,8 +129,8 @@ defmodule ALF.Manager.StreamTo do
             %IP{
               stream_ref: stream_ref,
               ref: reference,
-              init_datum: datum,
-              datum: datum,
+              init_datum: event,
+              event: event,
               manager_name: name
             }
           end
@@ -197,7 +198,7 @@ defmodule ALF.Manager.StreamTo do
         registry = state.registry[stream_ref]
         queue = registry.queue
 
-        data =
+        events =
           case :queue.to_list(queue) do
             [] ->
               if StreamRegistry.empty?(registry) do
@@ -206,8 +207,8 @@ defmodule ALF.Manager.StreamTo do
                 {:ok, []}
               end
 
-            data when is_list(data) ->
-              {:ok, data}
+            events when is_list(events) ->
+              {:ok, events}
           end
 
         new_registry =
@@ -217,7 +218,7 @@ defmodule ALF.Manager.StreamTo do
             %{registry | queue: :queue.new()}
           )
 
-        {:reply, data, %{state | registry: new_registry}}
+        {:reply, events, %{state | registry: new_registry}}
       end
     end
   end

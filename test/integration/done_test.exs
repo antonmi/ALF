@@ -12,8 +12,8 @@ defmodule ALF.DoneTest do
         stage(:mult_two)
       ]
 
-      def add_one(datum, _opts), do: done!(datum + 1)
-      def mult_two(datum, _opts), do: datum * 2
+      def add_one(event, _opts), do: done!(event + 1)
+      def mult_two(event, _opts), do: event * 2
     end
 
     setup do
@@ -28,7 +28,7 @@ defmodule ALF.DoneTest do
 
       assert [
                %IP{
-                 datum: 2,
+                 event: 2,
                  history: [{{:add_one, 0}, 1}]
                },
                %IP{},
@@ -55,8 +55,8 @@ defmodule ALF.DoneTest do
         stage(:mult_two)
       ]
 
-      def add_one(datum, _opts), do: datum + 1
-      def mult_two(datum, _opts), do: done!(datum * 2)
+      def add_one(event, _opts), do: event + 1
+      def mult_two(event, _opts), do: done!(event * 2)
     end
 
     setup do
@@ -71,7 +71,7 @@ defmodule ALF.DoneTest do
 
       assert [
                %IP{
-                 datum: 4,
+                 event: 4,
                  history: [{{:mult_two, 0}, 2}, {{:add_one, 0}, 1}]
                },
                %IP{},

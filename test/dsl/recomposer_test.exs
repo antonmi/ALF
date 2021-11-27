@@ -45,7 +45,7 @@ defmodule ALF.DSL.RecomposerTest do
       defmodule RecomposerModule do
         def init(opts), do: Keyword.put(opts, :baz, :qux)
 
-        def call(datum, _opts), do: [datum]
+        def call(event, _opts), do: [event]
       end
 
       @components [

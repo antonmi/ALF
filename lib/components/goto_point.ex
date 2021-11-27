@@ -19,7 +19,7 @@ defmodule ALF.Components.GotoPoint do
   end
 
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
-    ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
 
     :telemetry.span(
       [:alf, :component],
@@ -31,12 +31,12 @@ defmodule ALF.Components.GotoPoint do
   end
 
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
-    ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
     {:noreply, [ip], state}
   end
 
   def handle_call({:goto, %ALF.IP{} = ip}, _from, %__MODULE__{} = state) do
-    ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
     {:reply, :ok, [ip], state}
   end
 end

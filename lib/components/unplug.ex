@@ -47,24 +47,24 @@ defmodule ALF.Components.Unplug do
   end
 
   defp do_handle_event(ip, state) do
-    ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
 
-    prev_datum = Map.fetch!(ip.plugs, state.name)
+    prev_event = Map.fetch!(ip.plugs, state.name)
     ip_plugs = Map.delete(ip.plugs, state.name)
     ip = %{ip | plugs: ip_plugs}
 
-    case call_unplug_function(state.module, ip.datum, prev_datum, state.opts) do
+    case call_unplug_function(state.module, ip.event, prev_event, state.opts) do
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)
         {:noreply, [], state}
 
       new_datum ->
-        {:noreply, [%{ip | datum: new_datum}], state}
+        {:noreply, [%{ip | event: new_datum}], state}
     end
   end
 
-  defp call_unplug_function(module, datum, prev_datum, opts) do
-    apply(module, :unplug, [datum, prev_datum, opts])
+  defp call_unplug_function(module, event, prev_event, opts) do
+    apply(module, :unplug, [event, prev_event, opts])
   rescue
     error ->
       {:error, error, __STACKTRACE__}

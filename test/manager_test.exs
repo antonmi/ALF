@@ -11,8 +11,8 @@ defmodule ALF.ManagerTest do
       stage(:mult_two)
     ]
 
-    def add_one(datum, _opts), do: datum + 1
-    def mult_two(datum, _opts), do: datum * 2
+    def add_one(event, _opts), do: event + 1
+    def mult_two(event, _opts), do: event * 2
   end
 
   defmodule GoToPipeline do
@@ -118,7 +118,7 @@ defmodule ALF.ManagerTest do
       Manager.start(SimplePipeline)
     end
 
-    test "run stream and check data" do
+    test "run stream and check events" do
       results =
         sample_stream()
         |> Manager.stream_to(SimplePipeline)
@@ -158,9 +158,9 @@ defmodule ALF.ManagerTest do
         |> Enum.to_list()
 
       assert [
-               %ALF.IP{datum: 4},
-               %ALF.IP{datum: 6},
-               %ALF.IP{datum: 8}
+               %ALF.IP{event: 4},
+               %ALF.IP{event: 6},
+               %ALF.IP{event: 8}
              ] = results
     end
   end

@@ -39,9 +39,9 @@ defmodule ThePipeline do
     stage(:minus_three)
   ]
 
-  def add_one(datum, _opts), do: datum + 1
-  def mult_by_two(datum, _opts), do: datum * 2
-  def minus_three(datum, _opts), do: datum - 3
+  def add_one(event, _opts), do: event + 1
+  def mult_by_two(event, _opts), do: event * 2
+  def minus_three(event, _opts), do: event - 3
 end
 ```
 ### Start the pipeline
@@ -61,7 +61,7 @@ output_stream =  Manager.stream_to(inputs, Pipeline)
 Enum.to_list(output_stream) # it returns [1, 3, 5]
 ```
 ### Parallel processing of several streams
-The ALF pipeline can handle arbitrary amount of data streams in parallel.
+The ALF pipeline can handle arbitrary amount of events streams in parallel.
 For example:
 ```elixir
  stream1 = Manager.stream_to(0..9, Pipeline)
@@ -91,7 +91,7 @@ defmodule MyComponent do
   # optional
   def init(opts), do: %{opts | foo: :bar}
   
-  def call(datum, opts) do
+  def call(event, opts) do
     # logic is here
     new_datum
   end
@@ -127,7 +127,7 @@ defmodule MyComponent do
   # optional
   def init(opts), do: %{opts | foo: :bar}
   
-  def call(datum, opts) do
+  def call(event, opts) do
     # logic is here
     new_datum
   end
@@ -149,8 +149,8 @@ switch(MySwitchModule, ...)
 ```
 The `my_switch_function` function is 2-arity function that must return the key of the branch:
 ```elixir
-def my_switch_function(datum, opts) do
-  if datum == opts[:foo], do: :part1, else: :part2
+def my_switch_function(event, opts) do
+  if event == opts[:foo], do: :part1, else: :part2
 end
 
 # or
@@ -159,8 +159,8 @@ defmodule MySwitchModule do
   # optional
   def init(opts), do: %{opts | baz: :qux}
 
-  def call(datum, opts) do
-    if datum == opts[:foo], do: :part1, else: :part2
+  def call(event, opts) do
+    if event == opts[:foo], do: :part1, else: :part2
   end
 end
 ```
@@ -180,8 +180,8 @@ goto(:MyGotoModule, to: :my_goto_point, opts: [foo: :bar])
 ```
 The `function` function is 2-arity function that must return `true` of `false`
 ```elixir
-def my_goto_function(datum, opts) do
-  datum == opts[:foo]
+def my_goto_function(event, opts) do
+  event == opts[:foo]
 end
 ```
 
@@ -197,32 +197,32 @@ dead_end(:dead_end)
 ```
 
 ### Plug and Unplug
-Plug and Unplug are used for transforming data before and after reusable parts of a pipeline.
+Plug and Unplug are used for transforming events before and after reusable parts of a pipeline.
 The components can not be used directly and are generated automatically when one use `plug_with` macro. See below.
 
 ### Decomposer and Recomposer
 These components transform IPs. Decomposer creates several IPs based on one input IP. Recomposer does the opposite - creates a single IP based on a list of previously received IPs.
-Decomposer must implement a 2-arity function (or a module with the `call` function) that return either a list of new data:
+Decomposer must implement a 2-arity function (or a module with the `call` function) that return either a list of new events:
 ```elixir
-def decomposer_function(datum, _opts) do
-  [datum + 1, datum + 2, datum + 3]
+def decomposer_function(event, _opts) do
+  [event + 1, event + 2, event + 3]
 end
 ```
-or the the `{list(datum), datum}` tuple:
+or the the `{list(event), event}` tuple:
 ```elixir
-def decomposer_function(datum, _opts) do
-  {[datum + 1, datum + 2, datum + 3], datum * 100}
+def decomposer_function(event, _opts) do
+  {[event + 1, event + 2, event + 3], event * 100}
 end
 ```
-In the first case the initial IP will disappear and a list of new IPs will be created based on athe returned data.
-In the second case, the `datum` of original IP will be replaced by the datum from the second value in the tuple.
+In the first case the initial IP will disappear and a list of new IPs will be created based on athe returned events.
+In the second case, the `event` of original IP will be replaced by the event from the second value in the tuple.
 
-Recomposer is a bit more tricky. It is a 3-arity function (module with the `call` function). The first argument is incoming `datum`, the second one is a list of previously accumulated data, and the last one is `opts`
-The function must return `datum`, `{datum, list(datum)}` or `:continue` atom.
+Recomposer is a bit more tricky. It is a 3-arity function (module with the `call` function). The first argument is incoming `event`, the second one is a list of previously accumulated events, and the last one is `opts`
+The function must return `event`, `{event, list(event)}` or `:continue` atom.
 For example:
 ```elixir
-  def recomposer_function(datum, prev_data, _opts) do
-    sum = Enum.reduce(prev_data, 0, &(&1 + &2)) + datum
+  def recomposer_function(event, prev_events, _opts) do
+    sum = Enum.reduce(prev_events, 0, &(&1 + &2)) + event
 
     case sum > 5 do
       true -> sum
@@ -230,19 +230,19 @@ For example:
     end
   end
 ```
-The component will return one datum (`sum`) if the sum of previously received data is more than 5. If no, the data are just store in the component.
-`{datum, list(datum)}` tuple allows to return a datum and also specify what to store till another call.
+The component will return one event (`sum`) if the sum of previously received events is more than 5. If no, the events are just store in the component.
+`{event, list(event)}` tuple allows to return a event and also specify what to store till another call.
 ```elixir
-def recomposer_function_tuple(datum, prev_data, _opts) do
-  sum = Enum.reduce(prev_data, 0, &(&1 + &2)) + datum
+def recomposer_function_tuple(event, prev_events, _opts) do
+  sum = Enum.reduce(prev_events, 0, &(&1 + &2)) + event
 
   case sum > 5 do
-    true -> {sum, [hd(prev_data)]}
+    true -> {sum, [hd(prev_events)]}
     false -> :continue
   end  
 end
 ```
-In that case, the sum will be returned and the first `datum` from `prev_data` will be stored.
+In that case, the sum will be returned and the first `event` from `prev_events` will be stored.
 See the [telegram_test.exs](https://github.com/antonmi/ALF/tree/main/test/examples/telegram_test.exs) example which solves the famous "Telegram Problem".
 
 ## Components / Pipeline reusing
@@ -264,7 +264,7 @@ end
 ```
 
 ### `plug_with` macro
-Use the macro if you include other components that expect different type/format/structure of input data.
+Use the macro if you include other components that expect different type/format/structure of input events.
 ```elixir
 defmodule ThePipeline do
   use ALF.DSL
@@ -284,16 +284,16 @@ The first argument is an "adapter" module which must implement the `plug/2` and 
 def AdapterModuleBaz do
   def init(opts), do: opts # optional
   
-  def plug(datum, _opts) do
+  def plug(event, _opts) do
     # the function is called inside the `Plug` component 
-    # `datum` will be put on the "AdapterModuleBaz" until IP has reached the "unplug" component
+    # `event` will be put on the "AdapterModuleBaz" until IP has reached the "unplug" component
     # the function must return `new_datum` with the structure expected by the following component
     new_datum
   end
   
-  def unplug(datum, prev_datum, _opts) do
-    # here one can access previous "datum" in `prev_datum`
-    # transform the data back for the following components
+  def unplug(event, prev_event, _opts) do
+    # here one can access previous "event" in `prev_event`
+    # transform the events back for the following components
   end
 end
 ```

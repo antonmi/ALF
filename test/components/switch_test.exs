@@ -8,8 +8,8 @@ defmodule ALF.Components.SwitchTest do
     %{producer_pid: producer_pid}
   end
 
-  def cond_function(datum, opts) do
-    case datum + opts[:add] do
+  def cond_function(event, opts) do
+    case event + opts[:add] do
       1 -> :part1
       2 -> :part2
     end
@@ -56,10 +56,10 @@ defmodule ALF.Components.SwitchTest do
       consumer1_pid: consumer1_pid,
       consumer2_pid: consumer2_pid
     } do
-      ip = %IP{datum: 0}
+      ip = %IP{event: 0}
       GenServer.cast(producer_pid, [ip])
       Process.sleep(5)
-      assert [%IP{datum: 0}] = TestConsumer.ips(consumer1_pid)
+      assert [%IP{event: 0}] = TestConsumer.ips(consumer1_pid)
       assert [] = TestConsumer.ips(consumer2_pid)
     end
 
@@ -68,11 +68,11 @@ defmodule ALF.Components.SwitchTest do
       consumer1_pid: consumer1_pid,
       consumer2_pid: consumer2_pid
     } do
-      ip = %IP{datum: 1}
+      ip = %IP{event: 1}
       GenServer.cast(producer_pid, [ip])
       Process.sleep(5)
       assert [] = TestConsumer.ips(consumer1_pid)
-      assert [%IP{datum: 1}] = TestConsumer.ips(consumer2_pid)
+      assert [%IP{event: 1}] = TestConsumer.ips(consumer2_pid)
     end
   end
 
@@ -89,10 +89,10 @@ defmodule ALF.Components.SwitchTest do
       consumer1_pid: consumer1_pid,
       consumer2_pid: consumer2_pid
     } do
-      ip = %IP{datum: 0}
+      ip = %IP{event: 0}
       GenServer.cast(producer_pid, [ip])
       Process.sleep(5)
-      assert [%IP{datum: 0}] = TestConsumer.ips(consumer1_pid)
+      assert [%IP{event: 0}] = TestConsumer.ips(consumer1_pid)
       assert [] = TestConsumer.ips(consumer2_pid)
     end
 
@@ -101,11 +101,11 @@ defmodule ALF.Components.SwitchTest do
       consumer1_pid: consumer1_pid,
       consumer2_pid: consumer2_pid
     } do
-      ip = %IP{datum: 1}
+      ip = %IP{event: 1}
       GenServer.cast(producer_pid, [ip])
       Process.sleep(5)
       assert [] = TestConsumer.ips(consumer1_pid)
-      assert [%IP{datum: 1}] = TestConsumer.ips(consumer2_pid)
+      assert [%IP{event: 1}] = TestConsumer.ips(consumer2_pid)
     end
   end
 end

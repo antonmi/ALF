@@ -26,9 +26,9 @@ defmodule ALF.Components.Switch do
     branches = Map.keys(state.branches)
 
     hash = fn ip ->
-      ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
+      ip = %{ip | history: [{state.name, ip.event} | ip.history]}
 
-      case call_function(state.module, state.function, ip.datum, state.opts) do
+      case call_function(state.module, state.function, ip.event, state.opts) do
         {:error, error, stacktrace} ->
           send_error_result(ip, error, stacktrace, state)
           :none
@@ -85,16 +85,16 @@ defmodule ALF.Components.Switch do
     end
   end
 
-  defp call_function(module, function, datum, opts) when is_atom(module) and is_atom(function) do
-    apply(module, function, [datum, opts])
+  defp call_function(module, function, event, opts) when is_atom(module) and is_atom(function) do
+    apply(module, function, [event, opts])
   rescue
     error ->
       {:error, error, __STACKTRACE__}
   end
 
-  defp call_function(module, function, datum, opts)
+  defp call_function(module, function, event, opts)
        when is_atom(module) and is_function(function) do
-    function.(datum, opts)
+    function.(event, opts)
   rescue
     error ->
       {:error, error, __STACKTRACE__}

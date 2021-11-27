@@ -47,22 +47,22 @@ defmodule ALF.Components.Plug do
   end
 
   defp do_handle_event(ip, state) do
-    ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
-    ip_plugs = Map.put(ip.plugs, state.name, ip.datum)
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    ip_plugs = Map.put(ip.plugs, state.name, ip.event)
     ip = %{ip | plugs: ip_plugs}
 
-    case call_plug_function(state.module, ip.datum, state.opts) do
+    case call_plug_function(state.module, ip.event, state.opts) do
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)
         {:noreply, [], state}
 
       new_datum ->
-        {:noreply, [%{ip | datum: new_datum}], state}
+        {:noreply, [%{ip | event: new_datum}], state}
     end
   end
 
-  defp call_plug_function(module, datum, opts) do
-    apply(module, :plug, [datum, opts])
+  defp call_plug_function(module, event, opts) do
+    apply(module, :plug, [event, opts])
   rescue
     error ->
       {:error, error, __STACKTRACE__}

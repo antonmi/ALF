@@ -16,8 +16,8 @@ defmodule ALF.Components.RecomposerTest do
     %{state: state, producer_pid: producer_pid}
   end
 
-  def recomposer_function(datum, prev_data, _opts) do
-    sum = Enum.reduce(prev_data, 0, &(&1 + &2)) + datum
+  def recomposer_function(event, prev_events, _opts) do
+    sum = Enum.reduce(prev_events, 0, &(&1 + &2)) + event
 
     if sum > 5 do
       sum
@@ -26,11 +26,11 @@ defmodule ALF.Components.RecomposerTest do
     end
   end
 
-  def recomposer_function_tuple(datum, prev_data, _opts) do
-    sum = Enum.reduce(prev_data, 0, &(&1 + &2)) + datum
+  def recomposer_function_tuple(event, prev_events, _opts) do
+    sum = Enum.reduce(prev_events, 0, &(&1 + &2)) + event
 
     if sum > 5 do
-      {sum, [hd(prev_data)]}
+      {sum, [hd(prev_events)]}
     else
       :continue
     end
@@ -49,21 +49,21 @@ defmodule ALF.Components.RecomposerTest do
   def test_ips(stream_ref) do
     [
       %IP{
-        datum: 1,
+        event: 1,
         decomposed: true,
         manager_name: EmptyPipeline,
         stream_ref: stream_ref,
         ref: make_ref()
       },
       %IP{
-        datum: 2,
+        event: 2,
         decomposed: true,
         manager_name: EmptyPipeline,
         stream_ref: stream_ref,
         ref: make_ref()
       },
       %IP{
-        datum: 3,
+        event: 3,
         decomposed: true,
         manager_name: EmptyPipeline,
         stream_ref: stream_ref,
@@ -74,7 +74,7 @@ defmodule ALF.Components.RecomposerTest do
 
   def run_and_wait(state, producer_pid, consumer_pid, stream_ref) do
     ips = test_ips(stream_ref)
-    decomposed = Enum.reduce(ips, %{}, &Map.put(&2, &1.ref, &1.datum))
+    decomposed = Enum.reduce(ips, %{}, &Map.put(&2, &1.ref, &1.event))
     new_state = %{state | registry: %{stream_ref => %StreamRegistry{decomposed: decomposed}}}
     Manager.__set_state__(EmptyPipeline, new_state)
 
@@ -103,7 +103,7 @@ defmodule ALF.Components.RecomposerTest do
       [ip] = run_and_wait(state, producer_pid, consumer_pid, stream_ref)
 
       assert %ALF.IP{
-               datum: 6,
+               event: 6,
                decomposed: false,
                history: [recomposer: 3],
                init_datum: 6,
@@ -142,7 +142,7 @@ defmodule ALF.Components.RecomposerTest do
       [ip] = run_and_wait(state, producer_pid, consumer_pid, stream_ref)
 
       assert %ALF.IP{
-               datum: 6,
+               event: 6,
                decomposed: false,
                history: [recomposer: 3],
                init_datum: 6,
@@ -162,7 +162,7 @@ defmodule ALF.Components.RecomposerTest do
       [collected_ip] = state.collected_ips
 
       assert %ALF.IP{
-               datum: 1,
+               event: 1,
                decomposed: false,
                history: [recomposer: 6, recomposer: 3],
                init_datum: 1,

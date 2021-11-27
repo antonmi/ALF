@@ -9,8 +9,8 @@ defmodule ALF.ComponentTelemetryTest do
       stage(:just_stage)
     ]
 
-    def just_stage(datum, _opts) do
-      datum + 1
+    def just_stage(event, _opts) do
+      event + 1
     end
   end
 
@@ -73,7 +73,7 @@ defmodule ALF.ComponentTelemetryTest do
                    number: 0,
                    pipeline_module: __MODULE__.Pipeline
                  },
-                 ip: %{datum: 2},
+                 ip: %{event: 2},
                  telemetry_span_context: _ref
                }
              } = stage_stop
@@ -83,7 +83,7 @@ defmodule ALF.ComponentTelemetryTest do
                %{system_time: _system_time},
                %{
                  component: _component,
-                 ip: %{datum: 1},
+                 ip: %{event: 1},
                  telemetry_span_context: _ref
                }
              } = stage_start
@@ -98,7 +98,7 @@ defmodule ALF.ComponentTelemetryTest do
                    name: :producer,
                    pipeline_module: __MODULE__.Pipeline
                  },
-                 ip: %{datum: 1},
+                 ip: %{event: 1},
                  telemetry_span_context: _ref
                }
              } = producer_stop
@@ -111,7 +111,7 @@ defmodule ALF.ComponentTelemetryTest do
                    name: :producer,
                    pipeline_module: __MODULE__.Pipeline
                  },
-                 ip: %{datum: 1},
+                 ip: %{event: 1},
                  telemetry_span_context: _ref
                }
              } = producer_start
@@ -133,7 +133,7 @@ defmodule ALF.ComponentTelemetryTest do
                %{system_time: _system_time},
                %{
                  component: %{name: :consumer, pipeline_module: __MODULE__.Pipeline},
-                 ip: %{datum: 2},
+                 ip: %{event: 2},
                  telemetry_span_context: _ref
                }
              } = consumer_start

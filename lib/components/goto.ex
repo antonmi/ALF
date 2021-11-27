@@ -78,9 +78,9 @@ defmodule ALF.Components.Goto do
   end
 
   defp do_handle_event(ip, state) do
-    ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
 
-    case call_function(state.module, state.function, ip.datum, state.opts) do
+    case call_function(state.module, state.function, ip.event, state.opts) do
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)
         {:noreply, [], state}
@@ -117,8 +117,8 @@ defmodule ALF.Components.Goto do
 
   defp call_function(_module, true, _datum, _opts), do: true
 
-  defp call_function(module, function, datum, opts) when is_atom(module) and is_atom(function) do
-    apply(module, function, [datum, opts])
+  defp call_function(module, function, event, opts) when is_atom(module) and is_atom(function) do
+    apply(module, function, [event, opts])
   rescue
     error ->
       {:error, error, __STACKTRACE__}

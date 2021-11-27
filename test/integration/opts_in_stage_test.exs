@@ -8,14 +8,14 @@ defmodule ALF.OptsInStageTest do
       Map.put(opts, :b, opts[:a])
     end
 
-    def call(datum, opts) do
-      datum + opts[:a] + opts[:b]
+    def call(event, opts) do
+      event + opts[:a] + opts[:b]
     end
   end
 
   defmodule ComponentB do
-    def call(datum, opts) do
-      datum + opts[:c]
+    def call(event, opts) do
+      event + opts[:c]
     end
   end
 
@@ -28,8 +28,8 @@ defmodule ALF.OptsInStageTest do
       stage(:inline, opts: [b: 2])
     ]
 
-    def inline(datum, opts) do
-      datum + opts[:b]
+    def inline(event, opts) do
+      event + opts[:b]
     end
   end
 
@@ -56,8 +56,8 @@ defmodule ALF.OptsInStageTest do
         stage(:foo, opts: %{foo: :bar, module: __MODULE__})
       ]
 
-      def foo(datum, opts) do
-        "#{datum}-#{opts[:foo]}-#{opts[:module]}-#{opts[:aaa]}"
+      def foo(event, opts) do
+        "#{event}-#{opts[:foo]}-#{opts[:module]}-#{opts[:aaa]}"
       end
     end
 
@@ -67,8 +67,8 @@ defmodule ALF.OptsInStageTest do
       @components stages_from(PipelineA, opts: [module: __MODULE__, aaa: :bbb]) ++
                     [stage(:bar, opts: %{module: __MODULE__})]
 
-      def bar(datum, _opts) do
-        datum
+      def bar(event, _opts) do
+        event
       end
     end
 

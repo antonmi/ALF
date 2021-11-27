@@ -155,8 +155,8 @@ defmodule ALF.DSL.ValidationsTest do
   describe "plug_with" do
     defmodule MyAdapterModule do
       def init(opts), do: opts
-      def plug(datum, _opts), do: datum
-      def unplug(_datum, prev_datum, _opts), do: prev_datum
+      def plug(event, _opts), do: event
+      def unplug(_datum, prev_event, _opts), do: prev_event
     end
 
     test "no such module" do

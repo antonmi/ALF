@@ -44,7 +44,7 @@ defmodule ALF.Components.Clone do
   end
 
   defp do_handle_event(ip, state) do
-    ip = %{ip | history: [{state.name, ip.datum} | ip.history]}
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
     {:noreply, [ip], state}
   end
 

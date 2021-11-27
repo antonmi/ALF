@@ -53,12 +53,12 @@ defmodule ALF.Components.Recomposer do
   end
 
   defp do_handle_event(ip, state) do
-    collected_data = Enum.map(state.collected_ips, & &1.datum)
+    collected_data = Enum.map(state.collected_ips, & &1.event)
 
     case call_function(
            state.module,
            state.function,
-           ip.datum,
+           ip.event,
            collected_data,
            state.opts
          ) do
@@ -66,25 +66,25 @@ defmodule ALF.Components.Recomposer do
         collected_ips = state.collected_ips ++ [ip]
         {:noreply, [], %{state | collected_ips: collected_ips}}
 
-      {:ok, {datum, data}} ->
+      {:ok, {event, events}} ->
         Manager.remove_from_registry(ip.manager_name, [ip | state.collected_ips], ip.stream_ref)
 
         ip =
-          build_ip(datum, ip.stream_ref, ip.manager_name, [{state.name, ip.datum} | ip.history])
+          build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
 
         collected =
-          Enum.map(data, fn datum ->
-            build_ip(datum, ip.stream_ref, ip.manager_name, [{state.name, ip.datum} | ip.history])
+          Enum.map(events, fn event ->
+            build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
           end)
 
         Manager.add_to_registry(ip.manager_name, [ip], ip.stream_ref)
         {:noreply, [ip], %{state | collected_ips: collected}}
 
-      {:ok, datum} ->
+      {:ok, event} ->
         Manager.remove_from_registry(ip.manager_name, [ip | state.collected_ips], ip.stream_ref)
 
         ip =
-          build_ip(datum, ip.stream_ref, ip.manager_name, [{state.name, ip.datum} | ip.history])
+          build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
 
         Manager.add_to_registry(ip.manager_name, [ip], ip.stream_ref)
         {:noreply, [ip], %{state | collected_ips: []}}
@@ -95,12 +95,12 @@ defmodule ALF.Components.Recomposer do
     end
   end
 
-  defp build_ip(datum, stream_ref, manager_name, history) do
+  defp build_ip(event, stream_ref, manager_name, history) do
     %IP{
       stream_ref: stream_ref,
       ref: make_ref(),
-      init_datum: datum,
-      datum: datum,
+      init_datum: event,
+      event: event,
       manager_name: manager_name,
       recomposed: true,
       history: history
@@ -121,9 +121,9 @@ defmodule ALF.Components.Recomposer do
     end
   end
 
-  defp call_function(module, function, datum, collected_data, opts)
+  defp call_function(module, function, event, collected_data, opts)
        when is_atom(module) and is_atom(function) do
-    {:ok, apply(module, function, [datum, collected_data, opts])}
+    {:ok, apply(module, function, [event, collected_data, opts])}
   rescue
     error ->
       {:error, error, __STACKTRACE__}

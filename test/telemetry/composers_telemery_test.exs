@@ -10,15 +10,15 @@ defmodule ALF.ComposersTelemetryTest do
       recomposer(:the_recomposer)
     ]
 
-    def the_decomposer(datum, _opts) do
-      {[datum + 1], datum}
+    def the_decomposer(event, _opts) do
+      {[event + 1], event}
     end
 
-    def the_recomposer(datum, prev_data, _opts) do
-      sum = Enum.reduce(prev_data, 0, &(&1 + &2)) + datum
+    def the_recomposer(event, prev_events, _opts) do
+      sum = Enum.reduce(prev_events, 0, &(&1 + &2)) + event
 
       case sum >= 5 do
-        true -> {sum, [hd(prev_data)]}
+        true -> {sum, [hd(prev_events)]}
         false -> :continue
       end
     end
@@ -106,7 +106,7 @@ defmodule ALF.ComposersTelemetryTest do
                    pipeline_module: __MODULE__.Pipeline
                  },
                  ip: %{
-                   datum: 3
+                   event: 3
                  },
                  telemetry_span_context: _ref
                }
@@ -123,7 +123,7 @@ defmodule ALF.ComposersTelemetryTest do
                    pipeline_module: __MODULE__.Pipeline
                  },
                  ip: %{
-                   datum: 5
+                   event: 5
                  },
                  telemetry_span_context: _ref
                }
@@ -138,7 +138,7 @@ defmodule ALF.ComposersTelemetryTest do
                    pipeline_module: __MODULE__.Pipeline
                  },
                  ip: %{
-                   datum: 2
+                   event: 2
                  },
                  telemetry_span_context: _ref
                }
@@ -154,7 +154,7 @@ defmodule ALF.ComposersTelemetryTest do
                    name: :the_decomposer,
                    pipeline_module: __MODULE__.Pipeline
                  },
-                 ips: [%{datum: 3}, %{datum: 2}],
+                 ips: [%{event: 3}, %{event: 2}],
                  telemetry_span_context: _ref
                }
              } = decomposer_stop
@@ -168,7 +168,7 @@ defmodule ALF.ComposersTelemetryTest do
                    pipeline_module: __MODULE__.Pipeline
                  },
                  ip: %{
-                   datum: 2
+                   event: 2
                  },
                  telemetry_span_context: _ref
                }

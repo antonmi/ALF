@@ -52,21 +52,21 @@ defmodule ALF.Components.Decomposer do
   end
 
   defp do_handle_event(ip, state) do
-    case call_function(state.module, state.function, ip.datum, state.opts) do
-      {:ok, data} when is_list(data) ->
+    case call_function(state.module, state.function, ip.event, state.opts) do
+      {:ok, events} when is_list(events) ->
         Manager.remove_from_registry(ip.manager_name, [ip], ip.stream_ref)
 
         ips =
-          build_ips(data, ip.stream_ref, ip.manager_name, [{state.name, ip.datum} | ip.history])
+          build_ips(events, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
 
         Manager.add_to_registry(ip.manager_name, ips, ip.stream_ref)
         {:noreply, ips, state}
 
-      {:ok, {data, datum}} when is_list(data) ->
+      {:ok, {events, event}} when is_list(events) ->
         ips =
-          build_ips(data, ip.stream_ref, ip.manager_name, [{state.name, ip.datum} | ip.history])
+          build_ips(events, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
 
-        ip = %{ip | datum: datum, history: [{state.name, ip.datum} | ip.history]}
+        ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
         Manager.add_to_registry(ip.manager_name, ips, ip.stream_ref)
         {:noreply, ips ++ [ip], state}
 
@@ -76,14 +76,14 @@ defmodule ALF.Components.Decomposer do
     end
   end
 
-  defp build_ips(data, stream_ref, manager_name, history) do
-    data
-    |> Enum.map(fn datum ->
+  defp build_ips(events, stream_ref, manager_name, history) do
+    events
+    |> Enum.map(fn event ->
       %IP{
         stream_ref: stream_ref,
         ref: make_ref(),
-        init_datum: datum,
-        datum: datum,
+        init_datum: event,
+        event: event,
         manager_name: manager_name,
         decomposed: true,
         history: history
@@ -105,8 +105,8 @@ defmodule ALF.Components.Decomposer do
     end
   end
 
-  defp call_function(module, function, datum, opts) when is_atom(module) and is_atom(function) do
-    {:ok, apply(module, function, [datum, opts])}
+  defp call_function(module, function, event, opts) when is_atom(module) and is_atom(function) do
+    {:ok, apply(module, function, [event, opts])}
   rescue
     error ->
       {:error, error, __STACKTRACE__}

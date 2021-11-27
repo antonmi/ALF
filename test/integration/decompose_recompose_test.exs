@@ -12,12 +12,12 @@ defmodule ALF.DecomposeRecomposeTest do
         recomposer(:recomposer_function)
       ]
 
-      def decomposer_function(datum, _opts) do
-        String.split(datum)
+      def decomposer_function(event, _opts) do
+        String.split(event)
       end
 
-      def recomposer_function(datum, prev_data, _opts) do
-        string = Enum.join(prev_data ++ [datum], " ")
+      def recomposer_function(event, prev_events, _opts) do
+        string = Enum.join(prev_events ++ [event], " ")
 
         if String.length(string) > 10 do
           string
@@ -37,8 +37,8 @@ defmodule ALF.DecomposeRecomposeTest do
         |> Manager.stream_to(Pipeline, %{return_ips: true})
         |> Enum.to_list()
 
-      assert ip1.datum == "foo foo bar"
-      assert ip2.datum == "bar baz baz"
+      assert ip1.event == "foo foo bar"
+      assert ip2.event == "bar baz baz"
     end
   end
 end

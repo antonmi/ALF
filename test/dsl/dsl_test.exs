@@ -45,8 +45,8 @@ defmodule ALF.DSLTest do
 
   defmodule MyAdapterModule do
     def init(opts), do: opts
-    def plug(datum, _opts), do: datum
-    def unplug(_datum, prev_datum, _opts), do: prev_datum
+    def plug(event, _opts), do: event
+    def unplug(_datum, prev_event, _opts), do: prev_event
   end
 
   defmodule PipelineC do
@@ -71,12 +71,12 @@ defmodule ALF.DSLTest do
       recomposer(:recomposer_function, opts: [foo: :bar])
     ]
 
-    def decomposer_function(datum, _opts) do
-      [datum + 1, datum + 2, datum + 3]
+    def decomposer_function(event, _opts) do
+      [event + 1, event + 2, event + 3]
     end
 
-    def recomposer_function(datum, prev_data, _opts) do
-      sum = Enum.reduce(prev_data, 0, &(&1 + &2)) + datum
+    def recomposer_function(event, prev_events, _opts) do
+      sum = Enum.reduce(prev_events, 0, &(&1 + &2)) + event
 
       if sum > 5 do
         sum

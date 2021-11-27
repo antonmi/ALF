@@ -15,8 +15,8 @@ defmodule ALF.Components.GotoTest do
     }
   end
 
-  def if_function(datum, opts) do
-    datum < opts[:max]
+  def if_function(event, opts) do
+    event < opts[:max]
   end
 
   def build_goto(stage_pid, goto_point_pid, function) do
@@ -31,8 +31,8 @@ defmodule ALF.Components.GotoTest do
     }
   end
 
-  def stage_function(datum, _opts) do
-    datum + 1
+  def stage_function(event, _opts) do
+    event + 1
   end
 
   def build_stage(goto_point_pid) do
@@ -56,11 +56,11 @@ defmodule ALF.Components.GotoTest do
   end
 
   def do_run_test(producer_pid, consumer_pid) do
-    ip = %IP{datum: 0}
+    ip = %IP{event: 0}
     GenServer.cast(producer_pid, [ip])
     Process.sleep(10)
     [ip] = TestConsumer.ips(consumer_pid)
-    assert ip.datum == 2
+    assert ip.event == 2
 
     assert ip.history == [
              {:goto, 2},

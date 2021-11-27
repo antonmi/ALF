@@ -16,12 +16,12 @@ defmodule ALF.Components.DecomposerTest do
     %{state: state, producer_pid: producer_pid}
   end
 
-  def decomposer_function_list(datum, _opts) do
-    [datum + 1, datum + 2, datum + 3]
+  def decomposer_function_list(event, _opts) do
+    [event + 1, event + 2, event + 3]
   end
 
-  def decomposer_function_tuple(datum, _opts) do
-    {[datum + 1, datum + 2, datum + 3], datum + 100}
+  def decomposer_function_tuple(event, _opts) do
+    {[event + 1, event + 2, event + 3], event + 100}
   end
 
   def build_decomposer(producer_pid, function) do
@@ -37,7 +37,7 @@ defmodule ALF.Components.DecomposerTest do
   def run_and_wait_for_ips(state, producer_pid, consumer_pid, stream_ref, ip_ref) do
     new_state = %{state | registry: %{stream_ref => %StreamRegistry{}}}
     Manager.__set_state__(EmptyPipeline, new_state)
-    ip = %IP{datum: 1, manager_name: EmptyPipeline, stream_ref: stream_ref, ref: ip_ref}
+    ip = %IP{event: 1, manager_name: EmptyPipeline, stream_ref: stream_ref, ref: ip_ref}
 
     Manager.add_to_registry(EmptyPipeline, [ip], stream_ref)
     GenServer.cast(producer_pid, [ip])
@@ -69,7 +69,7 @@ defmodule ALF.Components.DecomposerTest do
       assert Enum.count(ips) == 3
 
       assert %ALF.IP{
-               datum: 2,
+               event: 2,
                decomposed: true,
                history: [decomposer: 1],
                init_datum: 2,
@@ -109,7 +109,7 @@ defmodule ALF.Components.DecomposerTest do
       assert Enum.count(ips) == 4
 
       assert %ALF.IP{
-               datum: 2,
+               event: 2,
                decomposed: true,
                history: [decomposer: 1],
                init_datum: 2,
@@ -127,7 +127,7 @@ defmodule ALF.Components.DecomposerTest do
       original_ip = List.last(ips)
 
       assert %ALF.IP{
-               datum: 101,
+               event: 101,
                decomposed: false,
                history: [decomposer: 1],
                manager_name: EmptyPipeline,

@@ -8,8 +8,8 @@ defmodule ALF.Components.StageTest do
       Map.put(opts, :foo, opts[:foo] <> "bar")
     end
 
-    def call(datum, opts) do
-      datum <> opts[:foo]
+    def call(event, opts) do
+      event <> opts[:foo]
     end
   end
 
@@ -46,11 +46,11 @@ defmodule ALF.Components.StageTest do
   end
 
   test "call component", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
-    ip = %IP{datum: "baz"}
+    ip = %IP{event: "baz"}
     GenServer.cast(producer_pid, [ip])
     Process.sleep(10)
     [ip] = TestConsumer.ips(consumer_pid)
-    assert ip.datum == "bazfoobar"
+    assert ip.event == "bazfoobar"
     assert ip.history == [{{:test_stage, 0}, "baz"}]
   end
 end
