@@ -37,11 +37,11 @@ defmodule ALF.Components.Decomposer do
       telemetry_data(ip, state),
       fn ->
         case do_handle_event(ip, state) do
-          {:noreply, ips, state} = result ->
-            {result, telemetry_data(ips, state)}
-
           {:noreply, [], state} = result ->
             {result, telemetry_data(nil, state)}
+
+          {:noreply, ips, state} = result ->
+            {result, telemetry_data(ips, state)}
         end
       end
     )
