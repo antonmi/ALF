@@ -4,7 +4,7 @@
 
 ## Flow-based Application Layer Framework
 
-#### ALF is a set of abstractions built on top Elixir GenStage which allows writing programs following the [Flow-Based Programming (FBP)](https://en.wikipedia.org/wiki/Flow-based_programming) approach.
+#### ALF is a set of control-flow abstractions built on top Elixir GenStage which allows writing programs following the [Flow-Based Programming (FBP)](https://en.wikipedia.org/wiki/Flow-based_programming) approach.
 
 #### ALF is a framework for your application (business-logic) layer, it provides a simple and expressive way of presenting the logic as sequential processing of "information packets" (IPs) (or, simply, messages or events), and thus brings high design-time and run-time observability.
 
@@ -68,7 +68,8 @@ This starts a manager (GenServer) with the `ThePipeline` name. The manager start
 
 ### Use the pipeline
 
-The only interface currently is the `stream_to` function (`stream_to/2` and `stream_to/3`).
+There are several ways you can run your pipeline.
+There is the `stream_to` function (`stream_to/2` and `stream_to/3`).
 It receives a stream or `Enumerable.t` and returns another stream where results will be streamed.
 
 ```elixir
@@ -76,6 +77,26 @@ inputs = [1,2,3]
 output_stream =  Manager.stream_to(inputs, Pipeline)
 Enum.to_list(output_stream) # it returns [1, 3, 5]
 ```
+
+There is also the `steam_with_ids_to/2` (`steam_with_ids_to/3`) function that allows you to put custom ids for events: `reference()`, `pid()`, any `term()` actually.
+You should pass `list({id, event})` as the first argument.
+Internally ALF assigns these ids to every IP, and will return the results in the same `{id, event}` format.
+Use this function if you need a granular control of what your pipeline returns.
+```elixir
+inputs = [{make_ref(), 1}, {:my_id, 2}, {self(), 3}]
+output_stream =  Manager.steam_with_ids_to(inputs, Pipeline)
+Enum.to_list(output_stream) # it returns [{ref, 1}, {:my_id, 3}, {pid, 5}]
+```
+
+Another way is to use `Manager.Client`. The `Client` has a simple `call(client_pid, event)` interface and return the result synchronously.
+```elixir
+# you have to start the manager first
+Manager.start(Pipeline)
+{:ok, pid} = Manager.Client.start(Pipeline)
+Manager.Client.call(pid, 1) #it returns 2
+```
+Under the hood, each client starts its own infinite stream to the manager.
+When one calls the client, it pushes an event to the stream and waits until it has been processed.
 
 ### Parallel processing of several streams
 
