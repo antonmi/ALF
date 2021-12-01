@@ -63,6 +63,7 @@ defmodule ALF.Manager.Client do
         fn -> state.pid end,
         fn client_pid ->
           Process.sleep(10)
+
           try do
             events = GenServer.call(client_pid, :events)
             {events, client_pid}

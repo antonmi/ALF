@@ -151,7 +151,7 @@ defmodule ALF.DSL do
     opts = options[:opts]
 
     quote do
-      validate_stages_from_options(unquote(module), unquote(options))
+      validate_stages_from_options(unquote(options))
 
       unquote(module).alf_components
       |> ALF.DSL.set_pipeline_module(__MODULE__)
@@ -163,7 +163,7 @@ defmodule ALF.DSL do
     name = options[:name]
 
     quote do
-      validate_plug_with_options(unquote(module), unquote(options))
+      validate_plug_with_options(unquote(options))
       name = if unquote(name), do: unquote(name), else: unquote(module)
 
       plug = %Plug{
@@ -184,13 +184,9 @@ defmodule ALF.DSL do
     end
   end
 
-  def validate_stages_from_options(module, options) do
+  def validate_stages_from_options(options) do
     dsl_options = [:count, :opts]
     wrong_options = Keyword.keys(options) -- dsl_options
-
-    unless module_exist?(module) do
-      raise DSLError, "There is no such module: #{inspect(module)}"
-    end
 
     if Enum.any?(wrong_options) do
       raise DSLError,
@@ -199,13 +195,9 @@ defmodule ALF.DSL do
     end
   end
 
-  def validate_plug_with_options(module, options) do
+  def validate_plug_with_options(options) do
     dsl_options = [:module, :name, :opts]
     wrong_options = Keyword.keys(options) -- dsl_options
-
-    unless module_exist?(module) do
-      raise DSLError, "There is no such module: #{inspect(module)}"
-    end
 
     if Enum.any?(wrong_options) do
       raise DSLError,
@@ -263,6 +255,4 @@ defmodule ALF.DSL do
       def alf_components, do: List.flatten(@components)
     end
   end
-
-  defp module_exist?(module), do: function_exported?(module, :__info__, 1)
 end

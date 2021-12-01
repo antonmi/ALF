@@ -126,18 +126,6 @@ defmodule ALF.DSL.ValidationsTest do
       @components [stage(:stage)]
     end
 
-    test "no such module", %{sup_pid: sup_pid} do
-      assert_raise DSLError,
-                   "There is no such module: NoSuchModule",
-                   fn ->
-                     defmodule StageFromWithNonExistingModule do
-                       use ALF.DSL
-
-                       @components stages_from(NoSuchModule)
-                     end
-                   end
-    end
-
     test "invalid options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Wrong options are given for the stages_from macro: [:foo]. " <>
@@ -157,20 +145,6 @@ defmodule ALF.DSL.ValidationsTest do
       def init(opts), do: opts
       def plug(event, _), do: event
       def unplug(_datum, prev_event, _), do: prev_event
-    end
-
-    test "no such module" do
-      assert_raise DSLError,
-                   "There is no such module: NoSuchModule",
-                   fn ->
-                     defmodule PlugWithNonExistingModule do
-                       use ALF.DSL
-
-                       @components (plug_with(NoSuchModule) do
-                                      [stage(StageA1, name: :custom_name)]
-                                    end)
-                     end
-                   end
     end
 
     test "invalid options" do
