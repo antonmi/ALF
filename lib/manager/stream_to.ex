@@ -1,20 +1,23 @@
 defmodule ALF.Manager.StreamTo do
   defmacro __using__(_opts) do
     quote do
-      alias ALF.{IP, ErrorIP, Manager.StreamRegistry, Components.Producer}
-
-      defmodule ProcessingOptions do
-        defstruct chunk_every: 10,
-                  return_ips: false
-
-        def new(map) when is_map(map) do
-          struct(__MODULE__, map)
-        end
-      end
+      alias ALF.{
+        IP,
+        ErrorIP,
+        Manager.StreamRegistry,
+        Manager.ProcessingOptions,
+        Components.Producer
+      }
 
       @spec stream_to(Enumerable.t(), atom(), map() | keyword()) :: Enumerable.t()
       def stream_to(stream, name, opts \\ %{}) when is_atom(name) do
-        GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts)})
+        GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts), false})
+      end
+
+      @spec steam_with_ids_to(Enumerable.t({term, term}), atom(), map() | keyword()) ::
+              Enumerable.t()
+      def steam_with_ids_to(stream, name, opts \\ %{}) when is_atom(name) do
+        GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts), true})
       end
 
       def add_to_registry(name, ips, stream_ref) when is_list(ips) do
@@ -25,7 +28,7 @@ defmodule ALF.Manager.StreamTo do
         GenServer.call(name, {:remove_from_registry, ips, stream_ref})
       end
 
-      def handle_call({:stream_to, stream, opts}, _from, %__MODULE__{} = state) do
+      def handle_call({:stream_to, stream, opts, custom_ids?}, _from, %__MODULE__{} = state) do
         stream_ref = make_ref()
 
         registry =
@@ -40,7 +43,7 @@ defmodule ALF.Manager.StreamTo do
         stream =
           stream
           |> build_input_stream(stream_ref, opts, state.name, state.producer_pid)
-          |> build_output_stream(stream_ref, opts, state.name)
+          |> build_output_stream(stream_ref, opts, state.name, custom_ids?)
 
         {:reply, stream, state}
       end
@@ -53,7 +56,7 @@ defmodule ALF.Manager.StreamTo do
         end)
       end
 
-      defp build_output_stream(input_stream, stream_ref, opts, manager_name) do
+      defp build_output_stream(input_stream, stream_ref, opts, manager_name, custom_ids?) do
         Stream.resource(
           fn ->
             Task.async(fn -> Stream.run(input_stream) end)
@@ -63,6 +66,7 @@ defmodule ALF.Manager.StreamTo do
 
             case flush_queue(manager_name, stream_ref) do
               {:ok, ips} ->
+                ips = if custom_ids?, do: Enum.map(ips, &{&1.ref, &1}), else: ips
                 format_output(ips, task, opts.return_ips)
 
               :done ->
@@ -80,12 +84,20 @@ defmodule ALF.Manager.StreamTo do
       end
 
       defp format_output([%IP{} | _] = ips, task, true), do: {ips, task}
+      defp format_output([{_id, %IP{}} | _] = ips, task, true), do: {ips, task}
 
       defp format_output([%IP{} | _] = ips, task, false) do
         {Enum.map(ips, & &1.event), task}
       end
 
+      defp format_output([{_id, %IP{}} | _] = ips, task, false) do
+        {Enum.map(ips, fn {id, ip} ->
+           {id, ip.event}
+         end), task}
+      end
+
       defp format_output([%ErrorIP{} | _] = ips, task, _return_ips), do: {ips, task}
+      defp format_output([{_id, %ErrorIP{}} | _] = ips, task, _return_ips), do: {ips, task}
       defp format_output([], task, return_ips), do: {[], task}
 
       defp send_events(name, events, stream_ref, producer_pid)
@@ -117,22 +129,34 @@ defmodule ALF.Manager.StreamTo do
         Enum.map(
           events,
           fn event ->
-            {reference, event} =
-              case event do
-                {ref, dat} when is_reference(ref) ->
-                  {ref, dat}
+            case event do
+              {id, event} ->
+                %IP{
+                  stream_ref: stream_ref,
+                  ref: id,
+                  init_datum: event,
+                  event: event,
+                  manager_name: name
+                }
 
-                dat ->
-                  {make_ref(), dat}
-              end
+              event ->
+                {reference, event} =
+                  case event do
+                    {ref, dat} when is_reference(ref) ->
+                      {ref, dat}
 
-            %IP{
-              stream_ref: stream_ref,
-              ref: reference,
-              init_datum: event,
-              event: event,
-              manager_name: name
-            }
+                    dat ->
+                      {make_ref(), dat}
+                  end
+
+                %IP{
+                  stream_ref: stream_ref,
+                  ref: reference,
+                  init_datum: event,
+                  event: event,
+                  manager_name: name
+                }
+            end
           end
         )
       end

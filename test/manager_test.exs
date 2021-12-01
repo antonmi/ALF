@@ -1,7 +1,7 @@
 defmodule ALF.ManagerTest do
   use ExUnit.Case, async: false
 
-  alias ALF.Manager
+  alias ALF.{IP, Manager}
 
   defmodule SimplePipeline do
     use ALF.DSL
@@ -162,6 +162,44 @@ defmodule ALF.ManagerTest do
                %ALF.IP{event: 6},
                %ALF.IP{event: 8}
              ] = results
+    end
+  end
+
+  describe "steam_with_ids_to/2" do
+    def sample_stream_with_ids(ref, pid) do
+      [{ref, 1}, {:my_id, 2}, {pid, 3}]
+    end
+
+    setup do
+      Manager.start(SimplePipeline)
+    end
+
+    test "run stream and check events" do
+      ref = make_ref()
+      pid = self()
+
+      result =
+        sample_stream_with_ids(ref, pid)
+        |> Manager.steam_with_ids_to(SimplePipeline)
+        |> Enum.to_list()
+
+      assert [{^ref, 4}, {:my_id, 6}, {^pid, 8}] = result
+    end
+
+    test "run stream with return_ips: true option" do
+      ref = make_ref()
+      pid = self()
+
+      result =
+        sample_stream_with_ids(ref, pid)
+        |> Manager.steam_with_ids_to(SimplePipeline, %{return_ips: true})
+        |> Enum.to_list()
+
+      assert [
+               {^ref, %IP{ref: ^ref, event: 4}},
+               {:my_id, %IP{ref: :my_id, event: 6}},
+               {^pid, %IP{ref: ^pid, event: 8}}
+             ] = result
     end
   end
 
