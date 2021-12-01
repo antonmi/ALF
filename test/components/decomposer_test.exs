@@ -16,11 +16,11 @@ defmodule ALF.Components.DecomposerTest do
     %{state: state, producer_pid: producer_pid}
   end
 
-  def decomposer_function_list(event, _opts) do
+  def decomposer_function_list(event, _) do
     [event + 1, event + 2, event + 3]
   end
 
-  def decomposer_function_tuple(event, _opts) do
+  def decomposer_function_tuple(event, _) do
     {[event + 1, event + 2, event + 3], event + 100}
   end
 

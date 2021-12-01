@@ -7,9 +7,9 @@ defmodule ALF.Examples.AddMultMinus.Pipeline do
     stage(:minus_three)
   ]
 
-  def add_one(event, _opts), do: event + 1
-  def mult_by_two(event, _opts), do: event * 2
-  def minus_three(event, _opts), do: event - 3
+  def add_one(event, _), do: event + 1
+  def mult_by_two(event, _), do: event * 2
+  def minus_three(event, _), do: event - 3
 end
 
 defmodule ALF.Examples.AddMultMinusTest do

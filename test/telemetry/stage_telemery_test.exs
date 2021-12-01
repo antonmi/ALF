@@ -9,7 +9,7 @@ defmodule ALF.ComponentTelemetryTest do
       stage(:just_stage)
     ]
 
-    def just_stage(event, _opts) do
+    def just_stage(event, _) do
       event + 1
     end
   end

@@ -12,8 +12,8 @@ defmodule ALF.ComponentErrorTest do
         stage(:mult_two)
       ]
 
-      def add_one(_datum, _opts), do: raise("Error in :add_one")
-      def mult_two(event, _opts), do: event * 2
+      def add_one(_datum, _), do: raise("Error in :add_one")
+      def mult_two(event, _), do: event * 2
     end
 
     setup do
@@ -49,8 +49,8 @@ defmodule ALF.ComponentErrorTest do
         stage(:mult_two)
       ]
 
-      def add_one(event, _opts), do: event + 1
-      def mult_two(_datum, _opts), do: raise("Error in :mult_two")
+      def add_one(event, _), do: event + 1
+      def mult_two(_datum, _), do: raise("Error in :mult_two")
     end
 
     setup do
@@ -91,19 +91,19 @@ defmodule ALF.ComponentErrorTest do
         stage(:ok)
       ]
 
-      def switch_cond(_datum, _opts) do
+      def switch_cond(_datum, _) do
         raise "Error in :switch"
       end
 
-      def add_one(event, _opts) do
+      def add_one(event, _) do
         event + 1
       end
 
-      def mult_two(event, _opts) do
+      def mult_two(event, _) do
         event * 2
       end
 
-      def ok(event, _opts), do: event
+      def ok(event, _), do: event
     end
 
     setup do
@@ -139,11 +139,11 @@ defmodule ALF.ComponentErrorTest do
         goto(:goto_function, to: :goto_point)
       ]
 
-      def goto_function(_datum, _opts) do
+      def goto_function(_datum, _) do
         raise "Error in :goto"
       end
 
-      def add_one(event, _opts), do: event + 1
+      def add_one(event, _), do: event + 1
     end
 
     setup do

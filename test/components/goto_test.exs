@@ -31,7 +31,7 @@ defmodule ALF.Components.GotoTest do
     }
   end
 
-  def stage_function(event, _opts) do
+  def stage_function(event, _) do
     event + 1
   end
 

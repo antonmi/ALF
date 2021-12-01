@@ -14,17 +14,17 @@ defmodule ALF.StopPipelineTest do
       stage(:baz)
     ]
 
-    def foo(event, _opts) do
+    def foo(event, _) do
       Process.sleep(@sleep)
       "#{event}-foo"
     end
 
-    def bar(event, _opts) do
+    def bar(event, _) do
       Process.sleep(@sleep)
       "#{event}-bar"
     end
 
-    def baz(event, _opts) do
+    def baz(event, _) do
       Process.sleep(@sleep)
       "#{event}-baz"
     end

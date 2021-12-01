@@ -45,7 +45,7 @@ defmodule ALF.DSL.DecomposerTest do
       defmodule DecomposerModule do
         def init(opts), do: Keyword.put(opts, :baz, :qux)
 
-        def call(event, _opts), do: [event]
+        def call(event, _), do: [event]
       end
 
       @components [

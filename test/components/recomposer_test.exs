@@ -16,7 +16,7 @@ defmodule ALF.Components.RecomposerTest do
     %{state: state, producer_pid: producer_pid}
   end
 
-  def recomposer_function(event, prev_events, _opts) do
+  def recomposer_function(event, prev_events, _) do
     sum = Enum.reduce(prev_events, 0, &(&1 + &2)) + event
 
     if sum > 5 do
@@ -26,7 +26,7 @@ defmodule ALF.Components.RecomposerTest do
     end
   end
 
-  def recomposer_function_tuple(event, prev_events, _opts) do
+  def recomposer_function_tuple(event, prev_events, _) do
     sum = Enum.reduce(prev_events, 0, &(&1 + &2)) + event
 
     if sum > 5 do

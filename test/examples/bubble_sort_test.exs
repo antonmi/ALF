@@ -14,32 +14,32 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
     stage(:format_output)
   ]
 
-  def build_struct(list, _opts) do
+  def build_struct(list, _) do
     %__MODULE__{list: list, new_list: [], max: 0, ready: false}
   end
 
-  def find_max(struct, _opts) do
+  def find_max(struct, _) do
     %{struct | max: Enum.max(struct.list)}
   end
 
-  def update_new_list(struct, _opts) do
+  def update_new_list(struct, _) do
     %{struct | new_list: [struct.max | struct.new_list]}
   end
 
-  def rebuild_list(struct, _opts) do
+  def rebuild_list(struct, _) do
     %{struct | list: struct.list -- [struct.max]}
   end
 
-  def goto_if(struct, _opts) do
+  def goto_if(struct, _) do
     !Enum.empty?(struct.list)
   end
 
-  def report_step(struct, _opts) do
+  def report_step(struct, _) do
     #    IO.inspect("Step: #{inspect struct}", charlists: :as_lists)
     struct
   end
 
-  def format_output(struct, _opts) do
+  def format_output(struct, _) do
     struct.new_list
   end
 end

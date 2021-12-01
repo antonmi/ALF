@@ -12,11 +12,11 @@ defmodule ALF.DecomposeRecomposeTest do
         recomposer(:recomposer_function)
       ]
 
-      def decomposer_function(event, _opts) do
+      def decomposer_function(event, _) do
         String.split(event)
       end
 
-      def recomposer_function(event, prev_events, _opts) do
+      def recomposer_function(event, prev_events, _) do
         string = Enum.join(prev_events ++ [event], " ")
 
         if String.length(string) > 10 do

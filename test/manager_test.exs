@@ -11,8 +11,8 @@ defmodule ALF.ManagerTest do
       stage(:mult_two)
     ]
 
-    def add_one(event, _opts), do: event + 1
-    def mult_two(event, _opts), do: event * 2
+    def add_one(event, _), do: event + 1
+    def mult_two(event, _), do: event * 2
   end
 
   defmodule GoToPipeline do

@@ -67,7 +67,7 @@ defmodule ALF.OptsInStageTest do
       @components stages_from(PipelineA, opts: [module: __MODULE__, aaa: :bbb]) ++
                     [stage(:bar, opts: %{module: __MODULE__})]
 
-      def bar(event, _opts) do
+      def bar(event, _) do
         event
       end
     end

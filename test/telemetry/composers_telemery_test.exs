@@ -10,11 +10,11 @@ defmodule ALF.ComposersTelemetryTest do
       recomposer(:the_recomposer)
     ]
 
-    def the_decomposer(event, _opts) do
+    def the_decomposer(event, _) do
       {[event + 1], event}
     end
 
-    def the_recomposer(event, prev_events, _opts) do
+    def the_recomposer(event, prev_events, _) do
       sum = Enum.reduce(prev_events, 0, &(&1 + &2)) + event
 
       case sum >= 5 do

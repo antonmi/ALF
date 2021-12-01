@@ -1,5 +1,5 @@
 defmodule ALF.Examples.PlugWith.HelloComponent do
-  def call(%{name: name}, _opts) do
+  def call(%{name: name}, _) do
     "Hello #{name}!"
   end
 end
@@ -13,8 +13,8 @@ defmodule ALF.Examples.PlugWith.Pipeline do
 
   defmodule InputToName do
     alias ALF.Examples.PlugWith.Pipeline
-    def plug(%Pipeline{input: input}, _opts), do: %{name: input}
-    def unplug(string, prev_event, _opts), do: %{prev_event | output: string}
+    def plug(%Pipeline{input: input}, _), do: %{name: input}
+    def unplug(string, prev_event, _), do: %{prev_event | output: string}
   end
 
   @components [
@@ -23,8 +23,8 @@ defmodule ALF.Examples.PlugWith.Pipeline do
     stage(:format_output)
   ]
 
-  def build_struct(event, _opts), do: %__MODULE__{input: event}
-  def format_output(%__MODULE__{output: event}, _opts), do: event
+  def build_struct(event, _), do: %__MODULE__{input: event}
+  def format_output(%__MODULE__{output: event}, _), do: event
 end
 
 defmodule ALF.Examples.PlugWithExamplesTest do

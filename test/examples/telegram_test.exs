@@ -8,13 +8,13 @@ defmodule ALF.Examples.Telegram.Pipeline do
 
   @length_limit 50
 
-  def split_to_words(line, _opts) do
+  def split_to_words(line, _) do
     line
     |> String.trim()
     |> String.split()
   end
 
-  def create_lines(word, words, _opts) do
+  def create_lines(word, words, _) do
     string = Enum.join(words, " ")
 
     if String.length(string <> " " <> word) > @length_limit do
