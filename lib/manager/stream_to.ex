@@ -220,29 +220,33 @@ defmodule ALF.Manager.StreamTo do
 
       def handle_call({:flush_queue, stream_ref}, _from, state) do
         registry = state.registry[stream_ref]
-        queue = registry.queue
+        if registry do
+          queue = registry.queue
 
-        events =
-          case :queue.to_list(queue) do
-            [] ->
-              if StreamRegistry.empty?(registry) do
-                :done
-              else
-                {:ok, []}
-              end
+          events =
+            case :queue.to_list(queue) do
+              [] ->
+                if StreamRegistry.empty?(registry) do
+                  :done
+                else
+                  {:ok, []}
+                end
 
-            events when is_list(events) ->
-              {:ok, events}
-          end
+              events when is_list(events) ->
+                {:ok, events}
+            end
 
-        new_registry =
-          Map.put(
-            state.registry,
-            stream_ref,
-            %{registry | queue: :queue.new()}
-          )
+          new_registry =
+            Map.put(
+              state.registry,
+              stream_ref,
+              %{registry | queue: :queue.new()}
+            )
 
-        {:reply, events, %{state | registry: new_registry}}
+          {:reply, events, %{state | registry: new_registry}}
+        else
+          {:reply, {:ok, []}, state}
+        end
       end
     end
   end
