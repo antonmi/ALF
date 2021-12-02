@@ -6,7 +6,7 @@
 
 #### ALF is a set of control-flow abstractions built on top Elixir GenStage which allows writing programs following the [Flow-Based Programming (FBP)](https://en.wikipedia.org/wiki/Flow-based_programming) approach.
 
-#### ALF is a framework for your application layer, it provides a simple and expressive way of presenting the logic as sequential processing of "information packets" (IPs) (or, simply, messages or events), and thus brings high design-time and run-time observability.
+#### ALF is a framework for your application layer, it provides a simple and expressive way of presenting the logic as sequential processing of "information packets" (IPs) (or, simply, messages or events), and thus brings high design-, coding-, and run-time observability.
 
 #### ALF is NOT a general-purpose "language", so implementing a complex domain logic with it might be questionable (although it is possible).
 
