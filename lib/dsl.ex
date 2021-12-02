@@ -10,7 +10,8 @@ defmodule ALF.DSL do
     Plug,
     Unplug,
     Decomposer,
-    Recomposer
+    Recomposer,
+    Tbd
   }
 
   alias ALF.DSLError
@@ -181,6 +182,20 @@ defmodule ALF.DSL do
       }
 
       [plug] ++ unquote(block) ++ [unplug]
+    end
+  end
+
+  defmacro tbd(atom \\ :tbd) do
+    quote do
+      Tbd.validate_name(unquote(atom))
+
+      Basic.build_component(
+        Tbd,
+        unquote(atom),
+        unquote(atom),
+        %{},
+        __MODULE__
+      )
     end
   end
 

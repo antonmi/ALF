@@ -220,6 +220,7 @@ defmodule ALF.Manager.StreamTo do
 
       def handle_call({:flush_queue, stream_ref}, _from, state) do
         registry = state.registry[stream_ref]
+
         if registry do
           queue = registry.queue
 

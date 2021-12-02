@@ -13,7 +13,8 @@ defmodule ALF.Builder do
     Plug,
     Unplug,
     Decomposer,
-    Recomposer
+    Recomposer,
+    Tbd
   }
 
   def build(pipe_spec, supervisor_pid, manager_name, pipeline_module) when is_list(pipe_spec) do
@@ -130,6 +131,10 @@ defmodule ALF.Builder do
         %Recomposer{} = recomposer ->
           recomposer = start_stage(recomposer, supervisor_pid, prev_stages)
           {[recomposer], stages ++ [recomposer]}
+
+        %Tbd{} = tbd ->
+          tbd = start_stage(tbd, supervisor_pid, prev_stages)
+          {[tbd], stages ++ [tbd]}
       end
     end)
   end
