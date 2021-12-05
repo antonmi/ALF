@@ -187,6 +187,12 @@ defmodule MyComponent do
   end
 end
 ```
+There is the `:count` option that allows running several copies of a stage.
+
+```elixir
+  stage(:my_fun, count: 5)
+```
+Use it for controlling parallelism.
 
 ### Switch
 
@@ -225,7 +231,7 @@ end
 
 ### Clone
 
-Clones an IP, useful for background actions.
+Clones an IP, useful for running aspects.
 
 ```elixir
 clone(:my_clone, to: [stage(:foo), dead_end(:dead_end)])
