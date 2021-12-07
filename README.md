@@ -128,7 +128,15 @@ The name of the function/module goes as a first argument in DSL. And the name al
   stage(MyComponent)
 ```
 
-where `MyComponent` is
+where `my_fun` is
+```elixir
+def my_fun(event, opts) do
+  #logic is here
+  new_event
+end
+```
+
+and `MyComponent` is
 
 ```elixir
 defmodule MyComponent do
@@ -137,7 +145,7 @@ defmodule MyComponent do
 
   def call(event, opts) do
     # logic is here
-    new_datum
+    new_event
   end
 end
 ```
