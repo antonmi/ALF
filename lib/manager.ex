@@ -12,9 +12,9 @@ defmodule ALF.Manager do
             registry: %{},
             registry_dump: %{}
 
-  use ALF.Manager.StreamTo
   use ALF.Manager.GraphEdges
 
+  alias ALF.Manager.{Streamer, ProcessingOptions, StreamRegistry}
   alias ALF.Components.Goto
   alias ALF.{Builder, IP, PipelineDynamicSupervisor, Pipeline}
 
@@ -61,6 +61,17 @@ defmodule ALF.Manager do
   catch
     :exit, {reason, details} ->
       {:exit, {reason, details}}
+  end
+
+  @spec stream_to(Enumerable.t(), atom(), map() | keyword()) :: Enumerable.t()
+  def stream_to(stream, name, opts \\ %{}) when is_atom(name) do
+    GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts), false})
+  end
+
+  @spec steam_with_ids_to(Enumerable.t({term, term}), atom(), map() | keyword()) ::
+          Enumerable.t()
+  def steam_with_ids_to(stream, name, opts \\ %{}) when is_atom(name) do
+    GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts), true})
   end
 
   def terminate(:normal, state) do
@@ -154,9 +165,56 @@ defmodule ALF.Manager do
       state
       |> start_pipeline()
       |> copy_registry_to_dump()
-      |> resend_packets()
+      |> Streamer.resend_packets()
 
     {:noreply, state}
+  end
+
+  # streaming related functions
+
+  def handle_call({:stream_to, stream, opts, custom_ids?}, _from, %__MODULE__{} = state) do
+    {stream, state} = Streamer.prepare_streams(state, stream, opts, custom_ids?)
+    {:reply, stream, state}
+  end
+
+  def handle_call({:add_to_registry, ips, stream_ref}, _from, state) do
+    new_registry = Streamer.add_to_registry(state.registry, stream_ref, ips)
+    {:reply, new_registry, %{state | registry: new_registry}}
+  end
+
+  def handle_call({:remove_from_registry, ips, stream_ref}, _from, state) do
+    new_registry = Streamer.remove_from_registry(state.registry, stream_ref, ips)
+    {:reply, new_registry, %{state | registry: new_registry}}
+  end
+
+  def result_ready(name, ip) when is_atom(name) do
+    GenServer.call(name, {:result_ready, ip})
+  end
+
+  def handle_call({:result_ready, ip}, _from, state) do
+    new_registry = Streamer.rebuild_registry_on_result_ready(state.registry, ip)
+    {:reply, :ok, %{state | registry: new_registry}}
+  end
+
+  def handle_call({:flush_queue, stream_ref}, _from, state) do
+    registry = state.registry[stream_ref]
+
+    if registry do
+      events =
+        case :queue.to_list(registry.queue) do
+          [] ->
+            if StreamRegistry.empty?(registry), do: :done, else: {:ok, []}
+
+          events when is_list(events) ->
+            {:ok, events}
+        end
+
+      new_registry = Map.put(state.registry, stream_ref, %{registry | queue: :queue.new()})
+
+      {:reply, events, %{state | registry: new_registry}}
+    else
+      {:reply, {:ok, []}, state}
+    end
   end
 
   defp copy_registry_to_dump(state) do

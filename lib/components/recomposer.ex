@@ -13,7 +13,7 @@ defmodule ALF.Components.Recomposer do
             collected_ips: [],
             telemetry_enabled: false
 
-  alias ALF.{DSLError, Manager}
+  alias ALF.{DSLError, Manager.Streamer}
 
   @dsl_options [:name, :opts]
 
@@ -67,7 +67,11 @@ defmodule ALF.Components.Recomposer do
         {:noreply, [], %{state | collected_ips: collected_ips}}
 
       {:ok, {event, events}} ->
-        Manager.remove_from_registry(ip.manager_name, [ip | state.collected_ips], ip.stream_ref)
+        Streamer.call_remove_from_registry(
+          ip.manager_name,
+          [ip | state.collected_ips],
+          ip.stream_ref
+        )
 
         ip =
           build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
@@ -77,16 +81,20 @@ defmodule ALF.Components.Recomposer do
             build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
           end)
 
-        Manager.add_to_registry(ip.manager_name, [ip], ip.stream_ref)
+        Streamer.call_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
         {:noreply, [ip], %{state | collected_ips: collected}}
 
       {:ok, event} ->
-        Manager.remove_from_registry(ip.manager_name, [ip | state.collected_ips], ip.stream_ref)
+        Streamer.call_remove_from_registry(
+          ip.manager_name,
+          [ip | state.collected_ips],
+          ip.stream_ref
+        )
 
         ip =
           build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
 
-        Manager.add_to_registry(ip.manager_name, [ip], ip.stream_ref)
+        Streamer.call_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
         {:noreply, [ip], %{state | collected_ips: []}}
 
       {:error, error, stacktrace} ->

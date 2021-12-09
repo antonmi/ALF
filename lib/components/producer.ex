@@ -1,6 +1,6 @@
 defmodule ALF.Components.Producer do
   use GenStage
-  alias ALF.Manager
+  alias ALF.Manager.Streamer
 
   import ALF.Components.Basic, only: [telemetry_enabled?: 0, telemetry_data: 2]
 
@@ -88,9 +88,9 @@ defmodule ALF.Components.Producer do
   end
 
   def add_to_in_progress_registry(ip, manager_name) do
-    Manager.remove_from_registry(manager_name, [ip], ip.stream_ref)
+    Streamer.call_remove_from_registry(manager_name, [ip], ip.stream_ref)
     ip = %{ip | in_progress: true}
-    Manager.add_to_registry(manager_name, [ip], ip.stream_ref)
+    Streamer.call_add_to_registry(manager_name, [ip], ip.stream_ref)
     ip
   end
 end
