@@ -39,7 +39,7 @@ defmodule ALF.Components.DecomposerTest do
     Manager.__set_state__(EmptyPipeline, new_state)
     ip = %IP{event: 1, manager_name: EmptyPipeline, stream_ref: stream_ref, ref: ip_ref}
 
-    Streamer.call_add_to_registry(EmptyPipeline, [ip], stream_ref)
+    Streamer.cast_add_to_registry(EmptyPipeline, [ip], stream_ref)
     GenServer.cast(producer_pid, [ip])
     Process.sleep(10)
 

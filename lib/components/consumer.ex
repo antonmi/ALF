@@ -3,7 +3,7 @@ defmodule ALF.Components.Consumer do
 
   import ALF.Components.Basic, only: [telemetry_enabled?: 0, telemetry_data: 2]
 
-  alias ALF.{ErrorIP, IP, Manager}
+  alias ALF.{ErrorIP, IP, Manager.Streamer}
 
   defstruct name: :consumer,
             manager_name: nil,
@@ -40,7 +40,7 @@ defmodule ALF.Components.Consumer do
   end
 
   defp do_handle_event(ip, state) do
-    Manager.result_ready(state.manager_name, ip)
+    Streamer.cast_result_ready(state.manager_name, ip)
 
     {:noreply, [], state}
   end

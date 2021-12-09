@@ -53,7 +53,7 @@ defmodule ALF.Components.Basic do
     quote do
       use GenStage
 
-      alias ALF.{IP, ErrorIP, Manager}
+      alias ALF.{IP, ErrorIP, Manager.Streamer}
 
       def __state__(pid) when is_pid(pid) do
         GenStage.call(pid, :__state__)
@@ -73,7 +73,7 @@ defmodule ALF.Components.Basic do
 
       def send_error_result(ip, error, stacktrace, state) do
         error_ip = build_error_ip(ip, error, stacktrace, state)
-        Manager.result_ready(error_ip.manager_name, error_ip)
+        Streamer.cast_result_ready(error_ip.manager_name, error_ip)
       end
 
       def handle_call(:subscribers, _form, state) do

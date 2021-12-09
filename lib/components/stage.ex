@@ -14,7 +14,7 @@ defmodule ALF.Components.Stage do
             subscribers: [],
             telemetry_enabled: false
 
-  alias ALF.{Manager, DoneStatement, DSLError}
+  alias ALF.{Manager.Streamer, DoneStatement, DSLError}
 
   @dsl_options [:opts, :count, :name]
 
@@ -86,7 +86,7 @@ defmodule ALF.Components.Stage do
 
       {:error, %DoneStatement{event: event}, _stacktrace} ->
         ip = %{ip | event: event}
-        Manager.result_ready(ip.manager_name, ip)
+        Streamer.cast_result_ready(ip.manager_name, ip)
         nil
 
       {:error, error, stacktrace} ->

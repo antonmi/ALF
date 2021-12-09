@@ -54,12 +54,12 @@ defmodule ALF.Components.Decomposer do
   defp do_handle_event(ip, state) do
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:ok, events} when is_list(events) ->
-        Streamer.call_remove_from_registry(ip.manager_name, [ip], ip.stream_ref)
+        Streamer.cast_remove_from_registry(ip.manager_name, [ip], ip.stream_ref)
 
         ips =
           build_ips(events, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
 
-        Streamer.call_add_to_registry(ip.manager_name, ips, ip.stream_ref)
+        Streamer.cast_add_to_registry(ip.manager_name, ips, ip.stream_ref)
         {:noreply, ips, state}
 
       {:ok, {events, event}} when is_list(events) ->
@@ -67,7 +67,7 @@ defmodule ALF.Components.Decomposer do
           build_ips(events, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
 
         ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
-        Streamer.call_add_to_registry(ip.manager_name, ips, ip.stream_ref)
+        Streamer.cast_add_to_registry(ip.manager_name, ips, ip.stream_ref)
         {:noreply, ips ++ [ip], state}
 
       {:error, error, stacktrace} ->

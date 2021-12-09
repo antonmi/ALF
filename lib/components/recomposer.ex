@@ -67,7 +67,7 @@ defmodule ALF.Components.Recomposer do
         {:noreply, [], %{state | collected_ips: collected_ips}}
 
       {:ok, {event, events}} ->
-        Streamer.call_remove_from_registry(
+        Streamer.cast_remove_from_registry(
           ip.manager_name,
           [ip | state.collected_ips],
           ip.stream_ref
@@ -81,11 +81,11 @@ defmodule ALF.Components.Recomposer do
             build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
           end)
 
-        Streamer.call_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
+        Streamer.cast_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
         {:noreply, [ip], %{state | collected_ips: collected}}
 
       {:ok, event} ->
-        Streamer.call_remove_from_registry(
+        Streamer.cast_remove_from_registry(
           ip.manager_name,
           [ip | state.collected_ips],
           ip.stream_ref
@@ -94,7 +94,7 @@ defmodule ALF.Components.Recomposer do
         ip =
           build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
 
-        Streamer.call_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
+        Streamer.cast_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
         {:noreply, [ip], %{state | collected_ips: []}}
 
       {:error, error, stacktrace} ->

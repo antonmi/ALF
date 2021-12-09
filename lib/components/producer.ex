@@ -88,9 +88,9 @@ defmodule ALF.Components.Producer do
   end
 
   def add_to_in_progress_registry(ip, manager_name) do
-    Streamer.call_remove_from_registry(manager_name, [ip], ip.stream_ref)
+    Streamer.cast_remove_from_registry(manager_name, [ip], ip.stream_ref)
     ip = %{ip | in_progress: true}
-    Streamer.call_add_to_registry(manager_name, [ip], ip.stream_ref)
+    Streamer.cast_add_to_registry(manager_name, [ip], ip.stream_ref)
     ip
   end
 end

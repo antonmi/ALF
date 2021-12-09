@@ -7,8 +7,16 @@ defmodule ALF.Manager.Streamer do
     Components.Producer
   }
 
-  def call_add_to_registry(name, ips, stream_ref) when is_list(ips) do
-    GenServer.call(name, {:add_to_registry, ips, stream_ref})
+  def cast_add_to_registry(name, ips, stream_ref) when is_list(ips) do
+    GenServer.cast(name, {:add_to_registry, ips, stream_ref})
+  end
+
+  def cast_remove_from_registry(name, ips, stream_ref) do
+    GenServer.cast(name, {:remove_from_registry, ips, stream_ref})
+  end
+
+  def cast_result_ready(name, ip) when is_atom(name) do
+    GenServer.cast(name, {:result_ready, ip})
   end
 
   def add_to_registry(state_registry, stream_ref, ips) do
@@ -20,10 +28,6 @@ defmodule ALF.Manager.Streamer do
 
     stream_reg = StreamRegistry.add_to_registry(stream_registry, ips)
     Map.put(state_registry, stream_ref, stream_reg)
-  end
-
-  def call_remove_from_registry(name, ips, stream_ref) do
-    GenServer.call(name, {:remove_from_registry, ips, stream_ref})
   end
 
   def remove_from_registry(state_registry, stream_ref, ips) do
@@ -116,7 +120,7 @@ defmodule ALF.Manager.Streamer do
   defp send_events(name, events, stream_ref, producer_pid)
        when is_atom(name) and is_list(events) do
     ips = build_ips(events, stream_ref, name)
-    call_add_to_registry(name, ips, stream_ref)
+    cast_add_to_registry(name, ips, stream_ref)
     Producer.load_ips(producer_pid, ips)
   catch
     :exit, {reason, details} ->

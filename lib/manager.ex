@@ -16,7 +16,7 @@ defmodule ALF.Manager do
 
   alias ALF.Manager.{Streamer, ProcessingOptions, StreamRegistry}
   alias ALF.Components.Goto
-  alias ALF.{Builder, IP, PipelineDynamicSupervisor, Pipeline}
+  alias ALF.{Builder, PipelineDynamicSupervisor, Pipeline}
 
   def start_link(%__MODULE__{} = state) do
     GenServer.start_link(__MODULE__, state, name: state.name)
@@ -160,40 +160,9 @@ defmodule ALF.Manager do
     {:stop, :normal, state, state}
   end
 
-  def handle_info({:DOWN, _ref, :process, _pid, :shutdown}, %__MODULE__{} = state) do
-    state =
-      state
-      |> start_pipeline()
-      |> copy_registry_to_dump()
-      |> Streamer.resend_packets()
-
-    {:noreply, state}
-  end
-
-  # streaming related functions
-
   def handle_call({:stream_to, stream, opts, custom_ids?}, _from, %__MODULE__{} = state) do
     {stream, state} = Streamer.prepare_streams(state, stream, opts, custom_ids?)
     {:reply, stream, state}
-  end
-
-  def handle_call({:add_to_registry, ips, stream_ref}, _from, state) do
-    new_registry = Streamer.add_to_registry(state.registry, stream_ref, ips)
-    {:reply, new_registry, %{state | registry: new_registry}}
-  end
-
-  def handle_call({:remove_from_registry, ips, stream_ref}, _from, state) do
-    new_registry = Streamer.remove_from_registry(state.registry, stream_ref, ips)
-    {:reply, new_registry, %{state | registry: new_registry}}
-  end
-
-  def result_ready(name, ip) when is_atom(name) do
-    GenServer.call(name, {:result_ready, ip})
-  end
-
-  def handle_call({:result_ready, ip}, _from, state) do
-    new_registry = Streamer.rebuild_registry_on_result_ready(state.registry, ip)
-    {:reply, :ok, %{state | registry: new_registry}}
   end
 
   def handle_call({:flush_queue, stream_ref}, _from, state) do
@@ -215,6 +184,31 @@ defmodule ALF.Manager do
     else
       {:reply, {:ok, []}, state}
     end
+  end
+
+  def handle_cast({:add_to_registry, ips, stream_ref}, state) do
+    new_registry = Streamer.add_to_registry(state.registry, stream_ref, ips)
+    {:noreply, %{state | registry: new_registry}}
+  end
+
+  def handle_cast({:remove_from_registry, ips, stream_ref}, state) do
+    new_registry = Streamer.remove_from_registry(state.registry, stream_ref, ips)
+    {:noreply, %{state | registry: new_registry}}
+  end
+
+  def handle_cast({:result_ready, ip}, state) do
+    new_registry = Streamer.rebuild_registry_on_result_ready(state.registry, ip)
+    {:noreply, %{state | registry: new_registry}}
+  end
+
+  def handle_info({:DOWN, _ref, :process, _pid, :shutdown}, %__MODULE__{} = state) do
+    state =
+      state
+      |> start_pipeline()
+      |> copy_registry_to_dump()
+      |> Streamer.resend_packets()
+
+    {:noreply, state}
   end
 
   defp copy_registry_to_dump(state) do
