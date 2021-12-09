@@ -14,7 +14,7 @@ defmodule ALF.Components.Tbd do
             subscribers: [],
             telemetry_enabled: false
 
-  alias ALF.{Manager, DSLError}
+  alias ALF.DSLError
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
