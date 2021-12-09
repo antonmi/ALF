@@ -115,7 +115,7 @@ defmodule ALF.Components.Goto do
     end
   end
 
-  defp call_function(_module, true, _datum, _opts), do: true
+  defp call_function(_module, true, _event, _opts), do: true
 
   defp call_function(module, function, event, opts) when is_atom(module) and is_atom(function) do
     apply(module, function, [event, opts])

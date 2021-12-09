@@ -12,7 +12,13 @@ defmodule ALF.ComponentErrorTest do
         stage(:mult_two)
       ]
 
-      def add_one(_datum, _), do: raise("Error in :add_one")
+      def add_one(event, _) do
+        if event == 2 do
+          raise("Error in :add_one")
+        else
+          event + 1
+        end
+      end
       def mult_two(event, _), do: event * 2
     end
 
@@ -23,20 +29,20 @@ defmodule ALF.ComponentErrorTest do
     test "returns error immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(ErrorInStagePipeline, %{return_ips: true})
+        |> Manager.stream_to(ErrorInStagePipeline)
         |> Enum.to_list()
 
       assert [
+               4,
                %ErrorIP{
                  component: %ALF.Components.Stage{function: :add_one},
                  ip: %IP{} = ip,
                  error: %RuntimeError{message: "Error in :add_one"}
                },
-               %ErrorIP{},
-               %ErrorIP{}
+               8
              ] = results
 
-      assert [{{:add_one, 0}, _datum}] = ip.history
+      assert [{{:add_one, 0}, _event}] = ip.history
     end
   end
 
@@ -50,7 +56,13 @@ defmodule ALF.ComponentErrorTest do
       ]
 
       def add_one(event, _), do: event + 1
-      def mult_two(_datum, _), do: raise("Error in :mult_two")
+      def mult_two(event, _) do
+        if event == 3 do
+          raise("Error in :mult_two")
+        else
+          event
+        end
+      end
     end
 
     setup do
@@ -64,13 +76,13 @@ defmodule ALF.ComponentErrorTest do
         |> Enum.to_list()
 
       assert [
+               %IP{},
                %ErrorIP{
                  component: %ALF.Components.Stage{function: :mult_two},
                  ip: %IP{} = ip,
                  error: %RuntimeError{message: "Error in :mult_two"}
                },
-               %ErrorIP{},
-               %ErrorIP{}
+               %IP{}
              ] = results
 
       assert [{{:mult_two, 0}, _}, {{:add_one, 0}, _}] = ip.history
@@ -91,7 +103,7 @@ defmodule ALF.ComponentErrorTest do
         stage(:ok)
       ]
 
-      def switch_cond(_datum, _) do
+      def switch_cond(_event, _) do
         raise "Error in :switch"
       end
 
@@ -125,7 +137,7 @@ defmodule ALF.ComponentErrorTest do
                %ErrorIP{}
              ] = results
 
-      assert [switch_cond: _datum] = ip.history
+      assert [switch_cond: _event] = ip.history
     end
   end
 
@@ -139,7 +151,7 @@ defmodule ALF.ComponentErrorTest do
         goto(:goto_function, to: :goto_point)
       ]
 
-      def goto_function(_datum, _) do
+      def goto_function(_event, _) do
         raise "Error in :goto"
       end
 

@@ -67,7 +67,7 @@ defmodule ALF.Manager.StreamTo do
             case flush_queue(manager_name, stream_ref) do
               {:ok, ips} ->
                 ips = if custom_ids?, do: Enum.map(ips, &{&1.ref, &1}), else: ips
-                format_output(ips, task, opts.return_ips)
+                {format_output(ips, task, opts.return_ips), task}
 
               :done ->
                 if Process.alive?(task.pid) do
@@ -83,22 +83,19 @@ defmodule ALF.Manager.StreamTo do
         )
       end
 
-      defp format_output([%IP{} | _] = ips, task, true), do: {ips, task}
-      defp format_output([{_id, %IP{}} | _] = ips, task, true), do: {ips, task}
-
-      defp format_output([%IP{} | _] = ips, task, false) do
-        {Enum.map(ips, & &1.event), task}
+      def format_output(ips, task, return_ips?) do
+        Enum.map(ips, fn(ip) ->
+          format_ip(ip, return_ips?)
+        end)
       end
 
-      defp format_output([{_id, %IP{}} | _] = ips, task, false) do
-        {Enum.map(ips, fn {id, ip} ->
-           {id, ip.event}
-         end), task}
-      end
+      defp format_ip(%IP{} = ip, true), do: ip
+      defp format_ip({id, %IP{} = ip}, true), do: {id, ip}
+      defp format_ip(%IP{} = ip, false), do: ip.event
+      defp format_ip({id, %IP{} = ip}, false), do: {id, ip.event}
 
-      defp format_output([%ErrorIP{} | _] = ips, task, _return_ips), do: {ips, task}
-      defp format_output([{_id, %ErrorIP{}} | _] = ips, task, _return_ips), do: {ips, task}
-      defp format_output([], task, return_ips), do: {[], task}
+      defp format_ip(%ErrorIP{} = ip, _return_ips), do: ip
+      defp format_ip({id, %ErrorIP{} = ip}, _return_ips), do: {id, ip}
 
       defp send_events(name, events, stream_ref, producer_pid)
            when is_atom(name) and is_list(events) do

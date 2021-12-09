@@ -46,7 +46,7 @@ defmodule ALF.DSLTest do
   defmodule MyAdapterModule do
     def init(opts), do: opts
     def plug(event, _), do: event
-    def unplug(_datum, prev_event, _), do: prev_event
+    def unplug(_event, prev_event, _), do: prev_event
   end
 
   defmodule PipelineC do

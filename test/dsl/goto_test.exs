@@ -56,7 +56,7 @@ defmodule ALF.DSL.GotoTest do
       defmodule GotoModule do
         def init(opts), do: Keyword.put(opts, :baz, :qux)
 
-        def call(_datum, _), do: true
+        def call(_event, _), do: true
       end
 
       @components [

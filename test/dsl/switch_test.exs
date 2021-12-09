@@ -63,7 +63,7 @@ defmodule ALF.DSL.SwitchTest do
       defmodule DoSwitch do
         def init(opts), do: Keyword.put(opts, :baz, :qux)
 
-        def call(_datum, _), do: :part1
+        def call(_event, _), do: :part1
       end
 
       @components [
