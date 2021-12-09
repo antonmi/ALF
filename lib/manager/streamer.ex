@@ -21,11 +21,6 @@ defmodule ALF.Manager.Streamer do
 
   def add_to_registry(state_registry, stream_ref, ips) do
     stream_registry = state_registry[stream_ref]
-
-    if Enum.count(stream_registry.inputs) + Enum.count(ips) > 1_000 do
-      Process.sleep(10)
-    end
-
     stream_reg = StreamRegistry.add_to_registry(stream_registry, ips)
     Map.put(state_registry, stream_ref, stream_reg)
   end
@@ -178,7 +173,7 @@ defmodule ALF.Manager.Streamer do
   end
 
   defp call_flush_queue(name, stream_ref) do
-    GenServer.call(name, {:flush_queue, stream_ref})
+    GenServer.call(name, {:flush_queue, stream_ref}, :infinity)
   catch
     :exit, {:normal, _details} ->
       :done
