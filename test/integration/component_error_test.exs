@@ -13,12 +13,13 @@ defmodule ALF.ComponentErrorTest do
       ]
 
       def add_one(event, _) do
-        if event == 2 do
+        if event == 1 do
           raise("Error in :add_one")
         else
           event + 1
         end
       end
+
       def mult_two(event, _), do: event * 2
     end
 
@@ -33,12 +34,12 @@ defmodule ALF.ComponentErrorTest do
         |> Enum.to_list()
 
       assert [
-               4,
                %ErrorIP{
                  component: %ALF.Components.Stage{function: :add_one},
                  ip: %IP{} = ip,
                  error: %RuntimeError{message: "Error in :add_one"}
                },
+               6,
                8
              ] = results
 
@@ -56,8 +57,9 @@ defmodule ALF.ComponentErrorTest do
       ]
 
       def add_one(event, _), do: event + 1
+
       def mult_two(event, _) do
-        if event == 3 do
+        if event == 2 do
           raise("Error in :mult_two")
         else
           event
@@ -76,12 +78,12 @@ defmodule ALF.ComponentErrorTest do
         |> Enum.to_list()
 
       assert [
-               %IP{},
                %ErrorIP{
                  component: %ALF.Components.Stage{function: :mult_two},
                  ip: %IP{} = ip,
                  error: %RuntimeError{message: "Error in :mult_two"}
                },
+               %IP{},
                %IP{}
              ] = results
 
