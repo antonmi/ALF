@@ -277,7 +277,7 @@ goto_point(:goto_point)
 
 ### DeadEnd
 
-IP won't propagate further. It's used alongside with the `Clone` component to avoid duplicate IPs in output
+Event won't propagate further. It's used alongside with the `Clone` component to avoid duplicate IPs in output
 
 ```elixir
 dead_end(:dead_end)
@@ -389,15 +389,16 @@ def AdapterModuleBaz do
   def init(opts), do: opts # optional
 
   def plug(event, _opts) do
-    # the function is called inside the `Plug` component
-    # `event` will be put on the "AdapterModuleBaz" until IP has reached the "unplug" component
-    # the function must return `new_datum` with the structure expected by the following component
-    new_datum
+    # The function is called inside the `Plug` component.
+    # `event` will be put on the "AdapterModuleBaz" until IP has reached the "unplug" component.
+    # The function must return `new_event` with the structure expected by the following component
+    new_event
   end
 
   def unplug(event, prev_event, _opts) do
     # here one can access previous "event" in `prev_event`
-    # transform the events back for the following components
+    # transform the event back for the following components.
+    new_event
   end
 end
 ```
