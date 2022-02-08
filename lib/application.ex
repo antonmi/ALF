@@ -5,7 +5,8 @@ defmodule ALF.Application do
 
   def start(_type, _args) do
     children = [
-      {DynamicSupervisor, strategy: :one_for_one, name: ALF.DynamicSupervisor}
+      {DynamicSupervisor, strategy: :one_for_one, name: ALF.DynamicSupervisor},
+      {ALF.Introspection, []}
     ]
 
     opts = [name: ALF.Supervisor, strategy: :one_for_one]
