@@ -14,14 +14,19 @@ defmodule ALF.Introspection do
     {:ok, state}
   end
 
+  @spec add(atom()) :: atom()
   def add(pipeline), do: GenServer.call(__MODULE__, {:add, pipeline})
 
+  @spec remove(atom()) :: atom()
   def remove(pipeline), do: GenServer.call(__MODULE__, {:remove, pipeline})
 
+  @spec pipelines() :: MapSet.t()
   def pipelines, do: GenServer.call(__MODULE__, :pipelines)
 
+  @spec info(atom) :: list(map())
   def info(pipeline), do: GenServer.call(__MODULE__, {:info, pipeline})
 
+  @spec reset() :: :ok
   def reset(), do: GenServer.call(__MODULE__, :reset)
 
   def handle_call({:add, pipeline}, _from, state) do
