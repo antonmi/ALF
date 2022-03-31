@@ -123,7 +123,7 @@ defmodule ALF.ComponentTelemetryTest do
                %{duration: _duration},
                %{
                  component: %{name: :consumer, pipeline_module: __MODULE__.Pipeline},
-                 ip: nil,
+                 ip: %{event: 2},
                  telemetry_span_context: _ref
                }
              } = consumer_stop

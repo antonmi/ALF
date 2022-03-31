@@ -29,7 +29,7 @@ defmodule ALF.Components.Consumer do
       telemetry_data(ip, state),
       fn ->
         {:noreply, [], state} = do_handle_event(ip, state)
-        {{:noreply, [], state}, telemetry_data(nil, state)}
+        {{:noreply, [], state}, telemetry_data(ip, state)}
       end
     )
   end

@@ -16,7 +16,7 @@ defmodule ALF.Manager do
 
   alias ALF.Manager.{Streamer, ProcessingOptions, StreamRegistry}
   alias ALF.Components.Goto
-  alias ALF.{Builder, PipelineDynamicSupervisor, Pipeline}
+  alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
 
   def start_link(%__MODULE__{} = state) do
     GenServer.start_link(__MODULE__, state, name: state.name)
@@ -49,6 +49,7 @@ defmodule ALF.Manager do
            }
          ) do
       {:ok, _manager_pid} ->
+        Introspection.add(module)
         :ok
 
       {:error, {:already_started, _pid}} ->
@@ -57,7 +58,9 @@ defmodule ALF.Manager do
   end
 
   def stop(module) when is_atom(module) do
-    GenServer.call(module, :stop)
+    result = GenServer.call(module, :stop, :infinity)
+    Introspection.remove(module)
+    result
   catch
     :exit, {reason, details} ->
       {:exit, {reason, details}}
