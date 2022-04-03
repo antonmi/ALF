@@ -425,5 +425,5 @@ Below there are several ALF-diagrams for the examples in [test/examples](https:/
 
 ### Tic-tac-toe
 See [tictactoe repo](https://github.com/antonmi/tictactoe)
-![Tic-Tac-Toe](https://github.com/antonmi/tictactoe/tic-tac-toe.png)
+![Tic-Tac-Toe](images/tic-tac-toe.png)
 
