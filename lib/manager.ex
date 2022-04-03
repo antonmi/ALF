@@ -12,8 +12,6 @@ defmodule ALF.Manager do
             registry: %{},
             registry_dump: %{}
 
-  use ALF.Manager.GraphEdges
-
   alias ALF.Manager.{Streamer, ProcessingOptions, StreamRegistry}
   alias ALF.Components.Goto
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
@@ -75,6 +73,11 @@ defmodule ALF.Manager do
           Enumerable.t()
   def steam_with_ids_to(stream, name, opts \\ %{}) when is_atom(name) do
     GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts), true})
+  end
+
+  @spec components(atom) :: list(map())
+  def components(name) when is_atom(name) do
+    GenServer.call(name, :components)
   end
 
   def terminate(:normal, state) do
@@ -187,6 +190,10 @@ defmodule ALF.Manager do
     else
       {:reply, {:ok, []}, state}
     end
+  end
+
+  def handle_call(:components, _from, state) do
+    {:reply, state.components, state}
   end
 
   def handle_cast({:add_to_registry, ips, stream_ref}, state) do

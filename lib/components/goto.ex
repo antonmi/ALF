@@ -1,7 +1,8 @@
 defmodule ALF.Components.Goto do
   use ALF.Components.Basic
 
-  defstruct name: nil,
+  defstruct type: :goto,
+            name: nil,
             to: nil,
             to_pid: nil,
             module: nil,

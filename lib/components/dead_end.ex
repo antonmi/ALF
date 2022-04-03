@@ -1,7 +1,8 @@
 defmodule ALF.Components.DeadEnd do
   use ALF.Components.Basic
 
-  defstruct name: nil,
+  defstruct type: :dead_end,
+            name: nil,
             pid: nil,
             pipe_module: nil,
             pipeline_module: nil,

@@ -1,7 +1,8 @@
 defmodule ALF.Components.GotoPoint do
   use ALF.Components.Basic
 
-  defstruct name: nil,
+  defstruct type: :goto_point,
+            name: nil,
             pid: nil,
             subscribe_to: [],
             subscribers: [],

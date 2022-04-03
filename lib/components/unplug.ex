@@ -1,7 +1,8 @@
 defmodule ALF.Components.Unplug do
   use ALF.Components.Basic
 
-  defstruct name: nil,
+  defstruct type: :unplug,
+            name: nil,
             module: nil,
             opts: [],
             pipe_module: nil,

@@ -1,7 +1,8 @@
 defmodule ALF.Components.Switch do
   use ALF.Components.Basic
 
-  defstruct name: nil,
+  defstruct type: :switch,
+            name: nil,
             pid: nil,
             module: nil,
             function: nil,

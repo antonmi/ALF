@@ -4,7 +4,8 @@ defmodule ALF.Components.Producer do
 
   import ALF.Components.Basic, only: [telemetry_enabled?: 0, telemetry_data: 2]
 
-  defstruct name: :producer,
+  defstruct type: :producer,
+            name: :producer,
             manager_name: nil,
             ips: [],
             pid: nil,

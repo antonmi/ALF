@@ -1,7 +1,8 @@
 defmodule ALF.Components.Plug do
   use ALF.Components.Basic
 
-  defstruct name: nil,
+  defstruct type: :plug,
+            name: nil,
             module: nil,
             opts: [],
             pipe_module: nil,

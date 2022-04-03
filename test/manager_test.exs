@@ -203,32 +203,14 @@ defmodule ALF.ManagerTest do
     end
   end
 
-  describe "graph_edges/1" do
+  describe "components/1" do
     setup do
-      :ok = Manager.start(GoToPipeline, :goto_pipeline_edges)
-      %{edges: Manager.graph_edges(:goto_pipeline_edges)}
+      Manager.start(SimplePipeline)
     end
 
-    test "check edges", %{edges: edges} do
-      assert Enum.member?(
-               edges,
-               {"ALF.ManagerTest.GoToPipeline-producer", "ALF.ManagerTest.GoToPipeline-point"}
-             )
-
-      assert Enum.member?(
-               edges,
-               {"ALF.ManagerTest.GoToPipeline-point", "ALF.ManagerTest.GoToPipeline-goto"}
-             )
-
-      assert Enum.member?(
-               edges,
-               {"ALF.ManagerTest.GoToPipeline-goto", "ALF.ManagerTest.GoToPipeline-consumer"}
-             )
-
-      assert Enum.member?(
-               edges,
-               {"ALF.ManagerTest.GoToPipeline-goto", "ALF.ManagerTest.GoToPipeline-point"}
-             )
+    test "get components module" do
+      components = Manager.components(SimplePipeline)
+      assert length(components) == 4
     end
   end
 end

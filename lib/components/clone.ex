@@ -1,7 +1,8 @@
 defmodule ALF.Components.Clone do
   use ALF.Components.Basic
 
-  defstruct name: nil,
+  defstruct type: :clone,
+            name: nil,
             pid: nil,
             to: [],
             subscribe_to: [],

@@ -1,7 +1,8 @@
 defmodule ALF.Components.Stage do
   use ALF.Components.Basic
 
-  defstruct name: nil,
+  defstruct type: :stage,
+            name: nil,
             count: 1,
             number: 0,
             pipe_module: nil,

@@ -1,7 +1,8 @@
 defmodule ALF.Components.Decomposer do
   use ALF.Components.Basic
 
-  defstruct name: nil,
+  defstruct type: :decomposer,
+            name: nil,
             pid: nil,
             module: nil,
             function: nil,

@@ -5,7 +5,8 @@ defmodule ALF.Components.Consumer do
 
   alias ALF.{ErrorIP, IP, Manager.Streamer}
 
-  defstruct name: :consumer,
+  defstruct type: :consumer,
+            name: :consumer,
             manager_name: nil,
             pid: nil,
             pipe_module: nil,

@@ -53,9 +53,9 @@ defmodule ALF.Introspection do
       raise "No such pipeline: #{pipeline}"
     end
 
-    # TODO introduce public function
     components =
-      ALF.Manager.__state__(pipeline).components
+      pipeline
+      |> ALF.Manager.components()
       |> Enum.map(&Map.from_struct/1)
 
     {:reply, components, state}
