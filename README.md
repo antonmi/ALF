@@ -410,8 +410,12 @@ Below there are several ALF-diagrams for the examples in [test/examples](https:/
 
 ### Bubble sort
 
-![alt text](images/bubble_sort.png "Bubble sort")
+![Bubble sort](images/bubble_sort.png "Bubble sort")
 
 ### Bubble sort with Switch
-![alt text](images/bubble_sort_with_switch.png "Bubble sort with Switch")
+![Bubble sort with Switch](images/bubble_sort_with_switch.png "Bubble sort with Switch")
+
+### Tic-tac-toe
+See [tictactoe repo](https://github.com/antonmi/tictactoe)
+![Tic-Tac-Toe](https://github.com/antonmi/tictactoe/tic-tac-toe.png)
 
