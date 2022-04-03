@@ -34,6 +34,14 @@ ALF is NOT about data-processing (although you can easily do it with ALF). It's 
 
 Just add `:alf` as dependency to your `mix.exs` file.
 
+```
+  defp deps do
+    [
+      {:alf, "~> 0.4"}
+    ]
+  end
+```
+
 ALF starts its own supervisor (`ALF.DynamicSupervisor`). All the pipelines and managers are started under the supervisor
 
 ## Quick start
@@ -78,7 +86,7 @@ It receives a stream or `Enumerable.t` and returns another stream where results 
 
 ```elixir
 inputs = [1,2,3]
-output_stream =  Manager.stream_to(inputs, Pipeline)
+output_stream =  Manager.stream_to(inputs, ThePipeline)
 Enum.to_list(output_stream) # it returns [1, 3, 5]
 ```
 
@@ -88,15 +96,15 @@ Internally ALF assigns these ids to every IP, and will return the results in the
 Use this function if you need a granular control of what your pipeline returns.
 ```elixir
 inputs = [{make_ref(), 1}, {:my_id, 2}, {self(), 3}]
-output_stream =  Manager.steam_with_ids_to(inputs, Pipeline)
+output_stream =  Manager.steam_with_ids_to(inputs, ThePipeline)
 Enum.to_list(output_stream) # it returns [{ref, 1}, {:my_id, 3}, {pid, 5}]
 ```
 
 Another way is to use `Manager.Client`. The `Client` has a simple `call(client_pid, event)` interface and return the result synchronously.
 ```elixir
 # you have to start the manager first
-Manager.start(Pipeline)
-{:ok, pid} = Manager.Client.start(Pipeline)
+Manager.start(ThePipeline)
+{:ok, pid} = Manager.Client.start(ThePipeline)
 Manager.Client.call(pid, 1) #it returns 2
 ```
 Under the hood, each client starts its own infinite stream to the manager.
@@ -108,9 +116,9 @@ The ALF pipeline can handle arbitrary amount of events streams in parallel.
 For example:
 
 ```elixir
- stream1 = Manager.stream_to(0..9, Pipeline)
- stream2 = Manager.stream_to(10..19, Pipeline)
- stream3 = Manager.stream_to(20..29, Pipeline)
+ stream1 = Manager.stream_to(0..9, ThePipeline)
+ stream2 = Manager.stream_to(10..19, ThePipeline)
+ stream3 = Manager.stream_to(20..29, ThePipeline)
 
  [result1, result2, result3] =
    [stream1, stream2, stream3]
