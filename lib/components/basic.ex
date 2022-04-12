@@ -41,7 +41,7 @@ defmodule ALF.Components.Basic do
     %{ip: nil, component: component_telemetry_data(state)}
   end
 
-  defp ip_telemetry_data(ip), do: Map.take(ip, [:event])
+  defp ip_telemetry_data(ip), do: Map.take(ip, [:event, :ref])
 
   defp component_telemetry_data(state) do
     Map.take(state, [:pid, :name, :number, :pipeline_module])
