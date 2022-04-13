@@ -7,8 +7,9 @@ defmodule ALF.TelemetryBroadcaster do
     end
   end
 
-  defstruct nodes: MapSet.new(),
-            pid: nil
+  defstruct remote_function: nil,
+            pid: nil,
+            components_with_timestamps: %{}
 
   def start_link([]) do
     GenServer.start_link(__MODULE__, %__MODULE__{}, name: __MODULE__)
@@ -25,29 +26,57 @@ defmodule ALF.TelemetryBroadcaster do
     {:noreply, state}
   end
 
-  @spec register_node(atom(), atom(), atom()) :: {atom(), atom(), atom()}
-  def register_node(name, module, function) do
-    GenServer.call(__MODULE__, {:register_node, {name, module, function}})
+  @spec register_remote_function(atom(), atom(), atom()) :: {atom(), atom(), atom()}
+  def register_remote_function(name, module, function, opts \\ %{}) do
+    GenServer.call(__MODULE__, {:register_remote_function, {name, module, function, opts}})
   end
 
-  def nodes(), do: GenServer.call(__MODULE__, :nodes)
+  def remote_function(), do: GenServer.call(__MODULE__, :remote_function)
 
-  def handle_call({:register_node, {name, module, function}}, _from, state) do
-    state = %{state | nodes: MapSet.put(state.nodes, {name, module, function})}
-    {:reply, {name, module, function}, state}
+  def handle_call(:remote_function, _from, state), do: {:reply, state.remote_function, state}
+
+  def handle_call({:register_remote_function, {name, module, function, opts}}, _from, state) do
+    state = %{state | remote_function: {name, module, function, opts}}
+    {:reply, {name, module, function, opts}, state}
   end
 
-  def handle_call(:nodes, _from, state) do
-    {:reply, state.nodes, state}
+  def handle_cast({:handle_event, [:alf, :component, _], _, _}, %{remote_function: nil} = state) do
+    {:noreply, state}
   end
 
   def handle_cast({:handle_event, [:alf, :component, type], measurements, metadata}, state) do
-    state.nodes
-    |> Enum.each(fn {name, module, function} ->
-      :rpc.call(name, module, function, [[:alf, :component, type], measurements, metadata])
-    end)
+    {name, module, function, opts} = state.remote_function
 
-    {:noreply, state}
+    if opts[:interval] do
+      component_pid = get_in(metadata, [:component, :pid])
+      timestamp = Map.get(state.components_with_timestamps, {component_pid, type}, false)
+      time_now = Time.utc_now()
+
+      if timestamp do
+        if Time.diff(time_now, timestamp, :millisecond) > opts[:interval] do
+          :rpc.call(name, module, function, [[:alf, :component, type], measurements, metadata])
+
+          new_components_with_timestamps =
+            Map.put(state.components_with_timestamps, {component_pid, type}, time_now)
+
+          new_state = %{state | components_with_timestamps: new_components_with_timestamps}
+          {:noreply, new_state}
+        else
+          {:noreply, state}
+        end
+      else
+        :rpc.call(name, module, function, [[:alf, :component, type], measurements, metadata])
+
+        new_components_with_timestamps =
+          Map.put(state.components_with_timestamps, {component_pid, type}, time_now)
+
+        new_state = %{state | components_with_timestamps: new_components_with_timestamps}
+        {:noreply, new_state}
+      end
+    else
+      :rpc.call(name, module, function, [[:alf, :component, type], measurements, metadata])
+      {:noreply, state}
+    end
   end
 
   defp do_attach_telemetry(pid) do

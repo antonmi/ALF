@@ -39,22 +39,35 @@ defmodule ALF.TelemetryBroadcasterTest do
     %{agent: agent}
   end
 
-  describe "add and get nodes" do
-    test "add node" do
-      TelemetryBroadcaster.register_node(:node1@localhost, Mod, :fun)
-      assert MapSet.member?(TelemetryBroadcaster.nodes(), {:node1@localhost, Mod, :fun})
+  describe "register_remote_function/4" do
+    test "register_remote_function" do
+      TelemetryBroadcaster.register_remote_function(:node1@localhost, Mod, :fun, %{interval: 100})
+
+      assert TelemetryBroadcaster.remote_function() ==
+               {:node1@localhost, Mod, :fun, %{interval: 100}}
     end
   end
 
   describe "broadcasting" do
     setup do
       Manager.start(SimplePipeline)
-      TelemetryBroadcaster.register_node(Node.self(), TelemetryHandler, :handle_event)
+
+      TelemetryBroadcaster.register_remote_function(
+        Node.self(),
+        TelemetryHandler,
+        :handle_event,
+        %{interval: 100}
+      )
+
       :ok
     end
 
     test "events", %{agent: agent} do
-      [%{agent: agent, number: 1}]
+      [
+        %{agent: agent, number: 1},
+        # no events because of interval
+        %{agent: agent, number: 2}
+      ]
       |> Manager.stream_to(SimplePipeline)
       |> Enum.to_list()
 
