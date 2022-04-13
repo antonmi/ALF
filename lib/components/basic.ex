@@ -53,7 +53,7 @@ defmodule ALF.Components.Basic do
     quote do
       use GenStage
 
-      alias ALF.{IP, ErrorIP, Manager.Streamer}
+      alias ALF.{IP, ErrorIP, Manager.Streamer, SourceCode}
 
       def __state__(pid) when is_pid(pid) do
         GenStage.call(pid, :__state__)
@@ -96,6 +96,14 @@ defmodule ALF.Components.Basic do
       def telemetry_enabled?, do: ALF.Components.Basic.telemetry_enabled?()
 
       def telemetry_data(ip, state), do: ALF.Components.Basic.telemetry_data(ip, state)
+
+      def read_source_code(module, :call) do
+        SourceCode.module_source(module)
+      end
+
+      def read_source_code(module, function) do
+        SourceCode.function_source(module, function)
+      end
 
       defp build_error_ip(ip, error, stacktrace, state) do
         %ErrorIP{

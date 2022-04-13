@@ -10,6 +10,7 @@ defmodule ALF.Components.Decomposer do
             subscribe_to: [],
             pipe_module: nil,
             pipeline_module: nil,
+            source_code: nil,
             subscribers: [],
             telemetry_enabled: false
 
@@ -26,6 +27,7 @@ defmodule ALF.Components.Decomposer do
       state
       | pid: self(),
         opts: init_opts(state.module, state.opts),
+        source_code: read_source_code(state.module, state.function),
         telemetry_enabled: telemetry_enabled?()
     }
 

@@ -22,6 +22,10 @@ defmodule ALF.SourceCodeTest do
     test "not found" do
       assert is_nil(SourceCode.module_source(NotFound))
     end
+
+    test "no source" do
+      assert is_nil(SourceCode.module_source(Module))
+    end
   end
 
   describe "function_source/2" do
@@ -36,6 +40,11 @@ defmodule ALF.SourceCodeTest do
     test "not found" do
       assert is_nil(SourceCode.function_source(NotFound, :not_found))
       assert is_nil(SourceCode.function_source(Foo, :not_found))
+    end
+
+    test "when second argument is a function" do
+      source = SourceCode.function_source(Foo, fn -> 1 + 1 end)
+      assert String.starts_with?(source, "#Function<")
     end
   end
 end

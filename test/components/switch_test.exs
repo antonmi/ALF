@@ -74,6 +74,11 @@ defmodule ALF.Components.SwitchTest do
       assert [] = TestConsumer.ips(consumer1_pid)
       assert [%IP{event: 1}] = TestConsumer.ips(consumer2_pid)
     end
+
+    test "set source_code", %{pid: pid} do
+      %{source_code: source_code} = Switch.__state__(pid)
+      assert String.starts_with?(source_code, "#Function")
+    end
   end
 
   describe "with function as atom" do
@@ -106,6 +111,11 @@ defmodule ALF.Components.SwitchTest do
       Process.sleep(5)
       assert [] = TestConsumer.ips(consumer1_pid)
       assert [%IP{event: 1}] = TestConsumer.ips(consumer2_pid)
+    end
+
+    test "set source_code", %{pid: pid} do
+      %{source_code: source_code} = Switch.__state__(pid)
+      assert String.starts_with?(source_code, "def(cond_function(event, opts))")
     end
   end
 end

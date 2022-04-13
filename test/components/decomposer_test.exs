@@ -136,5 +136,10 @@ defmodule ALF.Components.DecomposerTest do
                stream_ref: ^stream_ref
              } = original_ip
     end
+
+    test "set source_code", %{pid: pid} do
+      %{source_code: source_code} = Decomposer.__state__(pid)
+      assert String.starts_with?(source_code, "def(decomposer_function_tuple(")
+    end
   end
 end

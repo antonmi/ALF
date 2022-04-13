@@ -8,6 +8,7 @@ defmodule ALF.Components.Plug do
             pipe_module: nil,
             pipeline_module: nil,
             pid: nil,
+            source_code: nil,
             subscribe_to: [],
             subscribers: [],
             telemetry_enabled: false
@@ -21,6 +22,7 @@ defmodule ALF.Components.Plug do
       state
       | pid: self(),
         opts: init_opts(state.module, state.opts),
+        source_code: read_source_code(state.module, :plug),
         telemetry_enabled: telemetry_enabled?()
     }
 

@@ -1,7 +1,7 @@
 defmodule ALF.SourceCode do
   @moduledoc "Extracts source code"
 
-  @spec module_source(atom()) :: String.t | nil
+  @spec module_source(atom()) :: String.t() | nil
   def module_source(module) when is_atom(module) do
     case module_ast(module) do
       nil ->
@@ -12,7 +12,7 @@ defmodule ALF.SourceCode do
     end
   end
 
-  @spec function_source(atom(), atom()) :: String.t | nil
+  @spec function_source(atom(), atom() | (... -> any())) :: String.t() | nil
   def function_source(module, function) when is_atom(module) and is_atom(function) do
     case function_asts(module, function) do
       [] ->
@@ -23,6 +23,10 @@ defmodule ALF.SourceCode do
         |> Enum.map(&Macro.to_string(&1))
         |> Enum.join("\n")
     end
+  end
+
+  def function_source(module, function) when is_atom(module) and is_function(function) do
+    inspect(function)
   end
 
   defp function_asts(module, function) do
@@ -65,8 +69,14 @@ defmodule ALF.SourceCode do
 
   defp read_ast_from_source_file(module) do
     module.module_info(:compile)[:source]
-    |> File.read!()
-    |> Code.string_to_quoted!()
+    |> File.read()
+    |> case do
+      {:ok, content} ->
+        Code.string_to_quoted!(content)
+
+      {:error, :enoent} ->
+        ""
+    end
   end
 
   defp split_module_to_aliases(module) do
@@ -83,14 +93,14 @@ defmodule ALF.SourceCode do
   end
 
   defp traverse_modules(
-        {:defmodule, _,
-         [
-           {:__aliases__, _, aliases},
-           [do: tree]
-         ]} = subtree,
-        modules_acc,
-        aliases_before
-      ) do
+         {:defmodule, _,
+          [
+            {:__aliases__, _, aliases},
+            [do: tree]
+          ]} = subtree,
+         modules_acc,
+         aliases_before
+       ) do
     modules_acc
     |> Map.put(aliases_before ++ aliases, subtree)
     |> Map.merge(traverse_modules(tree, %{}, aliases_before ++ aliases))

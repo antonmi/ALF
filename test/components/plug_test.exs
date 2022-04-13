@@ -65,14 +65,14 @@ defmodule ALF.Components.PlugTest do
     {:ok, consumer_pid} =
       TestConsumer.start_link(%TestConsumer{subscribe_to: [{unplug_pid, max_demand: 1}]})
 
-    consumer_pid
+    {consumer_pid, plug_pid}
   end
 
   describe "event transformation" do
     setup %{producer_pid: producer_pid} do
-      consumer_pid = setup_pipeline(producer_pid)
+      {consumer_pid, plug_pid} = setup_pipeline(producer_pid)
 
-      %{consumer_pid: consumer_pid}
+      %{consumer_pid: consumer_pid, plug_pid: plug_pid}
     end
 
     test "test plug/unplug with map", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
@@ -101,6 +101,11 @@ defmodule ALF.Components.PlugTest do
                {{:test_stage, 0}, 2},
                {ALF.Components.PlugTest.PlugAdapter, %__MODULE__{number: 1, other: :events}}
              ]
+    end
+
+    test "set source_code", %{plug_pid: plug_pid} do
+      %{source_code: source_code} = Plug.__state__(plug_pid)
+      assert String.starts_with?(source_code, "def(plug(event, opts))")
     end
   end
 end

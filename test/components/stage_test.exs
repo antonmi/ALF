@@ -53,4 +53,9 @@ defmodule ALF.Components.StageTest do
     assert ip.event == "bazfoobar"
     assert ip.history == [{{:test_stage, 0}, "baz"}]
   end
+
+  test "set source_code", %{pid: pid} do
+    %{source_code: source_code} = Stage.__state__(pid)
+    assert String.starts_with?(source_code, "defmodule(Component) do")
+  end
 end

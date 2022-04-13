@@ -52,7 +52,7 @@ defmodule ALF.Components.GotoTest do
     {:ok, consumer_pid} =
       TestConsumer.start_link(%TestConsumer{subscribe_to: [{goto_pid, max_demand: 1}]})
 
-    consumer_pid
+    {consumer_pid, goto_pid}
   end
 
   def do_run_test(producer_pid, consumer_pid) do
@@ -74,13 +74,18 @@ defmodule ALF.Components.GotoTest do
 
   describe "with function as atom" do
     setup %{producer_pid: producer_pid} do
-      consumer_pid = setup_pipeline(producer_pid, :if_function)
+      {consumer_pid, goto_pid} = setup_pipeline(producer_pid, :if_function)
 
-      %{consumer_pid: consumer_pid}
+      %{consumer_pid: consumer_pid, goto_pid: goto_pid}
     end
 
     test "test goto", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
       do_run_test(producer_pid, consumer_pid)
+    end
+
+    test "set source_code", %{goto_pid: goto_pid} do
+      %{source_code: source_code} = Goto.__state__(goto_pid)
+      assert source_code == "def(if_function(event, opts)) do\n  event < opts[:max]\nend"
     end
   end
 end
