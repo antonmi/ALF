@@ -41,10 +41,10 @@ defmodule ALF.TelemetryBroadcasterTest do
 
   describe "register_remote_function/4" do
     test "register_remote_function" do
-      TelemetryBroadcaster.register_remote_function(:node1@localhost, Mod, :fun, %{interval: 100})
+      TelemetryBroadcaster.register_remote_function(:node1@localhost, Mod, :fun, interval: 100)
 
       assert TelemetryBroadcaster.remote_function() ==
-               {:node1@localhost, Mod, :fun, %{interval: 100}}
+               {:node1@localhost, Mod, :fun, interval: 100}
     end
   end
 
@@ -56,7 +56,7 @@ defmodule ALF.TelemetryBroadcasterTest do
         Node.self(),
         TelemetryHandler,
         :handle_event,
-        %{interval: 100}
+        interval: 100
       )
 
       :ok

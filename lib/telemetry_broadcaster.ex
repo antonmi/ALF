@@ -9,7 +9,9 @@ defmodule ALF.TelemetryBroadcaster do
 
   defstruct remote_function: nil,
             pid: nil,
-            components_with_timestamps: %{}
+            memo: %{}
+
+  @allowed_opts [:interval]
 
   def start_link([]) do
     GenServer.start_link(__MODULE__, %__MODULE__{}, name: __MODULE__)
@@ -26,8 +28,16 @@ defmodule ALF.TelemetryBroadcaster do
     {:noreply, state}
   end
 
-  @spec register_remote_function(atom(), atom(), atom()) :: {atom(), atom(), atom()}
-  def register_remote_function(name, module, function, opts \\ %{}) do
+  @spec register_remote_function(atom(), atom(), atom(), list()) :: {atom(), atom(), atom()}
+  def register_remote_function(name, module, function, opts \\ [interval: nil])
+      when is_atom(name) and is_atom(module) and is_atom(function) and is_list(opts) do
+    wrong_options = Keyword.keys(opts) -- @allowed_opts
+
+    if Enum.any?(wrong_options) do
+      raise "Wrong options for TelemetryBroadcaster: #{inspect(wrong_options)}. " <>
+              "Available options are #{inspect(@allowed_opts)}"
+    end
+
     GenServer.call(__MODULE__, {:register_remote_function, {name, module, function, opts}})
   end
 
@@ -48,35 +58,59 @@ defmodule ALF.TelemetryBroadcaster do
     {name, module, function, opts} = state.remote_function
 
     if opts[:interval] do
-      component_pid = get_in(metadata, [:component, :pid])
-      timestamp = Map.get(state.components_with_timestamps, {component_pid, type}, false)
+      do_handle_cast_with_interval(
+        {type, measurements, metadata},
+        {name, module, function},
+        opts[:interval],
+        state
+      )
+    else
+      :rpc.call(name, module, function, [[:alf, :component, type], measurements, metadata])
+      {:noreply, state}
+    end
+  end
+
+  defp do_handle_cast_with_interval(
+         {type, measurements, metadata},
+         {name, module, function},
+         interval,
+         state
+       ) do
+    {component_name, pipeline, ip_ref} = fetch_data_from_meta(metadata)
+    {timestamp, producer_ip_ref} = Map.get(state.memo, pipeline, {false, false})
+
+    if component_name == :producer and type == :start do
       time_now = Time.utc_now()
 
       if timestamp do
-        if Time.diff(time_now, timestamp, :millisecond) > opts[:interval] do
+        if Time.diff(time_now, timestamp, :millisecond) > interval do
           :rpc.call(name, module, function, [[:alf, :component, type], measurements, metadata])
-
-          new_components_with_timestamps =
-            Map.put(state.components_with_timestamps, {component_pid, type}, time_now)
-
-          new_state = %{state | components_with_timestamps: new_components_with_timestamps}
-          {:noreply, new_state}
+          new_memo = Map.put(state.memo, pipeline, {time_now, ip_ref})
+          {:noreply, %{state | memo: new_memo}}
         else
           {:noreply, state}
         end
       else
         :rpc.call(name, module, function, [[:alf, :component, type], measurements, metadata])
-
-        new_components_with_timestamps =
-          Map.put(state.components_with_timestamps, {component_pid, type}, time_now)
-
-        new_state = %{state | components_with_timestamps: new_components_with_timestamps}
-        {:noreply, new_state}
+        new_memo = Map.put(state.memo, pipeline, {time_now, ip_ref})
+        {:noreply, %{state | memo: new_memo}}
       end
     else
-      :rpc.call(name, module, function, [[:alf, :component, type], measurements, metadata])
-      {:noreply, state}
+      if ip_ref == producer_ip_ref do
+        :rpc.call(name, module, function, [[:alf, :component, type], measurements, metadata])
+        {:noreply, state}
+      else
+        {:noreply, state}
+      end
     end
+  end
+
+  defp fetch_data_from_meta(metadata) do
+    {
+      get_in(metadata, [:component, :name]),
+      get_in(metadata, [:component, :pipeline_module]),
+      get_in(metadata, [:ip, :ref])
+    }
   end
 
   defp do_attach_telemetry(pid) do

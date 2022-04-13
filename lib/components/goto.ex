@@ -70,7 +70,7 @@ defmodule ALF.Components.Goto do
             {result, telemetry_data(ip, state)}
 
           {:noreply, [], state} = result ->
-            {result, telemetry_data(nil, state)}
+            {result, telemetry_data(ip, state)}
         end
       end
     )
