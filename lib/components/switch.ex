@@ -93,6 +93,9 @@ defmodule ALF.Components.Switch do
   rescue
     error ->
       {:error, error, __STACKTRACE__}
+  catch
+    kind, value ->
+      {:error, kind, value}
   end
 
   defp call_function(module, function, event, opts)
@@ -101,5 +104,8 @@ defmodule ALF.Components.Switch do
   rescue
     error ->
       {:error, error, __STACKTRACE__}
+  catch
+    kind, value ->
+      {:error, kind, value}
   end
 end

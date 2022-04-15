@@ -138,5 +138,8 @@ defmodule ALF.Components.Recomposer do
   rescue
     error ->
       {:error, error, __STACKTRACE__}
+  catch
+    kind, value ->
+      {:error, kind, value}
   end
 end

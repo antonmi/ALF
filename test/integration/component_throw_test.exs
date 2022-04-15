@@ -1,51 +1,7 @@
-defmodule ALF.ComponentErrorTest do
+defmodule ALF.ComponentThrowTest do
   use ExUnit.Case, async: false
 
   alias ALF.{Manager, ErrorIP, IP}
-
-  describe "Error in stage" do
-    defmodule ErrorInStagePipeline do
-      use ALF.DSL
-
-      @components [
-        stage(:add_one),
-        stage(:mult_two)
-      ]
-
-      def add_one(event, _) do
-        if event == 1 do
-          raise("Error in :add_one")
-        else
-          event + 1
-        end
-      end
-
-      def mult_two(event, _), do: event * 2
-    end
-
-    setup do
-      Manager.start(ErrorInStagePipeline)
-    end
-
-    test "returns error immediately (skips mult_two)" do
-      results =
-        [1, 2, 3]
-        |> Manager.stream_to(ErrorInStagePipeline)
-        |> Enum.to_list()
-
-      assert [
-               %ErrorIP{
-                 component: %ALF.Components.Stage{function: :add_one},
-                 ip: %IP{} = ip,
-                 error: %RuntimeError{message: "Error in :add_one"}
-               },
-               6,
-               8
-             ] = results
-
-      assert [{{:add_one, 0}, _event}] = ip.history
-    end
-  end
 
   describe "throw in stage" do
     defmodule ThrowInStagePipeline do
@@ -92,8 +48,8 @@ defmodule ALF.ComponentErrorTest do
     end
   end
 
-  describe "Error in stage before consumer" do
-    defmodule ErrorInStageMultTwoPipeline do
+  describe "exit in stage" do
+    defmodule ExitInStagePipeline do
       use ALF.DSL
 
       @components [
@@ -101,43 +57,44 @@ defmodule ALF.ComponentErrorTest do
         stage(:mult_two)
       ]
 
-      def add_one(event, _), do: event + 1
-
-      def mult_two(event, _) do
-        if event == 2 do
-          raise("Error in :mult_two")
+      def add_one(event, _) do
+        if event == 1 do
+          exit("exit in :add_one")
         else
-          event
+          event + 1
         end
       end
+
+      def mult_two(event, _), do: event * 2
     end
 
     setup do
-      Manager.start(ErrorInStageMultTwoPipeline)
+      Manager.start(ExitInStagePipeline)
     end
 
-    test "returns error" do
+    test "returns error immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(ErrorInStageMultTwoPipeline, %{return_ips: true})
+        |> Manager.stream_to(ExitInStagePipeline)
         |> Enum.to_list()
 
       assert [
                %ErrorIP{
-                 component: %ALF.Components.Stage{function: :mult_two},
+                 component: %ALF.Components.Stage{function: :add_one},
                  ip: %IP{} = ip,
-                 error: %RuntimeError{message: "Error in :mult_two"}
+                 error: :exit,
+                 stacktrace: "exit in :add_one"
                },
-               %IP{},
-               %IP{}
+               6,
+               8
              ] = results
 
-      assert [{{:mult_two, 0}, _}, {{:add_one, 0}, _}] = ip.history
+      assert [{{:add_one, 0}, _event}] = ip.history
     end
   end
 
-  describe "error in switch function" do
-    defmodule ErrorInSwitchPipeline do
+  describe "throw in switch function" do
+    defmodule ThrowInSwitchPipeline do
       use ALF.DSL
 
       @components [
@@ -151,7 +108,7 @@ defmodule ALF.ComponentErrorTest do
       ]
 
       def switch_cond(_event, _) do
-        raise "Error in :switch"
+        throw("throw in :switch")
       end
 
       def add_one(event, _) do
@@ -166,20 +123,21 @@ defmodule ALF.ComponentErrorTest do
     end
 
     setup do
-      Manager.start(ErrorInSwitchPipeline)
+      Manager.start(ThrowInSwitchPipeline)
     end
 
     test "error results" do
       results =
         [1, 2]
-        |> Manager.stream_to(ErrorInSwitchPipeline, %{return_ips: true})
+        |> Manager.stream_to(ThrowInSwitchPipeline, %{return_ips: true})
         |> Enum.to_list()
 
       assert [
                %ErrorIP{
                  component: %ALF.Components.Switch{name: :switch_cond},
                  ip: %IP{} = ip,
-                 error: %RuntimeError{message: "Error in :switch"}
+                 error: :throw,
+                 stacktrace: "throw in :switch"
                },
                %ErrorIP{}
              ] = results
@@ -189,7 +147,7 @@ defmodule ALF.ComponentErrorTest do
   end
 
   describe "error in goto function" do
-    defmodule ErrorInGotoPipeline do
+    defmodule ThrowInGotoPipeline do
       use ALF.DSL
 
       @components [
@@ -199,27 +157,28 @@ defmodule ALF.ComponentErrorTest do
       ]
 
       def goto_function(_event, _) do
-        raise "Error in :goto"
+        throw("throw in :goto")
       end
 
       def add_one(event, _), do: event + 1
     end
 
     setup do
-      Manager.start(ErrorInGotoPipeline)
+      Manager.start(ThrowInGotoPipeline)
     end
 
     test "error results" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(ErrorInGotoPipeline)
+        |> Manager.stream_to(ThrowInGotoPipeline)
         |> Enum.to_list()
 
       assert [
                %ErrorIP{
                  component: %ALF.Components.Goto{name: :goto_function},
                  ip: %IP{} = ip,
-                 error: %RuntimeError{message: "Error in :goto"}
+                 error: :throw,
+                 stacktrace: "throw in :goto"
                },
                %ErrorIP{},
                %ErrorIP{}
