@@ -80,6 +80,14 @@ defmodule ALF.Manager do
     GenServer.call(name, :components)
   end
 
+  def add_component(name, stage_set_ref) do
+    GenServer.call(name, {:add_component, stage_set_ref})
+  end
+
+  def remove_component(name, stage_set_ref) do
+    GenServer.call(name, {:remove_component, stage_set_ref})
+  end
+
   def terminate(:normal, state) do
     Supervisor.stop(state.pipeline_sup_pid)
   end
@@ -129,14 +137,13 @@ defmodule ALF.Manager do
   end
 
   defp save_stages_states(%__MODULE__{} = state) do
+    components = [state.pipeline.producer | Pipeline.stages_to_list(state.pipeline.components)] ++ [state.pipeline.consumer]
     components =
-      state.pipeline.components
-      |> Pipeline.stages_to_list()
+      components
       |> Enum.map(fn stage ->
         stage.__struct__.__state__(stage.pid)
       end)
 
-    components = [state.pipeline.producer | components] ++ [state.pipeline.consumer]
     %{state | components: components}
   end
 
@@ -194,6 +201,115 @@ defmodule ALF.Manager do
 
   def handle_call(:components, _from, state) do
     {:reply, state.components, state}
+  end
+
+  def handle_call({:add_component, stage_set_ref}, _from, state) do
+    existing_workers = Enum.filter(state.components, fn
+      %ALF.Components.Stage{} = stage ->
+        stage.stage_set_ref == stage_set_ref
+      _other ->
+        false
+    end)
+    new_stage = Builder.add_stage_worker(state.pipeline_sup_pid, existing_workers)
+
+    stages_to_subscribe_pids = Enum.map(new_stage.subscribers, fn{pid, _opts} -> pid end)
+
+    new_components =
+      state.components
+      |> Enum.reduce([], fn(component, acc) ->
+        cond do
+          Enum.member?(stages_to_subscribe_pids, component.pid) ->
+            GenStage.sync_subscribe(component.pid, to: new_stage.pid, max_demand: 1, cancel: :transient)
+            new_subscribe_to = [{new_stage.pid, max_demand: 1, cancel: :transient} | component.subscribe_to]
+            component = %{component | subscribe_to: new_subscribe_to}
+            [component | acc]
+          component.type == :stage and (component.stage_set_ref == new_stage.stage_set_ref) ->
+            component = %{component | count: component.count + 1}
+            if component.number == new_stage.number - 1 do
+              [new_stage | [component | acc]]
+            else
+              [component | acc]
+            end
+          true ->
+            [component | acc]
+        end
+      end)
+      |> Enum.reverse
+
+    {:reply, new_stage, %{state | components: new_components}}
+  end
+
+  def handle_call({:remove_component, stage_set_ref}, _from, state) do
+    existing_workers = Enum.filter(state.components, fn
+      %ALF.Components.Stage{} = stage ->
+        stage.stage_set_ref == stage_set_ref
+      _other ->
+        false
+    end)
+
+    if length(existing_workers) > 0 do
+      stage_to_delete = Enum.max_by(existing_workers, &(&1.number))
+
+      subscribed_tos =
+        state.components
+        |> Enum.reduce([], fn(component, acc) ->
+          subscribed = Enum.find(component.subscribers, fn {pid, ref} ->
+            pid == stage_to_delete.pid
+          end)
+          if subscribed do
+            [subscribed | acc]
+          else
+            acc
+          end
+        end)
+
+      IO.inspect(stage_to_delete.pid)
+
+      Enum.map(subscribed_tos, fn(subscription) ->
+        IO.inspect(subscription)
+        :ok = GenStage.cancel(subscription, :shutdown)
+      end)
+
+      stage_to_delete.subscribers
+      |> Enum.map(fn(subscription) ->
+        IO.inspect(subscription)
+        :ok = GenStage.cancel(subscription, :shutdown)
+      end)
+
+      :ok = Builder.delete_stage_worker(state.pipeline_sup_pid, stage_to_delete)
+
+#      new_components =
+#        state.components
+#        |> Enum.reduce([], fn(component, acc) ->
+#          cond do
+#            Enum.member?(subscribers_pids, component.pid) ->
+#
+#              new_subscribe_to = [{new_stage.pid, max_demand: 1} | component.subscribe_to]
+#              component = %{component | subscribe_to: new_subscribe_to}
+#              [component | acc]
+#            component.type == :stage and (component.stage_set_ref == new_stage.stage_set_ref) ->
+#              component = %{component | count: component.count + 1}
+#              if component.number == new_stage.number - 1 do
+#                [new_stage | [component | acc]]
+#              else
+#                [component | acc]
+#              end
+#            true ->
+#              [component | acc]
+#          end
+#        end)
+#        |> Enum.reverse
+
+
+#      deleted_stage = Builder.delete_stage_worker(state.pipeline_sup_pid, existing_workers)
+
+      {:reply, "deleted_stage", state}
+    else
+      {:reply, {:error, :only_one_left}, state}
+    end
+
+
+
   end
 
   def handle_cast({:add_to_registry, ips, stream_ref}, state) do

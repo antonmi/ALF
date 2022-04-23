@@ -5,6 +5,7 @@ defmodule ALF.Components.Stage do
             name: nil,
             count: 1,
             number: 0,
+            stage_set_ref: nil,
             pipe_module: nil,
             pipeline_module: nil,
             module: nil,

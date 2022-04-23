@@ -1,8 +1,6 @@
 defmodule ALF.Components.Producer do
-  use GenStage
+  use ALF.Components.Basic
   alias ALF.Manager.Streamer
-
-  import ALF.Components.Basic, only: [telemetry_enabled?: 0, telemetry_data: 2]
 
   defstruct type: :producer,
             name: :producer,
@@ -12,6 +10,7 @@ defmodule ALF.Components.Producer do
             pipe_module: nil,
             pipeline_module: nil,
             subscribe_to: [],
+            subscribers: [],
             telemetry_enabled: false
 
   def start_link(%__MODULE__{} = state) do
@@ -80,6 +79,11 @@ defmodule ALF.Components.Producer do
 
   def handle_cast([], state) do
     {:noreply, [], state}
+  end
+
+  def handle_subscribe(:consumer, subscription_options, from, state) do
+    subscribers = [from | state.subscribers]
+    {:automatic, %{state | subscribers: subscribers}}
   end
 
   defp do_handle_cast([new_ip | new_ips], ips, manager_name, state) do

@@ -1,7 +1,5 @@
 defmodule ALF.Components.Consumer do
-  use GenStage
-
-  import ALF.Components.Basic, only: [telemetry_enabled?: 0, telemetry_data: 2]
+  use ALF.Components.Basic
 
   alias ALF.{ErrorIP, IP, Manager.Streamer}
 
@@ -11,6 +9,7 @@ defmodule ALF.Components.Consumer do
             pid: nil,
             pipe_module: nil,
             subscribe_to: [],
+            subscribers: [],
             pipeline_module: nil,
             telemetry_enabled: false
 

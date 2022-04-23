@@ -2,6 +2,7 @@ defmodule ALF.Builder do
   alias ALF.Pipeline
 
   alias ALF.Components.{
+
     Producer,
     Stage,
     Goto,
@@ -25,6 +26,19 @@ defmodule ALF.Builder do
     {producer, consumer} = set_modules({producer, consumer}, last_stages)
     pipeline = %Pipeline{producer: producer, consumer: consumer, components: final_stages}
     {:ok, pipeline}
+  end
+
+  def add_stage_worker(supervisor_pid, [%Stage{} = existing_stage | _] = existing_stages) do
+    stage = %{existing_stage |
+      number: length(existing_stages),
+      count: length(existing_stages) + 1
+    }
+    {:ok, stage_pid} = DynamicSupervisor.start_child(supervisor_pid, {stage.__struct__, stage})
+    %{stage | pid: stage_pid}
+  end
+
+  def delete_stage_worker(supervisor_pid, stage) do
+    DynamicSupervisor.terminate_child(supervisor_pid, stage.pid)
   end
 
   defp start_producer(supervisor_pid, manager_name, pipeline_module) do
@@ -71,9 +85,10 @@ defmodule ALF.Builder do
     |> Enum.reduce({producers, final_stages}, fn stage_spec, {prev_stages, stages} ->
       case stage_spec do
         %Stage{count: count} = stage ->
+          stage_set_ref = make_ref()
           new_stages =
             Enum.map(0..(count - 1), fn number ->
-              start_stage(%{stage | number: number}, supervisor_pid, prev_stages)
+              start_stage(%{stage | stage_set_ref: stage_set_ref, number: number}, supervisor_pid, prev_stages)
             end)
 
           {new_stages, stages ++ new_stages}
@@ -149,10 +164,10 @@ defmodule ALF.Builder do
     Enum.map(stages, fn stage ->
       case stage do
         {stage, partition: key} ->
-          {stage.pid, max_demand: 1, partition: key}
+          {stage.pid, max_demand: 1, cancel: :transient, partition: key}
 
         stage ->
-          {stage.pid, max_demand: 1}
+          {stage.pid, max_demand: 1, cancel: :transient}
       end
     end)
   end
