@@ -3,8 +3,8 @@ defmodule ALF.Examples.AddMultMinus.Pipeline do
 
   @components [
     stage(:add_one),
-    stage(:mult_by_two, count: 2),
-    stage(:minus_three, count: 2)
+    stage(:mult_by_two),
+    stage(:minus_three)
   ]
 
   def add_one(event, _), do: event + 1
@@ -21,31 +21,21 @@ defmodule ALF.Examples.AddMultMinusTest do
   setup do: Manager.start(Pipeline)
 
   test "several inputs" do
-    components = Manager.components(Pipeline)
-    component = Enum.find(components, &(&1.name == :mult_by_two))
-    stage_set_ref = component.stage_set_ref
-    Manager.add_component(Pipeline, stage_set_ref)
+    results =
+      [1, 2, 3]
+      |> Manager.stream_to(Pipeline)
+      |> Enum.to_list()
 
-#    results =
-#      [1, 2, 3]
-#      |> Manager.stream_to(Pipeline)
-#      |> Enum.to_list()
-#
-#    assert results == [1, 3, 5]
+    assert results == [1, 3, 5]
   end
 
   test "several inputs2" do
-    components = Manager.components(Pipeline)
-    component = Enum.find(components, &(&1.name == :mult_by_two))
-    stage_set_ref = component.stage_set_ref
-    Manager.remove_component(Pipeline, stage_set_ref)
+    results =
+      [1, 2, 3]
+      |> Manager.stream_to(Pipeline)
+      |> Enum.to_list()
 
-    #    results =
-    #      [1, 2, 3]
-    #      |> Manager.stream_to(Pipeline)
-    #      |> Enum.to_list()
-    #
-    #    assert results == [1, 3, 5]
+    assert results == [1, 3, 5]
   end
 
   test "several streams of inputs" do
