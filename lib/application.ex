@@ -7,7 +7,8 @@ defmodule ALF.Application do
     children = [
       {DynamicSupervisor, strategy: :one_for_one, name: ALF.DynamicSupervisor},
       {ALF.Introspection, []},
-      {ALF.TelemetryBroadcaster, []}
+      {ALF.TelemetryBroadcaster, []},
+      {ALF.TelemetryStats, []}
     ]
 
     opts = [name: ALF.Supervisor, strategy: :one_for_one]
