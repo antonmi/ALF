@@ -1,6 +1,7 @@
 defmodule ALF.ManagerTest do
   use ExUnit.Case, async: false
 
+  import ExUnit.CaptureLog
   alias ALF.{IP, Manager}
 
   defmodule SimplePipeline do
@@ -22,6 +23,10 @@ defmodule ALF.ManagerTest do
       goto_point(:point),
       goto(:goto, to: :point)
     ]
+  end
+
+  setup do
+    on_exit(fn -> Manager.stop(SimplePipeline) end)
   end
 
   describe "start-up actions" do
@@ -55,17 +60,17 @@ defmodule ALF.ManagerTest do
       assert is_pid(producer.pid)
 
       assert add.name == :add_one
-      assert add.subscribe_to == [{producer.pid, [max_demand: 1]}]
+      assert add.subscribe_to == [{producer.pid, [max_demand: 1, cancel: :transient]}]
       mult_pid = mult.pid
       assert [{^mult_pid, _ref}] = add.subscribers
 
       assert mult.name == :mult_two
-      assert mult.subscribe_to == [{add.pid, [max_demand: 1]}]
+      assert mult.subscribe_to == [{add.pid, [max_demand: 1, cancel: :transient]}]
       consumer_pid = consumer.pid
       assert [{^consumer_pid, _ref}] = mult.subscribers
 
       assert consumer.name == :consumer
-      assert consumer.subscribe_to == [{mult.pid, [max_demand: 1]}]
+      assert consumer.subscribe_to == [{mult.pid, [max_demand: 1, cancel: :transient]}]
     end
   end
 
@@ -211,6 +216,231 @@ defmodule ALF.ManagerTest do
     test "get components module" do
       components = Manager.components(SimplePipeline)
       assert length(components) == 4
+    end
+  end
+
+  describe "add_component" do
+    setup do
+      Manager.start(SimplePipeline)
+      %{components: Manager.components(SimplePipeline)}
+    end
+
+    test "add_component to add_one and then to mult_two", %{components: init_components} do
+      component = Enum.find(init_components, &(&1.name == :add_one))
+      Manager.add_component(SimplePipeline, component.stage_set_ref)
+
+      components = Manager.components(SimplePipeline)
+
+      producer = Enum.find(components, &(&1.name == :producer))
+      [add_one1, add_one2] = Enum.filter(components, &(&1.name == :add_one))
+
+      subscriber_pids = Enum.map(producer.subscribers, fn {pid, _ref} -> pid end)
+      assert Enum.count(producer.subscribers) == 2
+      assert Enum.member?(subscriber_pids, add_one1.pid)
+      assert Enum.member?(subscriber_pids, add_one2.pid)
+
+      assert add_one1.subscribe_to == [{producer.pid, [max_demand: 1, cancel: :transient]}]
+      assert add_one2.subscribe_to == [{producer.pid, [max_demand: 1, cancel: :transient]}]
+
+      mult_two_component = Enum.find(components, &(&1.name == :mult_two))
+
+      assert Enum.count(mult_two_component.subscribe_to) == 2
+
+      assert Enum.member?(
+               mult_two_component.subscribe_to,
+               {add_one1.pid, [max_demand: 1, cancel: :transient]}
+             )
+
+      assert Enum.member?(
+               mult_two_component.subscribe_to,
+               {add_one2.pid, [max_demand: 1, cancel: :transient]}
+             )
+
+      assert add_one1.count == 2
+      assert add_one2.count == 2
+      assert add_one1.stage_set_ref == add_one2.stage_set_ref
+      assert abs(add_one1.number - add_one2.number) == 1
+
+      #      # Add to mult_two
+      Manager.add_component(SimplePipeline, mult_two_component.stage_set_ref)
+      components = Manager.components(SimplePipeline)
+
+      [add_one1, add_one2] = Enum.filter(components, &(&1.name == :add_one))
+      [mult_two1, mult_two2] = Enum.filter(components, &(&1.name == :mult_two))
+      consumer = Enum.find(components, &(&1.name == :consumer))
+
+      subscriber_pids = Enum.map(add_one1.subscribers, fn {pid, _ref} -> pid end)
+      assert Enum.count(subscriber_pids) == 2
+      assert Enum.member?(subscriber_pids, mult_two1.pid)
+      assert Enum.member?(subscriber_pids, mult_two1.pid)
+
+      subscriber_pids = Enum.map(add_one2.subscribers, fn {pid, _ref} -> pid end)
+      assert Enum.count(subscriber_pids) == 2
+      assert Enum.member?(subscriber_pids, mult_two1.pid)
+      assert Enum.member?(subscriber_pids, mult_two1.pid)
+
+      assert add_one1.count == 2
+      assert add_one2.count == 2
+      assert abs(add_one1.number - add_one2.number) == 1
+
+      assert Enum.member?(
+               mult_two1.subscribe_to,
+               {add_one1.pid, [max_demand: 1, cancel: :transient]}
+             )
+
+      assert Enum.member?(
+               mult_two1.subscribe_to,
+               {add_one2.pid, [max_demand: 1, cancel: :transient]}
+             )
+
+      assert Enum.member?(
+               mult_two2.subscribe_to,
+               {add_one1.pid, [max_demand: 1, cancel: :transient]}
+             )
+
+      assert Enum.member?(
+               mult_two2.subscribe_to,
+               {add_one2.pid, [max_demand: 1, cancel: :transient]}
+             )
+
+      assert mult_two1.count == 2
+      assert mult_two2.count == 2
+      assert abs(mult_two1.number - mult_two2.number) == 1
+
+      consumer_pid = consumer.pid
+      assert [{^consumer_pid, _ref}] = mult_two1.subscribers
+      assert [{^consumer_pid, _ref}] = mult_two2.subscribers
+
+      assert Enum.member?(
+               consumer.subscribe_to,
+               {mult_two1.pid, [max_demand: 1, cancel: :transient]}
+             )
+
+      assert Enum.member?(
+               consumer.subscribe_to,
+               {mult_two2.pid, [max_demand: 1, cancel: :transient]}
+             )
+    end
+
+    test "if components states are identical", %{components: init_components} do
+      component = Enum.find(init_components, &(&1.name == :add_one))
+      Manager.add_component(SimplePipeline, component.stage_set_ref)
+
+      SimplePipeline
+      |> Manager.components()
+      |> Enum.each(fn component ->
+        assert component == component.__struct__.__state__(component.pid)
+      end)
+
+      component = Enum.find(Manager.components(SimplePipeline), &(&1.name == :mult_two))
+      Manager.add_component(SimplePipeline, component.stage_set_ref)
+
+      SimplePipeline
+      |> Manager.components()
+      |> Enum.each(fn component ->
+        assert component == component.__struct__.__state__(component.pid)
+      end)
+    end
+  end
+
+  describe "remove_component" do
+    setup do
+      Manager.start(SimplePipeline)
+      init_components = Manager.components(SimplePipeline)
+      component = Enum.find(init_components, &(&1.name == :add_one))
+      Manager.add_component(SimplePipeline, component.stage_set_ref)
+
+      component = Enum.find(Manager.components(SimplePipeline), &(&1.name == :mult_two))
+      Manager.add_component(SimplePipeline, component.stage_set_ref)
+
+      %{components: Manager.components(SimplePipeline)}
+    end
+
+    test "remove add_one and then to mult_two", %{components: init_components} do
+      component = Enum.find(init_components, &(&1.name == :add_one))
+      Manager.remove_component(SimplePipeline, component.stage_set_ref)
+
+      components = Manager.components(SimplePipeline)
+
+      producer = Enum.find(components, &(&1.name == :producer))
+      [add_one] = Enum.filter(components, &(&1.name == :add_one))
+      [mult_two1, mult_two2] = Enum.filter(components, &(&1.name == :mult_two))
+
+      add_one_pid = add_one.pid
+      assert [{^add_one_pid, _ref}] = producer.subscribers
+      assert add_one.count == 1
+      assert add_one.number == 0
+      producer_pid = producer.pid
+      assert [{^producer_pid, [max_demand: 1, cancel: :transient]}] = add_one.subscribe_to
+
+      subscriber_pids = Enum.map(add_one.subscribers, fn {pid, _ref} -> pid end)
+      assert Enum.member?(subscriber_pids, mult_two1.pid)
+      assert Enum.member?(subscriber_pids, mult_two2.pid)
+
+      assert [{^add_one_pid, [max_demand: 1, cancel: :transient]}] = mult_two1.subscribe_to
+      assert [{^add_one_pid, [max_demand: 1, cancel: :transient]}] = mult_two2.subscribe_to
+
+      # remove mult_two
+      component = Enum.find(components, &(&1.name == :mult_two))
+      # TODO weird thing with
+      # [error] GenStage consumer #PID<0.377.0> received $gen_producer message: {:"$gen_producer", {#PID<0.372.0>, #Reference<0.4115812848.3137077253.82677>},
+      # {:cancel, :shutdown}}
+      # should be addressed later
+      capture_log(fn ->
+        Manager.remove_component(SimplePipeline, component.stage_set_ref)
+      end)
+
+      components = Manager.components(SimplePipeline)
+
+      [add_one] = Enum.filter(components, &(&1.name == :add_one))
+      [mult_two] = Enum.filter(components, &(&1.name == :mult_two))
+      consumer = Enum.find(components, &(&1.name == :consumer))
+
+      assert add_one.count == 1
+      assert add_one.number == 0
+
+      assert mult_two.count == 1
+      assert mult_two.number == 0
+
+      mult_two_pid = mult_two.pid
+      assert [{^mult_two_pid, _ref}] = add_one.subscribers
+      add_one_pid = add_one.pid
+      assert [{^add_one_pid, [max_demand: 1, cancel: :transient]}] = mult_two.subscribe_to
+
+      assert [{^mult_two_pid, [max_demand: 1, cancel: :transient]}] = consumer.subscribe_to
+
+      consumer_pid = consumer.pid
+      assert [{^consumer_pid, _ref}] = mult_two.subscribers
+
+      # try to remove one more
+      assert {:error, :only_one_left} =
+               Manager.remove_component(SimplePipeline, component.stage_set_ref)
+    end
+
+    test "if components states are identical", %{components: init_components} do
+      component = Enum.find(init_components, &(&1.name == :add_one))
+      Manager.remove_component(SimplePipeline, component.stage_set_ref)
+
+      SimplePipeline
+      |> Manager.components()
+      |> Enum.each(fn component ->
+        assert component == component.__struct__.__state__(component.pid)
+      end)
+
+      component = Enum.find(Manager.components(SimplePipeline), &(&1.name == :mult_two))
+      # TODO weird thing with
+      # [error] GenStage consumer #PID<0.377.0> received $gen_producer message: {:"$gen_producer", {#PID<0.372.0>, #Reference<0.4115812848.3137077253.82677>},
+      # {:cancel, :shutdown}}
+      # should be addressed later
+      capture_log(fn ->
+        Manager.remove_component(SimplePipeline, component.stage_set_ref)
+      end)
+
+      SimplePipeline
+      |> Manager.components()
+      |> Enum.each(fn component ->
+        assert component == component.__struct__.__state__(component.pid)
+      end)
     end
   end
 end

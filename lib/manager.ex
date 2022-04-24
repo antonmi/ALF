@@ -12,7 +12,7 @@ defmodule ALF.Manager do
             registry: %{},
             registry_dump: %{}
 
-  alias ALF.Manager.{Streamer, ProcessingOptions, StreamRegistry}
+  alias ALF.Manager.{Components, Streamer, ProcessingOptions, StreamRegistry}
   alias ALF.Components.Goto
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
 
@@ -80,6 +80,14 @@ defmodule ALF.Manager do
     GenServer.call(name, :components)
   end
 
+  def add_component(name, stage_set_ref) do
+    GenServer.call(name, {:add_component, stage_set_ref})
+  end
+
+  def remove_component(name, stage_set_ref) do
+    GenServer.call(name, {:remove_component, stage_set_ref})
+  end
+
   def terminate(:normal, state) do
     Supervisor.stop(state.pipeline_sup_pid)
   end
@@ -130,13 +138,15 @@ defmodule ALF.Manager do
 
   defp save_stages_states(%__MODULE__{} = state) do
     components =
-      state.pipeline.components
-      |> Pipeline.stages_to_list()
+      [state.pipeline.producer | Pipeline.stages_to_list(state.pipeline.components)] ++
+        [state.pipeline.consumer]
+
+    components =
+      components
       |> Enum.map(fn stage ->
         stage.__struct__.__state__(stage.pid)
       end)
 
-    components = [state.pipeline.producer | components] ++ [state.pipeline.consumer]
     %{state | components: components}
   end
 
@@ -194,6 +204,42 @@ defmodule ALF.Manager do
 
   def handle_call(:components, _from, state) do
     {:reply, state.components, state}
+  end
+
+  def handle_call({:add_component, stage_set_ref}, _from, state) do
+    existing_workers = Components.find_existing_workers(state.components, stage_set_ref)
+
+    new_stage = Builder.add_stage_worker(state.pipeline_sup_pid, existing_workers)
+
+    stages_to_subscribe_pids = Enum.map(new_stage.subscribers, fn {pid, _opts} -> pid end)
+    subscribe_to_pids = Enum.map(new_stage.subscribe_to, fn {pid, _opts} -> pid end)
+
+    new_components =
+      Components.refresh_components_after_adding(
+        state.components,
+        new_stage,
+        stages_to_subscribe_pids,
+        subscribe_to_pids
+      )
+
+    {:reply, new_stage, %{state | components: new_components}}
+  end
+
+  def handle_call({:remove_component, stage_set_ref}, _from, state) do
+    existing_workers = Components.find_existing_workers(state.components, stage_set_ref)
+
+    if length(existing_workers) > 1 do
+      stage_to_delete = Enum.max_by(existing_workers, & &1.number)
+
+      :ok = Builder.delete_stage_worker(state.pipeline_sup_pid, stage_to_delete)
+
+      new_components =
+        Components.refresh_components_after_removing(state.components, stage_to_delete)
+
+      {:reply, stage_to_delete, %{state | components: new_components}}
+    else
+      {:reply, {:error, :only_one_left}, state}
+    end
   end
 
   def handle_cast({:add_to_registry, ips, stream_ref}, state) do

@@ -76,6 +76,42 @@ defmodule ALF.Components.Basic do
         Streamer.cast_result_ready(error_ip.manager_name, error_ip)
       end
 
+      def add_subscribe_to(state, subscribe_to),
+        do: GenStage.call(state.pid, {:add_subscribe_to, subscribe_to})
+
+      def remove_subscribe_to(state, subscribe_to),
+        do: GenStage.call(state.pid, {:remove_subscribe_to, subscribe_to})
+
+      def add_subscriber(state, subscriber),
+        do: GenStage.call(state.pid, {:add_subscriber, subscriber})
+
+      def remove_subscriber(state, subscriber),
+        do: GenStage.call(state.pid, {:remove_subscriber, subscriber})
+
+      def handle_call({:add_subscribe_to, subscribe_to}, _from, state) do
+        new_subscribe_to = [subscribe_to | state.subscribe_to]
+        state = %{state | subscribe_to: new_subscribe_to}
+        {:reply, state, [], state}
+      end
+
+      def handle_call({:remove_subscribe_to, subscribe_to}, _from, state) do
+        new_subscribe_to = Enum.filter(state.subscribe_to, &(&1 != subscribe_to))
+        state = %{state | subscribe_to: new_subscribe_to}
+        {:reply, state, [], state}
+      end
+
+      def handle_call({:add_subscriber, subscriber}, _from, state) do
+        new_subscribers = [subscriber | state.subscribers]
+        state = %{state | subscribers: new_subscribers}
+        {:reply, state, [], state}
+      end
+
+      def handle_call({:remove_subscriber, subscriber}, _from, state) do
+        new_subscribers = Enum.filter(state.subscribers, &(&1 != subscriber))
+        state = %{state | subscribers: new_subscribers}
+        {:reply, state, [], state}
+      end
+
       def handle_call(:subscribers, _form, state) do
         {:reply, state.subscribers, [], state}
       end

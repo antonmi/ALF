@@ -144,21 +144,24 @@ defmodule ALF.DSLTest do
       assert %Plug{
                name: MyAdapterModule,
                pid: plug_pid,
-               subscribe_to: [{^stage_pid, max_demand: 1}]
+               subscribe_to: [{^stage_pid, max_demand: 1, cancel: :transient}]
              } = plug
 
-      assert %Stage{pid: stage_pid, subscribe_to: [{^plug_pid, max_demand: 1}]} = stage_in_plug
+      assert %Stage{
+               pid: stage_pid,
+               subscribe_to: [{^plug_pid, max_demand: 1, cancel: :transient}]
+             } = stage_in_plug
 
       assert %Unplug{
                name: MyAdapterModule,
                pid: unplug_pid,
-               subscribe_to: [{^stage_pid, max_demand: 1}]
+               subscribe_to: [{^stage_pid, max_demand: 1, cancel: :transient}]
              } = unplug
 
       assert %Plug{
                name: :another_plug,
                pid: _plug_pid,
-               subscribe_to: [{^unplug_pid, max_demand: 1}]
+               subscribe_to: [{^unplug_pid, max_demand: 1, cancel: :transient}]
              } = another_plug
 
       assert %Stage{pid: last_stage_pid, name: :custom_name} = last_stage
@@ -166,7 +169,7 @@ defmodule ALF.DSLTest do
       assert %Unplug{
                name: :another_plug,
                pid: _plug_pid,
-               subscribe_to: [{^last_stage_pid, max_demand: 1}]
+               subscribe_to: [{^last_stage_pid, max_demand: 1, cancel: :transient}]
              } = another_unplug
     end
   end
@@ -186,7 +189,7 @@ defmodule ALF.DSLTest do
                pid: decomposer_pid,
                pipe_module: ALF.DSLTest.PipelineCompose,
                pipeline_module: ALF.DSLTest.PipelineCompose,
-               subscribe_to: [{producer_pid, [max_demand: 1]}],
+               subscribe_to: [{producer_pid, [max_demand: 1, cancel: :transient]}],
                subscribers: []
              } = decomposer
 
@@ -201,7 +204,7 @@ defmodule ALF.DSLTest do
                pid: recomposer_pid,
                pipe_module: ALF.DSLTest.PipelineCompose,
                pipeline_module: ALF.DSLTest.PipelineCompose,
-               subscribe_to: [{^decomposer_pid, [max_demand: 1]}],
+               subscribe_to: [{^decomposer_pid, [max_demand: 1, cancel: :transient]}],
                subscribers: []
              } = recomposer
 

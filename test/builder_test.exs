@@ -39,7 +39,7 @@ defmodule ALF.BuilderTest do
 
       assert is_pid(pid)
 
-      assert stage.subscribe_to == [{pipeline.producer.pid, max_demand: 1}]
+      assert stage.subscribe_to == [{pipeline.producer.pid, max_demand: 1, cancel: :transient}]
 
       assert Enum.count(components) == 3
       assert Enum.map(components, & &1.number) == [0, 1, 2]
@@ -73,19 +73,23 @@ defmodule ALF.BuilderTest do
              } = switch
 
       assert is_pid(switch_pid)
-      assert switch.subscribe_to == [{pipeline.producer.pid, max_demand: 1}]
+      assert switch.subscribe_to == [{pipeline.producer.pid, max_demand: 1, cancel: :transient}]
 
       assert [
                %Stage{
                  name: :stage_in_part1,
-                 subscribe_to: [{^switch_pid, [max_demand: 1, partition: :part1]}]
+                 subscribe_to: [
+                   {^switch_pid, [max_demand: 1, cancel: :transient, partition: :part1]}
+                 ]
                }
              ] = branches[:part1]
 
       assert [
                %Stage{
                  name: :stage_in_part2,
-                 subscribe_to: [{^switch_pid, [max_demand: 1, partition: :part2]}]
+                 subscribe_to: [
+                   {^switch_pid, [max_demand: 1, cancel: :transient, partition: :part2]}
+                 ]
                }
              ] = branches[:part2]
     end
@@ -125,10 +129,13 @@ defmodule ALF.BuilderTest do
 
       assert is_pid(clone_pid)
 
-      assert %Stage{pid: stage1_pid, subscribe_to: [{^clone_pid, max_demand: 1}]} = to_stage
+      assert %Stage{
+               pid: stage1_pid,
+               subscribe_to: [{^clone_pid, max_demand: 1, cancel: :transient}]
+             } = to_stage
 
-      assert Enum.member?(stage2.subscribe_to, {clone_pid, max_demand: 1})
-      assert Enum.member?(stage2.subscribe_to, {stage1_pid, max_demand: 1})
+      assert Enum.member?(stage2.subscribe_to, {clone_pid, max_demand: 1, cancel: :transient})
+      assert Enum.member?(stage2.subscribe_to, {stage1_pid, max_demand: 1, cancel: :transient})
     end
 
     test "build pipeline with clone and dead_end", %{sup_pid: sup_pid} do
@@ -145,11 +152,15 @@ defmodule ALF.BuilderTest do
 
       assert is_pid(clone_pid)
 
-      assert %Stage{pid: stage1_pid, subscribe_to: [{^clone_pid, max_demand: 1}]} = to_stage
-      assert %DeadEnd{subscribe_to: [{^stage1_pid, max_demand: 1}]} = dead_end
+      assert %Stage{
+               pid: stage1_pid,
+               subscribe_to: [{^clone_pid, max_demand: 1, cancel: :transient}]
+             } = to_stage
 
-      assert Enum.member?(stage2.subscribe_to, {clone_pid, max_demand: 1})
-      refute Enum.member?(stage2.subscribe_to, {stage1_pid, max_demand: 1})
+      assert %DeadEnd{subscribe_to: [{^stage1_pid, max_demand: 1, cancel: :transient}]} = dead_end
+
+      assert Enum.member?(stage2.subscribe_to, {clone_pid, max_demand: 1, cancel: :transient})
+      refute Enum.member?(stage2.subscribe_to, {stage1_pid, max_demand: 1, cancel: :transient})
     end
   end
 end

@@ -5,6 +5,7 @@ defmodule ALF.Components.Stage do
             name: nil,
             count: 1,
             number: 0,
+            stage_set_ref: nil,
             pipe_module: nil,
             pipeline_module: nil,
             module: nil,
@@ -30,10 +31,24 @@ defmodule ALF.Components.Stage do
       | pid: self(),
         opts: init_opts(state.module, state.opts),
         source_code: read_source_code(state.module, state.function),
+        subscribers: [],
         telemetry_enabled: telemetry_enabled?()
     }
 
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
+  end
+
+  def inc_count(state), do: GenStage.call(state.pid, :inc_count)
+  def dec_count(state), do: GenStage.call(state.pid, :dec_count)
+
+  def handle_call(:inc_count, _from, state) do
+    state = %{state | count: state.count + 1}
+    {:reply, state, [], state}
+  end
+
+  def handle_call(:dec_count, _from, state) do
+    state = %{state | count: state.count - 1}
+    {:reply, state, [], state}
   end
 
   def handle_events([%IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do

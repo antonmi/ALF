@@ -44,7 +44,7 @@ defmodule ALF.DSL.GotoTest do
                opts: [foo: :bar],
                pipe_module: PipelineGoto1,
                pipeline_module: PipelineGoto1,
-               subscribe_to: [{^point_pid, [max_demand: 1]}]
+               subscribe_to: [{^point_pid, [max_demand: 1, cancel: :transient]}]
              } = goto
     end
   end
