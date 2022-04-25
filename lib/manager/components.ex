@@ -72,27 +72,29 @@ defmodule ALF.Manager.Components do
       cond do
         subscription =
             Enum.find(component.subscribers, fn {pid, _ref} -> pid == stage_to_delete.pid end) ->
-          :ok = GenStage.cancel(subscription, :shutdown)
           component = Stage.remove_subscriber(component, subscription)
           [component | acc]
 
         component.pid == stage_to_delete.pid ->
-          component.subscribers
-          |> Enum.map(fn subscription ->
-            :ok = GenStage.cancel(subscription, :shutdown)
-          end)
-
           acc
 
         component.type == :stage && component.stage_set_ref == stage_to_delete.stage_set_ref ->
           component = Stage.dec_count(component)
           [component | acc]
 
-        subscribe_to =
-            Enum.find(component.subscribe_to, fn {pid, _opts} ->
+        subscribed_to =
+            Enum.find(component.subscribed_to, fn {pid, _ref} ->
               pid == stage_to_delete.pid
             end) ->
+          :ok = GenStage.cancel(subscribed_to, :shutdown)
+
+          subscribe_to =
+            Enum.find(component.subscribe_to, fn {pid, _opts} ->
+              pid == stage_to_delete.pid
+            end)
+
           component = Stage.remove_subscribe_to(component, subscribe_to)
+          component = component.__struct__.__state__(component.pid)
           [component | acc]
 
         true ->

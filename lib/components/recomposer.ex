@@ -8,6 +8,7 @@ defmodule ALF.Components.Recomposer do
             function: nil,
             opts: [],
             subscribe_to: [],
+            subscribed_to: [],
             pipe_module: nil,
             pipeline_module: nil,
             source_code: nil,

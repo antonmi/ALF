@@ -6,6 +6,7 @@ defmodule ALF.Components.Clone do
             pid: nil,
             to: [],
             subscribe_to: [],
+            subscribed_to: [],
             pipe_module: nil,
             pipeline_module: nil,
             subscribers: [],

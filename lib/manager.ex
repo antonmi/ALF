@@ -253,14 +253,15 @@ defmodule ALF.Manager do
     if length(existing_workers) > 1 do
       stage_to_delete = Enum.max_by(existing_workers, & &1.number)
 
+      stage_to_delete.subscribed_to
+      |> Enum.map(fn subscription ->
+        :ok = GenStage.cancel(subscription, :shutdown)
+      end)
+
       new_components =
         Components.refresh_components_before_removing(state.components, stage_to_delete)
 
-        # TODO do it differently
-#        Task.async(fn ->
-#          Process.sleep(1000)
-#          :ok = Builder.delete_stage_worker(state.pipeline_sup_pid, stage_to_delete)
-#        end)
+      :ok = Builder.delete_stage_worker(state.pipeline_sup_pid, stage_to_delete)
 
       {:reply, stage_to_delete, %{state | components: new_components}}
     else

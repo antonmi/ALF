@@ -126,13 +126,15 @@ defmodule ALF.Components.Basic do
       end
 
       def handle_subscribe(:producer, subscription_options, from, state) do
-        {:automatic, state}
+        subscribed_to = [from | state.subscribed_to]
+        {:automatic, %{state | subscribed_to: subscribed_to}}
       end
 
-      def handle_cancel({:cancel, reason}, _from, state) do
-        {:noreply, [], state}
+      def handle_cancel({:cancel, reason}, from, state) do
+        subscribed_to = Enum.filter(state.subscribed_to, &(&1 != from))
+        subscribers = Enum.filter(state.subscribers, &(&1 != from))
+        {:noreply, [], %{state | subscribed_to: subscribed_to, subscribers: subscribers}}
       end
-
 
       def telemetry_enabled?, do: ALF.Components.Basic.telemetry_enabled?()
 

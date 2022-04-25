@@ -12,6 +12,7 @@ defmodule ALF.Components.Tbd do
             opts: %{},
             pid: nil,
             subscribe_to: [],
+            subscribed_to: [],
             subscribers: [],
             telemetry_enabled: false
 

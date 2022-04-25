@@ -1,7 +1,6 @@
 defmodule ALF.ManagerTest do
   use ExUnit.Case, async: false
 
-  import ExUnit.CaptureLog
   alias ALF.{IP, Manager}
 
   defmodule SimplePipeline do
@@ -61,16 +60,22 @@ defmodule ALF.ManagerTest do
 
       assert add.name == :add_one
       assert add.subscribe_to == [{producer.pid, [max_demand: 1, cancel: :transient]}]
+      producer_pid = producer.pid
+      assert [{^producer_pid, _ref}] = add.subscribed_to
       mult_pid = mult.pid
       assert [{^mult_pid, _ref}] = add.subscribers
 
       assert mult.name == :mult_two
       assert mult.subscribe_to == [{add.pid, [max_demand: 1, cancel: :transient]}]
+      add_pid = add.pid
+      assert [{^add_pid, _ref}] = mult.subscribed_to
       consumer_pid = consumer.pid
       assert [{^consumer_pid, _ref}] = mult.subscribers
 
       assert consumer.name == :consumer
       assert consumer.subscribe_to == [{mult.pid, [max_demand: 1, cancel: :transient]}]
+      mult_pid = mult.pid
+      assert [{^mult_pid, _ref}] = consumer.subscribed_to
     end
   end
 
@@ -259,29 +264,28 @@ defmodule ALF.ManagerTest do
       assert Enum.member?(subscriber_pids, add_one1.pid)
       assert Enum.member?(subscriber_pids, add_one2.pid)
 
-      assert add_one1.subscribe_to == [{producer.pid, [max_demand: 1, cancel: :transient]}]
-      assert add_one2.subscribe_to == [{producer.pid, [max_demand: 1, cancel: :transient]}]
+      producer_pid = producer.pid
+      assert [{^producer_pid, _opts}] = add_one1.subscribe_to
+      assert [{^producer_pid, _opts}] = add_one1.subscribed_to
+      assert [{^producer_pid, _opts}] = add_one2.subscribe_to
+      assert [{^producer_pid, _opts}] = add_one2.subscribed_to
 
       mult_two_component = Enum.find(components, &(&1.name == :mult_two))
 
-      assert Enum.count(mult_two_component.subscribe_to) == 2
+      [{pid1, opts}, {pid2, opts}] = mult_two_component.subscribe_to
+      assert Enum.member?([pid1, pid2], add_one1.pid)
+      assert Enum.member?([pid1, pid2], add_one2.pid)
 
-      assert Enum.member?(
-               mult_two_component.subscribe_to,
-               {add_one1.pid, [max_demand: 1, cancel: :transient]}
-             )
-
-      assert Enum.member?(
-               mult_two_component.subscribe_to,
-               {add_one2.pid, [max_demand: 1, cancel: :transient]}
-             )
+      [{pid1, _ref1}, {pid2, _ref2}] = mult_two_component.subscribed_to
+      assert Enum.member?([pid1, pid2], add_one1.pid)
+      assert Enum.member?([pid1, pid2], add_one2.pid)
 
       assert add_one1.count == 2
       assert add_one2.count == 2
       assert add_one1.stage_set_ref == add_one2.stage_set_ref
       assert abs(add_one1.number - add_one2.number) == 1
 
-      #      # Add to mult_two
+      # Add to mult_two
       Manager.add_component(PipelineToScale, mult_two_component.stage_set_ref)
       components = Manager.components(PipelineToScale)
 
@@ -303,25 +307,21 @@ defmodule ALF.ManagerTest do
       assert add_one2.count == 2
       assert abs(add_one1.number - add_one2.number) == 1
 
-      assert Enum.member?(
-               mult_two1.subscribe_to,
-               {add_one1.pid, [max_demand: 1, cancel: :transient]}
-             )
+      [{pid1, opts}, {pid2, opts}] = mult_two1.subscribe_to
+      assert Enum.member?([pid1, pid2], add_one1.pid)
+      assert Enum.member?([pid1, pid2], add_one2.pid)
 
-      assert Enum.member?(
-               mult_two1.subscribe_to,
-               {add_one2.pid, [max_demand: 1, cancel: :transient]}
-             )
+      [{pid1, opts}, {pid2, opts}] = mult_two2.subscribe_to
+      assert Enum.member?([pid1, pid2], add_one1.pid)
+      assert Enum.member?([pid1, pid2], add_one2.pid)
 
-      assert Enum.member?(
-               mult_two2.subscribe_to,
-               {add_one1.pid, [max_demand: 1, cancel: :transient]}
-             )
+      [{pid1, _ref1}, {pid2, _ref2}] = mult_two1.subscribed_to
+      assert Enum.member?([pid1, pid2], add_one1.pid)
+      assert Enum.member?([pid1, pid2], add_one2.pid)
 
-      assert Enum.member?(
-               mult_two2.subscribe_to,
-               {add_one2.pid, [max_demand: 1, cancel: :transient]}
-             )
+      [{pid1, _ref1}, {pid2, _ref12}] = mult_two2.subscribed_to
+      assert Enum.member?([pid1, pid2], add_one1.pid)
+      assert Enum.member?([pid1, pid2], add_one2.pid)
 
       assert mult_two1.count == 2
       assert mult_two2.count == 2
@@ -331,15 +331,17 @@ defmodule ALF.ManagerTest do
       assert [{^consumer_pid, _ref}] = mult_two1.subscribers
       assert [{^consumer_pid, _ref}] = mult_two2.subscribers
 
-      assert Enum.member?(
-               consumer.subscribe_to,
-               {mult_two1.pid, [max_demand: 1, cancel: :transient]}
-             )
+      [{pid1, opts}, {pid2, opts}] = consumer.subscribe_to
+      assert Enum.member?([pid1, pid2], mult_two1.pid)
+      assert Enum.member?([pid1, pid2], mult_two2.pid)
 
-      assert Enum.member?(
-               consumer.subscribe_to,
-               {mult_two2.pid, [max_demand: 1, cancel: :transient]}
-             )
+      [{pid1, opts}, {pid2, opts}] = consumer.subscribe_to
+      assert Enum.member?([pid1, pid2], mult_two1.pid)
+      assert Enum.member?([pid1, pid2], mult_two2.pid)
+
+      [{pid1, _ref1}, {pid2, _ref2}] = consumer.subscribed_to
+      assert Enum.member?([pid1, pid2], mult_two1.pid)
+      assert Enum.member?([pid1, pid2], mult_two2.pid)
     end
 
     test "if components states are identical", %{components: init_components} do
@@ -389,9 +391,11 @@ defmodule ALF.ManagerTest do
 
       add_one_pid = add_one.pid
       assert [{^add_one_pid, _ref}] = producer.subscribers
+      producer_pid = producer.pid
+      assert [{^producer_pid, _ref}] = add_one.subscribed_to
       assert add_one.count == 1
       assert add_one.number == 0
-      producer_pid = producer.pid
+
       assert [{^producer_pid, [max_demand: 1, cancel: :transient]}] = add_one.subscribe_to
 
       subscriber_pids = Enum.map(add_one.subscribers, fn {pid, _ref} -> pid end)
@@ -401,15 +405,12 @@ defmodule ALF.ManagerTest do
       assert [{^add_one_pid, [max_demand: 1, cancel: :transient]}] = mult_two1.subscribe_to
       assert [{^add_one_pid, [max_demand: 1, cancel: :transient]}] = mult_two2.subscribe_to
 
+      [{^add_one_pid, _ref1}] = mult_two1.subscribed_to
+      [{^add_one_pid, _ref1}] = mult_two2.subscribed_to
+
       # remove mult_two
       component = Enum.find(components, &(&1.name == :mult_two))
-      # TODO weird thing with
-      # [error] GenStage consumer #PID<0.377.0> received $gen_producer message: {:"$gen_producer", {#PID<0.372.0>, #Reference<0.4115812848.3137077253.82677>},
-      # {:cancel, :shutdown}}
-      # should be addressed later
-      capture_log(fn ->
-        Manager.remove_component(PipelineToScale, component.stage_set_ref)
-      end)
+      Manager.remove_component(PipelineToScale, component.stage_set_ref)
 
       components = Manager.components(PipelineToScale)
 
@@ -427,8 +428,10 @@ defmodule ALF.ManagerTest do
       assert [{^mult_two_pid, _ref}] = add_one.subscribers
       add_one_pid = add_one.pid
       assert [{^add_one_pid, [max_demand: 1, cancel: :transient]}] = mult_two.subscribe_to
+      assert [{^add_one_pid, _ref}] = mult_two.subscribe_to
 
       assert [{^mult_two_pid, [max_demand: 1, cancel: :transient]}] = consumer.subscribe_to
+      assert [{^mult_two_pid, _ref}] = consumer.subscribed_to
 
       consumer_pid = consumer.pid
       assert [{^consumer_pid, _ref}] = mult_two.subscribers
@@ -449,13 +452,7 @@ defmodule ALF.ManagerTest do
       end)
 
       component = Enum.find(Manager.components(PipelineToScale), &(&1.name == :mult_two))
-      # TODO weird thing with
-      # [error] GenStage consumer #PID<0.377.0> received $gen_producer message: {:"$gen_producer", {#PID<0.372.0>, #Reference<0.4115812848.3137077253.82677>},
-      # {:cancel, :shutdown}}
-      # should be addressed later
-      capture_log(fn ->
-        Manager.remove_component(PipelineToScale, component.stage_set_ref)
-      end)
+      Manager.remove_component(PipelineToScale, component.stage_set_ref)
 
       PipelineToScale
       |> Manager.components()
@@ -483,41 +480,36 @@ defmodule ALF.ManagerTest do
     end
   end
 
-
-  describe "remove_component 2" do
-    defmodule PipelineToScale2 do
-      use ALF.DSL
-
-      @components [
-        stage(:add_one, count: 2),
-        stage(:mult_two)
-      ]
-
-      def add_one(event, _) do
-        Process.sleep(1)
-        event + 1
-      end
-
-      def mult_two(event, _) do
-        Process.sleep(1)
-        event * 2
-      end
-    end
-
-    setup do
-      Manager.start(PipelineToScale2)
-
-      on_exit(fn -> Manager.stop(PipelineToScale2) end)
-      %{components: Manager.components(PipelineToScale2)}
-    end
-
-#    test "remove add_one and then to mult_two", %{components: init_components} do
-#      IO.inspect(init_components)
-#      component = Enum.find(init_components, &(&1.name == :add_one))
-#      Manager.remove_component(PipelineToScale2, component.stage_set_ref)
-#
-#      Process.sleep(100)
-#
-#    end
-  end
+  #  describe "remove_component simple case" do
+  #    defmodule PipelineToScale2 do
+  #      use ALF.DSL
+  #
+  #      @components [
+  #        stage(:add_one, count: 2)
+  #      ]
+  #
+  #      def add_one(event, _) do
+  #        event + 1
+  #      end
+  #    end
+  #
+  #    setup do
+  #      Manager.start(PipelineToScale2)
+  #
+  #      on_exit(fn -> Manager.stop(PipelineToScale2) end)
+  #      %{components: Manager.components(PipelineToScale2)}
+  #    end
+  #
+  #    test "remove add_one and then to mult_two", %{components: init_components} do
+  #      component = Enum.find(init_components, &(&1.name == :add_one))
+  #      Manager.remove_component(PipelineToScale2, component.stage_set_ref)
+  #
+  #      components = Manager.components(PipelineToScale2)
+  #      |> IO.inspect
+  #      [add_one] = Enum.filter(components, &(&1.name == :add_one))
+  #      consumer = Enum.find(components, &(&1.name == :consumer))
+  #      IO.inspect(ALF.Components.Consumer.__state__(consumer.pid))
+  #
+  #    end
+  #  end
 end

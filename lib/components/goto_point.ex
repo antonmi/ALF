@@ -5,6 +5,7 @@ defmodule ALF.Components.GotoPoint do
             name: nil,
             pid: nil,
             subscribe_to: [],
+            subscribed_to: [],
             subscribers: [],
             pipe_module: nil,
             pipeline_module: nil,

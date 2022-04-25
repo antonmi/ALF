@@ -7,6 +7,7 @@ defmodule ALF.Components.DeadEnd do
             pipe_module: nil,
             pipeline_module: nil,
             subscribe_to: [],
+            subscribed_to: [],
             subscribers: [],
             telemetry_enabled: false
 

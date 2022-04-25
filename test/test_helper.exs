@@ -26,6 +26,7 @@ defmodule ALF.TestConsumer do
   use ALF.Components.Basic
 
   defstruct subscribe_to: [],
+            subscribed_to: [],
             ips: []
 
   def start_link(%__MODULE__{} = state) do

@@ -93,28 +93,29 @@ defmodule ALF.AutoScalerTest do
       1..5
       |> Manager.stream_to(PipelineToScale)
       |> Enum.to_list()
+
       Process.sleep(1000)
 
-#      IO.inspect("111111111111111111111111111111111111111111111111111111")
-#      IO.inspect("111111111111111111111111111111111111111111111111111111")
-#      IO.inspect("111111111111111111111111111111111111111111111111111111")
-#      IO.inspect("111111111111111111111111111111111111111111111111111111")
-#      IO.inspect("111111111111111111111111111111111111111111111111111111")
-#      Process.sleep(1000)
-#
-#      1..5
-#      |> Manager.stream_to(PipelineToScale)
-#      |> Enum.to_list()
-#      Process.sleep(1000)
-#
-#      1..5
-#      |> Manager.stream_to(PipelineToScale)
-#      |> Enum.to_list()
-#      Process.sleep(1000)
-#
-#      1..5
-#      |> Manager.stream_to(PipelineToScale)
-#      |> Enum.to_list()
+      #      IO.inspect("111111111111111111111111111111111111111111111111111111")
+      #      IO.inspect("111111111111111111111111111111111111111111111111111111")
+      #      IO.inspect("111111111111111111111111111111111111111111111111111111")
+      #      IO.inspect("111111111111111111111111111111111111111111111111111111")
+      #      IO.inspect("111111111111111111111111111111111111111111111111111111")
+      #      Process.sleep(1000)
+      #
+      #      1..5
+      #      |> Manager.stream_to(PipelineToScale)
+      #      |> Enum.to_list()
+      #      Process.sleep(1000)
+      #
+      #      1..5
+      #      |> Manager.stream_to(PipelineToScale)
+      #      |> Enum.to_list()
+      #      Process.sleep(1000)
+      #
+      #      1..5
+      #      |> Manager.stream_to(PipelineToScale)
+      #      |> Enum.to_list()
     end
   end
 end

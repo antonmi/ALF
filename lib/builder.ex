@@ -30,7 +30,8 @@ defmodule ALF.Builder do
   def add_stage_worker(supervisor_pid, [%Stage{} = existing_stage | _] = existing_stages) do
     stage = %{
       existing_stage
-      | number: length(existing_stages),
+      | subscribed_to: [],
+        number: length(existing_stages),
         count: length(existing_stages) + 1
     }
 
@@ -58,7 +59,6 @@ defmodule ALF.Builder do
     }
 
     {:ok, consumer_pid} = DynamicSupervisor.start_child(supervisor_pid, {Consumer, consumer})
-    %Consumer{pid: consumer_pid, subscribe_to: subscribe_to}
     %{consumer | pid: consumer_pid}
   end
 

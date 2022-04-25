@@ -34,7 +34,7 @@ defmodule ALF.AutoScaler do
   end
 
   def handle_continue(:spawn_monitor, %__MODULE__{} = state) do
-#    spawn_scaling_attempts(state.pid)
+    #    spawn_scaling_attempts(state.pid)
     {:noreply, state}
   end
 
@@ -45,28 +45,34 @@ defmodule ALF.AutoScaler do
   def handle_info(:monitor_workload, state) do
     pipeline = hd(state.pipelines)
     ips_count = Manager.producer_ips_count(pipeline)
-    new_stats = cond do
-      ips_count > Manager.max_producer_load * 0.9 ->
-        scale_up(pipeline, Map.get(state.stats, pipeline))
-        Map.put(state.stats, pipeline, nil)
-      ips_count < Manager.max_producer_load * 0.1 ->
-        scale_down(pipeline, Map.get(state.stats, pipeline))
-        Map.put(state.stats, pipeline, nil)
-      true ->
-        state.stats
-    end
+
+    new_stats =
+      cond do
+        ips_count > Manager.max_producer_load() * 0.9 ->
+          scale_up(pipeline, Map.get(state.stats, pipeline))
+          Map.put(state.stats, pipeline, nil)
+
+        ips_count < Manager.max_producer_load() * 0.1 ->
+          scale_down(pipeline, Map.get(state.stats, pipeline))
+          Map.put(state.stats, pipeline, nil)
+
+        true ->
+          state.stats
+      end
 
     spawn_scaling_attempts(state.pid)
     {:noreply, %{state | stats: new_stats}}
   end
 
   defp scale_up(pipeline, nil), do: :no_stats
+
   defp scale_up(pipeline, stats) do
     {slowest_stage_set_ref, _} =
       stats
       |> Enum.min_by(fn
         {:since, _time} ->
           :atom_is_more_than_number
+
         {stage_set_ref, stage_stats} ->
           total_stage_set_speed(stage_stats)
       end)
@@ -75,15 +81,18 @@ defmodule ALF.AutoScaler do
   end
 
   defp scale_down(pipeline, nil), do: :no_stats
+
   defp scale_down(pipeline, stats) do
     {fastest_stage_set_ref, _} =
       stats
       |> Enum.max_by(fn
         {:since, _time} ->
           -1
+
         {stage_set_ref, stage_stats} ->
           total_stage_set_speed(stage_stats)
       end)
+
     Manager.remove_component(pipeline, fastest_stage_set_ref)
   end
 

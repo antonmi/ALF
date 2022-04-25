@@ -9,6 +9,7 @@ defmodule ALF.Components.Switch do
             opts: %{},
             source_code: nil,
             subscribe_to: [],
+            subscribed_to: [],
             subscribers: [],
             branches: %{},
             pipe_module: nil,

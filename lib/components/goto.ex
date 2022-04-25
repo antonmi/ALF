@@ -13,6 +13,7 @@ defmodule ALF.Components.Goto do
             pid: nil,
             source_code: nil,
             subscribe_to: [],
+            subscribed_to: [],
             subscribers: [],
             telemetry_enabled: false
 

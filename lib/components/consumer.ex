@@ -9,6 +9,7 @@ defmodule ALF.Components.Consumer do
             pid: nil,
             pipe_module: nil,
             subscribe_to: [],
+            subscribed_to: [],
             subscribers: [],
             pipeline_module: nil,
             telemetry_enabled: false
