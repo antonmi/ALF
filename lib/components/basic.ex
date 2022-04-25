@@ -129,6 +129,11 @@ defmodule ALF.Components.Basic do
         {:automatic, state}
       end
 
+      def handle_cancel({:cancel, reason}, _from, state) do
+        {:noreply, [], state}
+      end
+
+
       def telemetry_enabled?, do: ALF.Components.Basic.telemetry_enabled?()
 
       def telemetry_data(ip, state), do: ALF.Components.Basic.telemetry_data(ip, state)

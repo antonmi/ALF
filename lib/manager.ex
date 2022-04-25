@@ -12,9 +12,13 @@ defmodule ALF.Manager do
             registry: %{},
             registry_dump: %{}
 
+  alias ALF.AutoScaler
   alias ALF.Manager.{Components, Streamer, ProcessingOptions, StreamRegistry}
-  alias ALF.Components.Goto
+  alias ALF.Components.{Goto, Producer}
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
+
+  @max_producer_load 100
+  def max_producer_load, do: @max_producer_load
 
   def start_link(%__MODULE__{} = state) do
     GenServer.start_link(__MODULE__, state, name: state.name)
@@ -80,6 +84,11 @@ defmodule ALF.Manager do
     GenServer.call(name, :components)
   end
 
+  @spec producer_ips_count(atom) :: integer()
+  def producer_ips_count(name) when is_atom(name) do
+    GenServer.call(name, :producer_ips_count)
+  end
+
   def add_component(name, stage_set_ref) do
     GenServer.call(name, {:add_component, stage_set_ref})
   end
@@ -101,7 +110,15 @@ defmodule ALF.Manager do
   end
 
   def handle_continue(:init_pipeline, %__MODULE__{} = state) do
-    {:noreply, start_pipeline(state)}
+    {:noreply, start_pipeline(state), {:continue, :register_auto_scaling}}
+  end
+
+  def handle_continue(:register_auto_scaling, %__MODULE__{} = state) do
+    if telemetry_enabled?() do
+      AutoScaler.register_pipeline(state.pipeline_module)
+    end
+
+    {:noreply, state}
   end
 
   defp start_pipeline(%__MODULE__{} = state) do
@@ -206,6 +223,11 @@ defmodule ALF.Manager do
     {:reply, state.components, state}
   end
 
+  def handle_call(:producer_ips_count, _from, state) do
+    count = Producer.ips_count(state.producer_pid)
+    {:reply, count, state}
+  end
+
   def handle_call({:add_component, stage_set_ref}, _from, state) do
     existing_workers = Components.find_existing_workers(state.components, stage_set_ref)
 
@@ -231,10 +253,14 @@ defmodule ALF.Manager do
     if length(existing_workers) > 1 do
       stage_to_delete = Enum.max_by(existing_workers, & &1.number)
 
-      :ok = Builder.delete_stage_worker(state.pipeline_sup_pid, stage_to_delete)
-
       new_components =
-        Components.refresh_components_after_removing(state.components, stage_to_delete)
+        Components.refresh_components_before_removing(state.components, stage_to_delete)
+
+        # TODO do it differently
+#        Task.async(fn ->
+#          Process.sleep(1000)
+#          :ok = Builder.delete_stage_worker(state.pipeline_sup_pid, stage_to_delete)
+#        end)
 
       {:reply, stage_to_delete, %{state | components: new_components}}
     else
@@ -275,5 +301,9 @@ defmodule ALF.Manager do
     is_list(module.alf_components())
   rescue
     _error -> false
+  end
+
+  defp telemetry_enabled? do
+    Application.get_env(:alf, :telemetry_enabled, false)
   end
 end

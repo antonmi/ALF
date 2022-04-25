@@ -219,17 +219,37 @@ defmodule ALF.ManagerTest do
     end
   end
 
+  defmodule PipelineToScale do
+    use ALF.DSL
+
+    @components [
+      stage(:add_one),
+      stage(:mult_two)
+    ]
+
+    def add_one(event, _) do
+      Process.sleep(1)
+      event + 1
+    end
+
+    def mult_two(event, _) do
+      Process.sleep(1)
+      event * 2
+    end
+  end
+
   describe "add_component" do
     setup do
-      Manager.start(SimplePipeline)
-      %{components: Manager.components(SimplePipeline)}
+      Manager.start(PipelineToScale)
+      on_exit(fn -> Manager.stop(PipelineToScale) end)
+      %{components: Manager.components(PipelineToScale)}
     end
 
     test "add_component to add_one and then to mult_two", %{components: init_components} do
       component = Enum.find(init_components, &(&1.name == :add_one))
-      Manager.add_component(SimplePipeline, component.stage_set_ref)
+      Manager.add_component(PipelineToScale, component.stage_set_ref)
 
-      components = Manager.components(SimplePipeline)
+      components = Manager.components(PipelineToScale)
 
       producer = Enum.find(components, &(&1.name == :producer))
       [add_one1, add_one2] = Enum.filter(components, &(&1.name == :add_one))
@@ -262,8 +282,8 @@ defmodule ALF.ManagerTest do
       assert abs(add_one1.number - add_one2.number) == 1
 
       #      # Add to mult_two
-      Manager.add_component(SimplePipeline, mult_two_component.stage_set_ref)
-      components = Manager.components(SimplePipeline)
+      Manager.add_component(PipelineToScale, mult_two_component.stage_set_ref)
+      components = Manager.components(PipelineToScale)
 
       [add_one1, add_one2] = Enum.filter(components, &(&1.name == :add_one))
       [mult_two1, mult_two2] = Enum.filter(components, &(&1.name == :mult_two))
@@ -324,18 +344,18 @@ defmodule ALF.ManagerTest do
 
     test "if components states are identical", %{components: init_components} do
       component = Enum.find(init_components, &(&1.name == :add_one))
-      Manager.add_component(SimplePipeline, component.stage_set_ref)
+      Manager.add_component(PipelineToScale, component.stage_set_ref)
 
-      SimplePipeline
+      PipelineToScale
       |> Manager.components()
       |> Enum.each(fn component ->
         assert component == component.__struct__.__state__(component.pid)
       end)
 
-      component = Enum.find(Manager.components(SimplePipeline), &(&1.name == :mult_two))
-      Manager.add_component(SimplePipeline, component.stage_set_ref)
+      component = Enum.find(Manager.components(PipelineToScale), &(&1.name == :mult_two))
+      Manager.add_component(PipelineToScale, component.stage_set_ref)
 
-      SimplePipeline
+      PipelineToScale
       |> Manager.components()
       |> Enum.each(fn component ->
         assert component == component.__struct__.__state__(component.pid)
@@ -345,22 +365,23 @@ defmodule ALF.ManagerTest do
 
   describe "remove_component" do
     setup do
-      Manager.start(SimplePipeline)
-      init_components = Manager.components(SimplePipeline)
+      Manager.start(PipelineToScale)
+      init_components = Manager.components(PipelineToScale)
       component = Enum.find(init_components, &(&1.name == :add_one))
-      Manager.add_component(SimplePipeline, component.stage_set_ref)
+      Manager.add_component(PipelineToScale, component.stage_set_ref)
 
-      component = Enum.find(Manager.components(SimplePipeline), &(&1.name == :mult_two))
-      Manager.add_component(SimplePipeline, component.stage_set_ref)
+      component = Enum.find(Manager.components(PipelineToScale), &(&1.name == :mult_two))
+      Manager.add_component(PipelineToScale, component.stage_set_ref)
 
-      %{components: Manager.components(SimplePipeline)}
+      on_exit(fn -> Manager.stop(PipelineToScale) end)
+      %{components: Manager.components(PipelineToScale)}
     end
 
     test "remove add_one and then to mult_two", %{components: init_components} do
       component = Enum.find(init_components, &(&1.name == :add_one))
-      Manager.remove_component(SimplePipeline, component.stage_set_ref)
+      Manager.remove_component(PipelineToScale, component.stage_set_ref)
 
-      components = Manager.components(SimplePipeline)
+      components = Manager.components(PipelineToScale)
 
       producer = Enum.find(components, &(&1.name == :producer))
       [add_one] = Enum.filter(components, &(&1.name == :add_one))
@@ -387,10 +408,10 @@ defmodule ALF.ManagerTest do
       # {:cancel, :shutdown}}
       # should be addressed later
       capture_log(fn ->
-        Manager.remove_component(SimplePipeline, component.stage_set_ref)
+        Manager.remove_component(PipelineToScale, component.stage_set_ref)
       end)
 
-      components = Manager.components(SimplePipeline)
+      components = Manager.components(PipelineToScale)
 
       [add_one] = Enum.filter(components, &(&1.name == :add_one))
       [mult_two] = Enum.filter(components, &(&1.name == :mult_two))
@@ -414,33 +435,89 @@ defmodule ALF.ManagerTest do
 
       # try to remove one more
       assert {:error, :only_one_left} =
-               Manager.remove_component(SimplePipeline, component.stage_set_ref)
+               Manager.remove_component(PipelineToScale, component.stage_set_ref)
     end
 
     test "if components states are identical", %{components: init_components} do
       component = Enum.find(init_components, &(&1.name == :add_one))
-      Manager.remove_component(SimplePipeline, component.stage_set_ref)
+      Manager.remove_component(PipelineToScale, component.stage_set_ref)
 
-      SimplePipeline
+      PipelineToScale
       |> Manager.components()
       |> Enum.each(fn component ->
         assert component == component.__struct__.__state__(component.pid)
       end)
 
-      component = Enum.find(Manager.components(SimplePipeline), &(&1.name == :mult_two))
+      component = Enum.find(Manager.components(PipelineToScale), &(&1.name == :mult_two))
       # TODO weird thing with
       # [error] GenStage consumer #PID<0.377.0> received $gen_producer message: {:"$gen_producer", {#PID<0.372.0>, #Reference<0.4115812848.3137077253.82677>},
       # {:cancel, :shutdown}}
       # should be addressed later
       capture_log(fn ->
-        Manager.remove_component(SimplePipeline, component.stage_set_ref)
+        Manager.remove_component(PipelineToScale, component.stage_set_ref)
       end)
 
-      SimplePipeline
+      PipelineToScale
       |> Manager.components()
       |> Enum.each(fn component ->
         assert component == component.__struct__.__state__(component.pid)
       end)
     end
+
+    test "there is no lost ips after stopping" do
+      stream1 = Manager.stream_to(0..99, PipelineToScale)
+      stream2 = Manager.stream_to(100..199, PipelineToScale)
+
+      [task1, task2] =
+        [stream1, stream2]
+        |> Enum.map(fn stream ->
+          Task.async(fn -> Enum.to_list(stream) end)
+        end)
+
+      Process.sleep(10)
+      component = Enum.find(Manager.components(PipelineToScale), &(&1.name == :add_one))
+      Manager.remove_component(PipelineToScale, component.stage_set_ref)
+
+      assert Task.await(task1) -- Enum.map(0..99, fn n -> (n + 1) * 2 end) == []
+      assert Task.await(task2) -- Enum.map(100..199, fn n -> (n + 1) * 2 end) == []
+    end
+  end
+
+
+  describe "remove_component 2" do
+    defmodule PipelineToScale2 do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one, count: 2),
+        stage(:mult_two)
+      ]
+
+      def add_one(event, _) do
+        Process.sleep(1)
+        event + 1
+      end
+
+      def mult_two(event, _) do
+        Process.sleep(1)
+        event * 2
+      end
+    end
+
+    setup do
+      Manager.start(PipelineToScale2)
+
+      on_exit(fn -> Manager.stop(PipelineToScale2) end)
+      %{components: Manager.components(PipelineToScale2)}
+    end
+
+#    test "remove add_one and then to mult_two", %{components: init_components} do
+#      IO.inspect(init_components)
+#      component = Enum.find(init_components, &(&1.name == :add_one))
+#      Manager.remove_component(PipelineToScale2, component.stage_set_ref)
+#
+#      Process.sleep(100)
+#
+#    end
   end
 end

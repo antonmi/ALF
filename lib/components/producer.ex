@@ -25,6 +25,12 @@ defmodule ALF.Components.Producer do
     GenServer.cast(pid, ips)
   end
 
+  def ips_count(pid), do: GenServer.call(pid, :ips_count)
+
+  def handle_call(:ips_count, _from, state) do
+    {:reply, length(state.ips), [], state}
+  end
+
   def handle_demand(
         _demand,
         %__MODULE__{ips: [ip | ips], manager_name: manager_name, telemetry_enabled: true} = state

@@ -116,10 +116,20 @@ defmodule ALF.Manager.Streamer do
        when is_atom(name) and is_list(events) do
     ips = build_ips(events, stream_ref, name)
     cast_add_to_registry(name, ips, stream_ref)
+    wait_until_producer_load_is_ok(producer_pid)
     Producer.load_ips(producer_pid, ips)
   catch
     :exit, {reason, details} ->
       {:exit, {reason, details}}
+  end
+
+  defp wait_until_producer_load_is_ok(producer_pid) do
+    if Producer.ips_count(producer_pid) < Manager.max_producer_load() do
+      :ok
+    else
+      Process.sleep(10)
+      wait_until_producer_load_is_ok(producer_pid)
+    end
   end
 
   def resend_packets(%Manager{} = state) do

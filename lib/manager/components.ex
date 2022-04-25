@@ -66,7 +66,7 @@ defmodule ALF.Manager.Components do
     |> Enum.reverse()
   end
 
-  def refresh_components_after_removing(components, stage_to_delete) do
+  def refresh_components_before_removing(components, stage_to_delete) do
     components
     |> Enum.reduce([], fn component, acc ->
       cond do
