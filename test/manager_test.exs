@@ -224,6 +224,17 @@ defmodule ALF.ManagerTest do
     end
   end
 
+  describe "reload_components_states" do
+    setup do
+      Manager.start(SimplePipeline)
+    end
+
+    test "reloading" do
+      components = Manager.reload_components_states(SimplePipeline)
+      assert length(components) == 4
+    end
+  end
+
   defmodule PipelineToScale do
     use ALF.DSL
 
@@ -254,7 +265,8 @@ defmodule ALF.ManagerTest do
       component = Enum.find(init_components, &(&1.name == :add_one))
       Manager.add_component(PipelineToScale, component.stage_set_ref)
 
-      components = Manager.components(PipelineToScale)
+      Process.sleep(1)
+      components = Manager.reload_components_states(PipelineToScale)
 
       producer = Enum.find(components, &(&1.name == :producer))
       [add_one1, add_one2] = Enum.filter(components, &(&1.name == :add_one))
@@ -265,16 +277,10 @@ defmodule ALF.ManagerTest do
       assert Enum.member?(subscriber_pids, add_one2.pid)
 
       producer_pid = producer.pid
-      assert [{^producer_pid, _opts}] = add_one1.subscribe_to
       assert [{^producer_pid, _opts}] = add_one1.subscribed_to
-      assert [{^producer_pid, _opts}] = add_one2.subscribe_to
       assert [{^producer_pid, _opts}] = add_one2.subscribed_to
 
       mult_two_component = Enum.find(components, &(&1.name == :mult_two))
-
-      [{pid1, opts}, {pid2, opts}] = mult_two_component.subscribe_to
-      assert Enum.member?([pid1, pid2], add_one1.pid)
-      assert Enum.member?([pid1, pid2], add_one2.pid)
 
       [{pid1, _ref1}, {pid2, _ref2}] = mult_two_component.subscribed_to
       assert Enum.member?([pid1, pid2], add_one1.pid)
@@ -287,7 +293,8 @@ defmodule ALF.ManagerTest do
 
       # Add to mult_two
       Manager.add_component(PipelineToScale, mult_two_component.stage_set_ref)
-      components = Manager.components(PipelineToScale)
+      Process.sleep(1)
+      components = Manager.reload_components_states(PipelineToScale)
 
       [add_one1, add_one2] = Enum.filter(components, &(&1.name == :add_one))
       [mult_two1, mult_two2] = Enum.filter(components, &(&1.name == :mult_two))
@@ -307,14 +314,6 @@ defmodule ALF.ManagerTest do
       assert add_one2.count == 2
       assert abs(add_one1.number - add_one2.number) == 1
 
-      [{pid1, opts}, {pid2, opts}] = mult_two1.subscribe_to
-      assert Enum.member?([pid1, pid2], add_one1.pid)
-      assert Enum.member?([pid1, pid2], add_one2.pid)
-
-      [{pid1, opts}, {pid2, opts}] = mult_two2.subscribe_to
-      assert Enum.member?([pid1, pid2], add_one1.pid)
-      assert Enum.member?([pid1, pid2], add_one2.pid)
-
       [{pid1, _ref1}, {pid2, _ref2}] = mult_two1.subscribed_to
       assert Enum.member?([pid1, pid2], add_one1.pid)
       assert Enum.member?([pid1, pid2], add_one2.pid)
@@ -331,41 +330,55 @@ defmodule ALF.ManagerTest do
       assert [{^consumer_pid, _ref}] = mult_two1.subscribers
       assert [{^consumer_pid, _ref}] = mult_two2.subscribers
 
-      [{pid1, opts}, {pid2, opts}] = consumer.subscribe_to
-      assert Enum.member?([pid1, pid2], mult_two1.pid)
-      assert Enum.member?([pid1, pid2], mult_two2.pid)
-
-      [{pid1, opts}, {pid2, opts}] = consumer.subscribe_to
-      assert Enum.member?([pid1, pid2], mult_two1.pid)
-      assert Enum.member?([pid1, pid2], mult_two2.pid)
-
       [{pid1, _ref1}, {pid2, _ref2}] = consumer.subscribed_to
       assert Enum.member?([pid1, pid2], mult_two1.pid)
       assert Enum.member?([pid1, pid2], mult_two2.pid)
     end
+  end
 
-    test "if components states are identical", %{components: init_components} do
+  describe "remove_component simple case" do
+    defmodule PipelineToRemove do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one, count: 2)
+      ]
+
+      def add_one(event, _) do
+        event + 1
+      end
+    end
+
+    setup do
+      Manager.start(PipelineToRemove)
+
+      on_exit(fn -> Manager.stop(PipelineToRemove) end)
+      %{components: Manager.components(PipelineToRemove)}
+    end
+
+    test "remove add_one", %{components: init_components} do
       component = Enum.find(init_components, &(&1.name == :add_one))
-      Manager.add_component(PipelineToScale, component.stage_set_ref)
+      removed_stage = Manager.remove_component(PipelineToRemove, component.stage_set_ref)
 
-      PipelineToScale
-      |> Manager.components()
-      |> Enum.each(fn component ->
-        assert component == component.__struct__.__state__(component.pid)
-      end)
+      refute Process.alive?(removed_stage.pid)
 
-      component = Enum.find(Manager.components(PipelineToScale), &(&1.name == :mult_two))
-      Manager.add_component(PipelineToScale, component.stage_set_ref)
+      Process.sleep(1)
+      [producer, add_one, consumer] = Manager.reload_components_states(PipelineToRemove)
 
-      PipelineToScale
-      |> Manager.components()
-      |> Enum.each(fn component ->
-        assert component == component.__struct__.__state__(component.pid)
-      end)
+      add_one_pid = add_one.pid
+      assert [{^add_one_pid, _ref}] = producer.subscribers
+
+      producer_pid = producer.pid
+      consumer_pid = consumer.pid
+
+      assert [{^producer_pid, _ref}] = add_one.subscribed_to
+      assert [{^consumer_pid, _ref}] = add_one.subscribers
+
+      assert [{^add_one_pid, _ref}] = consumer.subscribed_to
     end
   end
 
-  describe "remove_component" do
+  describe "remove_component after adding" do
     setup do
       Manager.start(PipelineToScale)
       init_components = Manager.components(PipelineToScale)
@@ -376,14 +389,17 @@ defmodule ALF.ManagerTest do
       Manager.add_component(PipelineToScale, component.stage_set_ref)
 
       on_exit(fn -> Manager.stop(PipelineToScale) end)
-      %{components: Manager.components(PipelineToScale)}
+      %{components: Manager.reload_components_states(PipelineToScale)}
     end
 
     test "remove add_one and then to mult_two", %{components: init_components} do
       component = Enum.find(init_components, &(&1.name == :add_one))
-      Manager.remove_component(PipelineToScale, component.stage_set_ref)
+      removed_stage = Manager.remove_component(PipelineToScale, component.stage_set_ref)
 
-      components = Manager.components(PipelineToScale)
+      refute Process.alive?(removed_stage.pid)
+
+      Process.sleep(1)
+      components = Manager.reload_components_states(PipelineToScale)
 
       producer = Enum.find(components, &(&1.name == :producer))
       [add_one] = Enum.filter(components, &(&1.name == :add_one))
@@ -396,23 +412,23 @@ defmodule ALF.ManagerTest do
       assert add_one.count == 1
       assert add_one.number == 0
 
-      assert [{^producer_pid, [max_demand: 1, cancel: :transient]}] = add_one.subscribe_to
+      assert [{^producer_pid, _ref}] = add_one.subscribed_to
 
       subscriber_pids = Enum.map(add_one.subscribers, fn {pid, _ref} -> pid end)
       assert Enum.member?(subscriber_pids, mult_two1.pid)
       assert Enum.member?(subscriber_pids, mult_two2.pid)
-
-      assert [{^add_one_pid, [max_demand: 1, cancel: :transient]}] = mult_two1.subscribe_to
-      assert [{^add_one_pid, [max_demand: 1, cancel: :transient]}] = mult_two2.subscribe_to
 
       [{^add_one_pid, _ref1}] = mult_two1.subscribed_to
       [{^add_one_pid, _ref1}] = mult_two2.subscribed_to
 
       # remove mult_two
       component = Enum.find(components, &(&1.name == :mult_two))
-      Manager.remove_component(PipelineToScale, component.stage_set_ref)
+      removed_stage = Manager.remove_component(PipelineToScale, component.stage_set_ref)
 
-      components = Manager.components(PipelineToScale)
+      refute Process.alive?(removed_stage.pid)
+
+      Process.sleep(1)
+      components = Manager.reload_components_states(PipelineToScale)
 
       [add_one] = Enum.filter(components, &(&1.name == :add_one))
       [mult_two] = Enum.filter(components, &(&1.name == :mult_two))
@@ -427,38 +443,14 @@ defmodule ALF.ManagerTest do
       mult_two_pid = mult_two.pid
       assert [{^mult_two_pid, _ref}] = add_one.subscribers
       add_one_pid = add_one.pid
-      assert [{^add_one_pid, [max_demand: 1, cancel: :transient]}] = mult_two.subscribe_to
-      assert [{^add_one_pid, _ref}] = mult_two.subscribe_to
 
-      assert [{^mult_two_pid, [max_demand: 1, cancel: :transient]}] = consumer.subscribe_to
-      assert [{^mult_two_pid, _ref}] = consumer.subscribed_to
-
+      assert [{^add_one_pid, _ref}] = mult_two.subscribed_to
       consumer_pid = consumer.pid
       assert [{^consumer_pid, _ref}] = mult_two.subscribers
 
       # try to remove one more
       assert {:error, :only_one_left} =
                Manager.remove_component(PipelineToScale, component.stage_set_ref)
-    end
-
-    test "if components states are identical", %{components: init_components} do
-      component = Enum.find(init_components, &(&1.name == :add_one))
-      Manager.remove_component(PipelineToScale, component.stage_set_ref)
-
-      PipelineToScale
-      |> Manager.components()
-      |> Enum.each(fn component ->
-        assert component == component.__struct__.__state__(component.pid)
-      end)
-
-      component = Enum.find(Manager.components(PipelineToScale), &(&1.name == :mult_two))
-      Manager.remove_component(PipelineToScale, component.stage_set_ref)
-
-      PipelineToScale
-      |> Manager.components()
-      |> Enum.each(fn component ->
-        assert component == component.__struct__.__state__(component.pid)
-      end)
     end
 
     test "there is no lost ips after stopping" do
@@ -479,37 +471,4 @@ defmodule ALF.ManagerTest do
       assert Task.await(task2) -- Enum.map(100..199, fn n -> (n + 1) * 2 end) == []
     end
   end
-
-  #  describe "remove_component simple case" do
-  #    defmodule PipelineToScale2 do
-  #      use ALF.DSL
-  #
-  #      @components [
-  #        stage(:add_one, count: 2)
-  #      ]
-  #
-  #      def add_one(event, _) do
-  #        event + 1
-  #      end
-  #    end
-  #
-  #    setup do
-  #      Manager.start(PipelineToScale2)
-  #
-  #      on_exit(fn -> Manager.stop(PipelineToScale2) end)
-  #      %{components: Manager.components(PipelineToScale2)}
-  #    end
-  #
-  #    test "remove add_one and then to mult_two", %{components: init_components} do
-  #      component = Enum.find(init_components, &(&1.name == :add_one))
-  #      Manager.remove_component(PipelineToScale2, component.stage_set_ref)
-  #
-  #      components = Manager.components(PipelineToScale2)
-  #      |> IO.inspect
-  #      [add_one] = Enum.filter(components, &(&1.name == :add_one))
-  #      consumer = Enum.find(components, &(&1.name == :consumer))
-  #      IO.inspect(ALF.Components.Consumer.__state__(consumer.pid))
-  #
-  #    end
-  #  end
 end

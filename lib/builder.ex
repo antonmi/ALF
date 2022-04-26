@@ -28,9 +28,15 @@ defmodule ALF.Builder do
   end
 
   def add_stage_worker(supervisor_pid, [%Stage{} = existing_stage | _] = existing_stages) do
+    subscribe_to =
+      Enum.map(existing_stage.subscribed_to, fn {pid, _ref} ->
+        {pid, [max_demand: 1, cancel: :transient]}
+      end)
+
     stage = %{
       existing_stage
-      | subscribed_to: [],
+      | subscribe_to: subscribe_to,
+        subscribed_to: [],
         number: length(existing_stages),
         count: length(existing_stages) + 1
     }

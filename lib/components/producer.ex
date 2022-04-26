@@ -88,11 +88,6 @@ defmodule ALF.Components.Producer do
     {:noreply, [], state}
   end
 
-  def handle_subscribe(:consumer, subscription_options, from, state) do
-    subscribers = [from | state.subscribers]
-    {:automatic, %{state | subscribers: subscribers}}
-  end
-
   defp do_handle_cast([new_ip | new_ips], ips, manager_name, state) do
     ip = add_to_in_progress_registry(new_ip, manager_name)
     state = %{state | ips: ips ++ new_ips}

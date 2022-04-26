@@ -84,6 +84,11 @@ defmodule ALF.Manager do
     GenServer.call(name, :components)
   end
 
+  @spec reload_components_states(atom()) :: list(map())
+  def reload_components_states(name) when is_atom(name) do
+    GenServer.call(name, :reload_components_states)
+  end
+
   @spec producer_ips_count(atom) :: integer()
   def producer_ips_count(name) when is_atom(name) do
     GenServer.call(name, :producer_ips_count)
@@ -223,49 +228,35 @@ defmodule ALF.Manager do
     {:reply, state.components, state}
   end
 
+  def handle_call(:reload_components_states, _from, state) do
+    components =
+      state.components
+      |> Enum.map(fn stage ->
+        stage.__struct__.__state__(stage.pid)
+      end)
+
+    {:reply, components, %{state | components: components}}
+  end
+
   def handle_call(:producer_ips_count, _from, state) do
     count = Producer.ips_count(state.producer_pid)
     {:reply, count, state}
   end
 
   def handle_call({:add_component, stage_set_ref}, _from, state) do
-    existing_workers = Components.find_existing_workers(state.components, stage_set_ref)
-
-    new_stage = Builder.add_stage_worker(state.pipeline_sup_pid, existing_workers)
-
-    stages_to_subscribe_pids = Enum.map(new_stage.subscribers, fn {pid, _opts} -> pid end)
-    subscribe_to_pids = Enum.map(new_stage.subscribe_to, fn {pid, _opts} -> pid end)
-
-    new_components =
-      Components.refresh_components_after_adding(
-        state.components,
-        new_stage,
-        stages_to_subscribe_pids,
-        subscribe_to_pids
-      )
+    {new_stage, new_components} =
+      Components.add_component(state.components, stage_set_ref, state.pipeline_sup_pid)
 
     {:reply, new_stage, %{state | components: new_components}}
   end
 
   def handle_call({:remove_component, stage_set_ref}, _from, state) do
-    existing_workers = Components.find_existing_workers(state.components, stage_set_ref)
+    case Components.remove_component(state.components, stage_set_ref, state.pipeline_sup_pid) do
+      {:ok, {stage_to_delete, new_components}} ->
+        {:reply, stage_to_delete, %{state | components: new_components}}
 
-    if length(existing_workers) > 1 do
-      stage_to_delete = Enum.max_by(existing_workers, & &1.number)
-
-      stage_to_delete.subscribed_to
-      |> Enum.map(fn subscription ->
-        :ok = GenStage.cancel(subscription, :shutdown)
-      end)
-
-      new_components =
-        Components.refresh_components_before_removing(state.components, stage_to_delete)
-
-      :ok = Builder.delete_stage_worker(state.pipeline_sup_pid, stage_to_delete)
-
-      {:reply, stage_to_delete, %{state | components: new_components}}
-    else
-      {:reply, {:error, :only_one_left}, state}
+      {:error, :only_one_left} ->
+        {:reply, {:error, :only_one_left}, state}
     end
   end
 
