@@ -3,6 +3,7 @@ defmodule ALF.Components.Producer do
   alias ALF.Manager.Streamer
 
   defstruct type: :producer,
+            demand: 0,
             name: :producer,
             manager_name: nil,
             ips: [],
@@ -23,7 +24,7 @@ defmodule ALF.Components.Producer do
   end
 
   def load_ips(pid, ips) do
-    GenServer.cast(pid, ips)
+    GenServer.cast(pid, {:load_ips, ips})
   end
 
   def ips_count(pid), do: GenServer.call(pid, :ips_count)
@@ -32,67 +33,82 @@ defmodule ALF.Components.Producer do
     {:reply, length(state.ips), [], state}
   end
 
+  def send_extra_event(pid) do
+    Process.send_after(pid, :send_extra_event, 1)
+  end
+
+  def handle_info(:send_extra_event, state) do
+    IO.inspect("111111111111111111111111111111111111111111111111111111")
+    IO.inspect("111111111111111111111111111111111111111111111111111111")
+    IO.inspect("111111111111111111111111111111111111111111111111111111")
+    IO.inspect("111111111111111111111111111111111111111111111111111111")
+    IO.inspect(state.ips)
+    case state.ips do
+      [] ->
+        {:noreply, [], state}
+      [ip | _] ->
+        {:noreply, [ip], state}
+    end
+  end
+
   def handle_demand(
-        _demand,
+        1,
         %__MODULE__{ips: [ip | ips], manager_name: manager_name, telemetry_enabled: true} = state
       ) do
     :telemetry.span(
       [:alf, :component],
       telemetry_data(ip, state),
       fn ->
-        {:noreply, [ip], state} = do_handle_demand(ip, ips, manager_name, state)
+        {:noreply, [ip], state} = send_ip(ip, ips, manager_name, state)
         {{:noreply, [ip], state}, telemetry_data(ip, state)}
       end
     )
   end
 
   def handle_demand(
-        _demand,
+        1,
         %__MODULE__{ips: [ip | ips], manager_name: manager_name, telemetry_enabled: false} = state
       ) do
-    do_handle_demand(ip, ips, manager_name, state)
+    send_ip([ip], ips, manager_name, state)
   end
 
-  def handle_demand(_demand, state) do
+  def handle_demand(1, %__MODULE__{ips: [], demand: demand} = state) do
+    state = %{state | demand: state.demand + 1}
     {:noreply, [], state}
   end
 
-  defp do_handle_demand(ip, ips, manager_name, state) do
-    ip = add_to_in_progress_registry(ip, manager_name)
-    state = %{state | ips: ips}
-    {:noreply, [ip], state}
-  end
-
   def handle_cast(
-        [new_ip | new_ips],
+        {:load_ips, [new_ip | new_ips]},
         %__MODULE__{ips: ips, manager_name: manager_name, telemetry_enabled: true} = state
       ) do
     :telemetry.span(
       [:alf, :component],
       telemetry_data(new_ip, state),
       fn ->
-        {:noreply, [ip], state} = do_handle_cast([new_ip | new_ips], ips, manager_name, state)
+        {:noreply, [ip], state} = send_ip([new_ip | new_ips], ips, manager_name, state)
         {{:noreply, [ip], state}, telemetry_data(ip, state)}
       end
     )
   end
 
   def handle_cast(
-        [new_ip | new_ips],
+        {:load_ips, [new_ip | new_ips]},
         %__MODULE__{ips: ips, manager_name: manager_name, telemetry_enabled: false} = state
       ) do
-    do_handle_cast([new_ip | new_ips], ips, manager_name, state)
+    send_ip([new_ip | new_ips], ips, manager_name, state)
   end
 
-  def handle_cast([], state) do
+  def handle_cast({:load_ips, []}, state) do
     {:noreply, [], state}
   end
 
-  defp do_handle_cast([new_ip | new_ips], ips, manager_name, state) do
-    ip = add_to_in_progress_registry(new_ip, manager_name)
-    state = %{state | ips: ips ++ new_ips}
-    {:noreply, [ip], state}
+  defp send_ip(new_ips, ips, manager_name, state) do
+    [ip_to_send | ips_to_store] = new_ips ++ ips
+    ip_to_send = add_to_in_progress_registry(ip_to_send, manager_name)
+    state = %{state | ips: ips_to_store}
+    {:noreply, [ip_to_send], state}
   end
+
 
   def add_to_in_progress_registry(ip, manager_name) do
     Streamer.cast_remove_from_registry(manager_name, [ip], ip.stream_ref)
