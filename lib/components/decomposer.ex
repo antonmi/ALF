@@ -28,8 +28,7 @@ defmodule ALF.Components.Decomposer do
       state
       | pid: self(),
         opts: init_opts(state.module, state.opts),
-        source_code: read_source_code(state.module, state.function),
-        telemetry_enabled: telemetry_enabled?()
+        source_code: read_source_code(state.module, state.function)
     }
 
     {:producer_consumer, state, subscribe_to: state.subscribe_to}

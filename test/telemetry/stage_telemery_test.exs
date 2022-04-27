@@ -15,9 +15,6 @@ defmodule ALF.ComponentTelemetryTest do
   end
 
   setup do
-    before = Application.get_env(:alf, :telemetry_enabled)
-    Application.put_env(:alf, :telemetry_enabled, true)
-    on_exit(fn -> Application.put_env(:alf, :telemetry_enabled, before) end)
     {:ok, agent} = Agent.start_link(fn -> [] end)
     %{agent: agent}
   end
@@ -30,7 +27,7 @@ defmodule ALF.ComponentTelemetryTest do
     end
 
     setup %{agent: agent} do
-      ALF.Manager.start(Pipeline)
+      Manager.start(Pipeline, telemetry_enabled: true)
 
       :ok =
         :telemetry.attach_many(

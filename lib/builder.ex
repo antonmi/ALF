@@ -17,10 +17,21 @@ defmodule ALF.Builder do
     Tbd
   }
 
-  def build(pipe_spec, supervisor_pid, manager_name, pipeline_module) when is_list(pipe_spec) do
-    producer = start_producer(supervisor_pid, manager_name, pipeline_module)
-    {last_stages, final_stages} = do_build_pipeline(pipe_spec, [producer], supervisor_pid, [])
-    consumer = start_consumer(supervisor_pid, last_stages, manager_name, pipeline_module)
+  def build(pipe_spec, supervisor_pid, manager_name, pipeline_module, telemetry_enabled \\ nil)
+      when is_list(pipe_spec) do
+    producer = start_producer(supervisor_pid, manager_name, pipeline_module, telemetry_enabled)
+
+    {last_stages, final_stages} =
+      do_build_pipeline(pipe_spec, [producer], supervisor_pid, [], telemetry_enabled)
+
+    consumer =
+      start_consumer(
+        supervisor_pid,
+        last_stages,
+        manager_name,
+        pipeline_module,
+        telemetry_enabled
+      )
 
     {producer, consumer} = set_modules({producer, consumer}, last_stages)
     pipeline = %Pipeline{producer: producer, consumer: consumer, components: final_stages}
@@ -49,19 +60,31 @@ defmodule ALF.Builder do
     DynamicSupervisor.terminate_child(supervisor_pid, stage.pid)
   end
 
-  defp start_producer(supervisor_pid, manager_name, pipeline_module) do
-    producer = %Producer{manager_name: manager_name, pipeline_module: pipeline_module}
+  defp start_producer(supervisor_pid, manager_name, pipeline_module, telemetry_enabled) do
+    producer = %Producer{
+      manager_name: manager_name,
+      pipeline_module: pipeline_module,
+      telemetry_enabled: telemetry_enabled
+    }
+
     {:ok, producer_pid} = DynamicSupervisor.start_child(supervisor_pid, {Producer, producer})
     %{producer | pid: producer_pid}
   end
 
-  defp start_consumer(supervisor_pid, last_stages, manager_name, pipeline_module) do
+  defp start_consumer(
+         supervisor_pid,
+         last_stages,
+         manager_name,
+         pipeline_module,
+         telemetry_enabled
+       ) do
     subscribe_to = subscribe_to_opts(last_stages)
 
     consumer = %Consumer{
       subscribe_to: subscribe_to,
       manager_name: manager_name,
-      pipeline_module: pipeline_module
+      pipeline_module: pipeline_module,
+      telemetry_enabled: telemetry_enabled
     }
 
     {:ok, consumer_pid} = DynamicSupervisor.start_child(supervisor_pid, {Consumer, consumer})
@@ -86,7 +109,7 @@ defmodule ALF.Builder do
     {producer, consumer}
   end
 
-  defp do_build_pipeline(pipe_spec, producers, supervisor_pid, final_stages)
+  defp do_build_pipeline(pipe_spec, producers, supervisor_pid, final_stages, telemetry_enabled)
        when is_list(pipe_spec) do
     pipe_spec
     |> Enum.reduce({producers, final_stages}, fn stage_spec, {prev_stages, stages} ->
@@ -99,32 +122,39 @@ defmodule ALF.Builder do
               start_stage(
                 %{stage | stage_set_ref: stage_set_ref, number: number},
                 supervisor_pid,
-                prev_stages
+                prev_stages,
+                telemetry_enabled
               )
             end)
 
           {new_stages, stages ++ new_stages}
 
         %Goto{} = goto ->
-          goto = start_stage(goto, supervisor_pid, prev_stages)
+          goto = start_stage(goto, supervisor_pid, prev_stages, telemetry_enabled)
           {[goto], stages ++ [goto]}
 
         %DeadEnd{} = dead_end ->
-          dead_end = start_stage(dead_end, supervisor_pid, prev_stages)
+          dead_end = start_stage(dead_end, supervisor_pid, prev_stages, telemetry_enabled)
           {[], stages ++ [dead_end]}
 
         %GotoPoint{} = goto_point ->
-          goto_point = start_stage(goto_point, supervisor_pid, prev_stages)
+          goto_point = start_stage(goto_point, supervisor_pid, prev_stages, telemetry_enabled)
           {[goto_point], stages ++ [goto_point]}
 
         %Switch{branches: branches} = switch ->
-          switch = start_stage(switch, supervisor_pid, prev_stages)
+          switch = start_stage(switch, supervisor_pid, prev_stages, telemetry_enabled)
 
           {last_stages, branches} =
             Enum.reduce(branches, {[], %{}}, fn {key, inner_pipe_spec},
                                                 {all_last_stages, branches} ->
               {last_stages, final_stages} =
-                do_build_pipeline(inner_pipe_spec, [{switch, partition: key}], supervisor_pid, [])
+                do_build_pipeline(
+                  inner_pipe_spec,
+                  [{switch, partition: key}],
+                  supervisor_pid,
+                  [],
+                  telemetry_enabled
+                )
 
               {all_last_stages ++ last_stages, Map.put(branches, key, final_stages)}
             end)
@@ -134,40 +164,45 @@ defmodule ALF.Builder do
           {last_stages, stages ++ [switch]}
 
         %Clone{to: pipe_stages} = clone ->
-          clone = start_stage(clone, supervisor_pid, prev_stages)
+          clone = start_stage(clone, supervisor_pid, prev_stages, telemetry_enabled)
 
           {last_stages, final_stages} =
-            do_build_pipeline(pipe_stages, [clone], supervisor_pid, [])
+            do_build_pipeline(pipe_stages, [clone], supervisor_pid, [], telemetry_enabled)
 
           clone = %{clone | to: final_stages}
 
           {last_stages ++ [clone], stages ++ [clone]}
 
         %Plug{} = plug ->
-          plug = start_stage(plug, supervisor_pid, prev_stages)
+          plug = start_stage(plug, supervisor_pid, prev_stages, telemetry_enabled)
           {[plug], stages ++ [plug]}
 
         %Unplug{} = unplug ->
-          unplug = start_stage(unplug, supervisor_pid, prev_stages)
+          unplug = start_stage(unplug, supervisor_pid, prev_stages, telemetry_enabled)
           {[unplug], stages ++ [unplug]}
 
         %Decomposer{} = decomposer ->
-          decomposer = start_stage(decomposer, supervisor_pid, prev_stages)
+          decomposer = start_stage(decomposer, supervisor_pid, prev_stages, telemetry_enabled)
           {[decomposer], stages ++ [decomposer]}
 
         %Recomposer{} = recomposer ->
-          recomposer = start_stage(recomposer, supervisor_pid, prev_stages)
+          recomposer = start_stage(recomposer, supervisor_pid, prev_stages, telemetry_enabled)
           {[recomposer], stages ++ [recomposer]}
 
         %Tbd{} = tbd ->
-          tbd = start_stage(tbd, supervisor_pid, prev_stages)
+          tbd = start_stage(tbd, supervisor_pid, prev_stages, telemetry_enabled)
           {[tbd], stages ++ [tbd]}
       end
     end)
   end
 
-  defp start_stage(stage, supervisor_pid, prev_stages) do
-    stage = %{stage | subscribe_to: subscribe_to_opts(prev_stages)}
+  defp start_stage(stage, supervisor_pid, prev_stages, telemetry_enabled) do
+    stage = %{
+      stage
+      | subscribe_to: subscribe_to_opts(prev_stages),
+        telemetry_enabled: telemetry_enabled
+    }
+
     {:ok, stage_pid} = DynamicSupervisor.start_child(supervisor_pid, {stage.__struct__, stage})
     %{stage | pid: stage_pid}
   end

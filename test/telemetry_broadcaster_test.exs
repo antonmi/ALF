@@ -32,9 +32,6 @@ defmodule ALF.TelemetryBroadcasterTest do
   end
 
   setup do
-    before = Application.get_env(:alf, :telemetry_enabled)
-    Application.put_env(:alf, :telemetry_enabled, true)
-    on_exit(fn -> Application.put_env(:alf, :telemetry_enabled, before) end)
     {:ok, agent} = Agent.start_link(fn -> [] end)
     %{agent: agent}
   end
@@ -50,7 +47,7 @@ defmodule ALF.TelemetryBroadcasterTest do
 
   describe "broadcasting" do
     setup do
-      Manager.start(SimplePipeline)
+      Manager.start(SimplePipeline, telemetry_enabled: true)
 
       TelemetryBroadcaster.register_remote_function(
         Node.self(),

@@ -15,15 +15,9 @@ defmodule ALF.AutoScalerTest do
     def mult_two(event, _), do: event * 2
   end
 
-  setup do
-    before = Application.get_env(:alf, :telemetry_enabled)
-    Application.put_env(:alf, :telemetry_enabled, true)
-    on_exit(fn -> Application.put_env(:alf, :telemetry_enabled, before) end)
-  end
-
   describe "stats" do
     setup do
-      Manager.start(SimplePipeline)
+      Manager.start(SimplePipeline, autoscaling_enabled: true, telemetry_enabled: true)
     end
 
     test "stats for the pipeline" do
@@ -57,6 +51,9 @@ defmodule ALF.AutoScalerTest do
     test "registering" do
       AutoScaler.register_pipeline(SimplePipeline)
       assert Enum.member?(AutoScaler.pipelines(), SimplePipeline)
+
+      AutoScaler.unregister_pipeline(SimplePipeline)
+      refute Enum.member?(AutoScaler.pipelines(), SimplePipeline)
     end
   end
 
@@ -81,7 +78,7 @@ defmodule ALF.AutoScalerTest do
     end
 
     setup do
-      Manager.start(PipelineToScaleUp)
+      Manager.start(PipelineToScaleUp, autoscaling_enabled: true, telemetry_enabled: true)
     end
 
     test "up" do
@@ -116,13 +113,13 @@ defmodule ALF.AutoScalerTest do
     end
 
     setup do
-      Manager.start(PipelineToScaleDown)
+      Manager.start(PipelineToScaleDown, autoscaling_enabled: true, telemetry_enabled: true)
     end
 
     test "down" do
       {:ok, pid} = Client.start(PipelineToScaleDown)
 
-      1..50
+      1..100
       |> Enum.each(fn event ->
         Client.call(pid, event)
         Process.sleep(10)

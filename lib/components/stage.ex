@@ -32,8 +32,7 @@ defmodule ALF.Components.Stage do
       | pid: self(),
         opts: init_opts(state.module, state.opts),
         source_code: read_source_code(state.module, state.function),
-        subscribers: [],
-        telemetry_enabled: telemetry_enabled?()
+        subscribers: []
     }
 
     {:producer_consumer, state, subscribe_to: state.subscribe_to}

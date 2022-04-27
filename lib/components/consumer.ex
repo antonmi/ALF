@@ -19,8 +19,7 @@ defmodule ALF.Components.Consumer do
   end
 
   def init(state) do
-    {:consumer, %{state | pid: self(), telemetry_enabled: telemetry_enabled?()},
-     subscribe_to: state.subscribe_to}
+    {:consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
   end
 
   def handle_events([ip], _from, %__MODULE__{telemetry_enabled: true} = state)

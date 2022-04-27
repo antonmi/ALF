@@ -20,7 +20,7 @@ defmodule ALF.Components.Producer do
   end
 
   def init(state) do
-    {:producer, %{state | pid: self(), telemetry_enabled: telemetry_enabled?()}}
+    {:producer, %{state | pid: self()}}
   end
 
   def load_ips(pid, ips) do

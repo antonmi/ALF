@@ -22,7 +22,7 @@ defmodule ALF.Components.Clone do
   end
 
   def init(state) do
-    {:producer_consumer, %{state | pid: self(), telemetry_enabled: telemetry_enabled?()},
+    {:producer_consumer, %{state | pid: self()},
      dispatcher: GenStage.BroadcastDispatcher, subscribe_to: state.subscribe_to}
   end
 

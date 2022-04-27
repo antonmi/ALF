@@ -10,12 +10,16 @@ defmodule ALF.Manager do
             sup_pid: nil,
             producer_pid: nil,
             registry: %{},
-            registry_dump: %{}
+            registry_dump: %{},
+            autoscaling_enabled: nil,
+            telemetry_enabled: nil
 
   alias ALF.AutoScaler
   alias ALF.Manager.{Components, Streamer, ProcessingOptions, StreamRegistry}
   alias ALF.Components.{Goto, Producer}
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
+
+  @available_options [:autoscaling_enabled, :telemetry_enabled]
 
   @max_producer_load 100
   def max_producer_load, do: @max_producer_load
@@ -30,10 +34,32 @@ defmodule ALF.Manager do
     {:ok, state, {:continue, :init_pipeline}}
   end
 
+  @spec start(atom) :: :ok
+  def start(module) when is_atom(module) do
+    start(module, module, [])
+  end
+
   @spec start(atom, atom) :: :ok
-  def start(module, name \\ nil) when is_atom(module) and is_atom(name) do
+  def start(module, name) when is_atom(module) and is_atom(name) do
+    start(module, name, [])
+  end
+
+  @spec start(atom, list) :: :ok
+  def start(module, opts) when is_atom(module) and is_list(opts) do
+    start(module, module, opts)
+  end
+
+  @spec start(atom, atom, list) :: :ok
+  def start(module, name, opts) when is_atom(module) and is_atom(name) and is_list(opts) do
     unless is_pipeline_module?(module) do
       raise "The #{module} doesn't implement any pipeline"
+    end
+
+    wrong_options = Keyword.keys(opts) -- @available_options
+
+    if Enum.any?(wrong_options) do
+      raise "Wrong options for the '#{name}' pipeline: #{inspect(wrong_options)}. " <>
+              "Available options are #{inspect(@available_options)}"
     end
 
     sup_pid = Process.whereis(ALF.DynamicSupervisor)
@@ -46,7 +72,17 @@ defmodule ALF.Manager do
              id: __MODULE__,
              start:
                {__MODULE__, :start_link,
-                [%__MODULE__{sup_pid: sup_pid, name: name, pipeline_module: module}]},
+                [
+                  %__MODULE__{
+                    sup_pid: sup_pid,
+                    name: name,
+                    pipeline_module: module,
+                    autoscaling_enabled: Keyword.get(opts, :autoscaling_enabled, false),
+                    telemetry_enabled:
+                      Keyword.get(opts, :telemetry_enabled, nil) ||
+                        telemetry_enabled_in_configs?()
+                  }
+                ]},
              restart: :transient
            }
          ) do
@@ -60,6 +96,7 @@ defmodule ALF.Manager do
   end
 
   def stop(module) when is_atom(module) do
+    AutoScaler.unregister_pipeline(module)
     result = GenServer.call(module, :stop, :infinity)
     Introspection.remove(module)
     result
@@ -119,7 +156,7 @@ defmodule ALF.Manager do
   end
 
   def handle_continue(:register_auto_scaling, %__MODULE__{} = state) do
-    if telemetry_enabled?() do
+    if state.autoscaling_enabled do
       AutoScaler.register_pipeline(state.pipeline_module)
     end
 
@@ -152,7 +189,8 @@ defmodule ALF.Manager do
         state.pipeline_module.alf_components,
         state.pipeline_sup_pid,
         state.name,
-        state.pipeline_module
+        state.pipeline_module,
+        state.telemetry_enabled
       )
 
     %{state | pipeline: pipeline, producer_pid: pipeline.producer.pid}
@@ -295,7 +333,7 @@ defmodule ALF.Manager do
     _error -> false
   end
 
-  defp telemetry_enabled? do
+  defp telemetry_enabled_in_configs? do
     Application.get_env(:alf, :telemetry_enabled, false)
   end
 end

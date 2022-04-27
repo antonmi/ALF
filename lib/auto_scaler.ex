@@ -120,6 +120,9 @@ defmodule ALF.AutoScaler do
   @spec register_pipeline(atom()) :: atom()
   def register_pipeline(module), do: GenServer.call(__MODULE__, {:register_pipeline, module})
 
+  @spec unregister_pipeline(atom()) :: atom()
+  def unregister_pipeline(module), do: GenServer.call(__MODULE__, {:unregister_pipeline, module})
+
   @spec pipelines() :: list(atom())
   def pipelines(), do: GenServer.call(__MODULE__, :pipelines)
 
@@ -137,38 +140,48 @@ defmodule ALF.AutoScaler do
     {:reply, pipeline, state}
   end
 
+  def handle_call({:unregister_pipeline, pipeline}, _from, state) do
+    pipelines = Enum.filter(state.pipelines, &(&1 != pipeline))
+    state = %{state | pipelines: pipelines}
+    {:reply, pipeline, state}
+  end
+
   def handle_call(:pipelines, _from, state) do
     {:reply, state.pipelines, state}
   end
 
   def handle_cast({:update_component_stats, component, duration_micro}, state) do
-    stats = state.stats
-    pipeline_stats = Map.get(stats, component.pipeline_module, false)
+    if Enum.member?(state.pipelines, component.pipeline_module) do
+      stats = state.stats
+      pipeline_stats = Map.get(stats, component.pipeline_module, false)
 
-    stats =
-      if pipeline_stats do
-        stats
-      else
-        stats
-        |> Map.put(component.pipeline_module, %{
-          since: DateTime.truncate(DateTime.utc_now(), :microsecond)
+      stats =
+        if pipeline_stats do
+          stats
+        else
+          stats
+          |> Map.put(component.pipeline_module, %{
+            since: DateTime.truncate(DateTime.utc_now(), :microsecond)
+          })
+        end
+
+      key = component_key(component)
+      stats = ensure_key_exists(stats, key)
+
+      component_stats = get_in(stats, key)
+      counter = component_stats[:counter] || 0
+      sum_time_micro = component_stats[:sum_time_micro] || 0
+
+      stats =
+        put_in(stats, key, %{
+          counter: counter + 1,
+          sum_time_micro: sum_time_micro + duration_micro
         })
-      end
 
-    key = component_key(component)
-    stats = ensure_key_exists(stats, key)
-
-    component_stats = get_in(stats, key)
-    counter = component_stats[:counter] || 0
-    sum_time_micro = component_stats[:sum_time_micro] || 0
-
-    stats =
-      put_in(stats, key, %{
-        counter: counter + 1,
-        sum_time_micro: sum_time_micro + duration_micro
-      })
-
-    {:noreply, %{state | stats: stats}}
+      {:noreply, %{state | stats: stats}}
+    else
+      {:noreply, state}
+    end
   end
 
   defp ensure_key_exists(state, []), do: state

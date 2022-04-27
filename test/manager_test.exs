@@ -3,35 +3,102 @@ defmodule ALF.ManagerTest do
 
   alias ALF.{IP, Manager}
 
-  defmodule SimplePipeline do
-    use ALF.DSL
+  describe "start" do
+    defmodule ExtremelySimplePipeline do
+      use ALF.DSL
 
-    @components [
-      stage(:add_one),
-      stage(:mult_two)
-    ]
+      @components []
+    end
 
-    def add_one(event, _), do: event + 1
-    def mult_two(event, _), do: event * 2
-  end
+    setup do
+      on_exit(fn -> Manager.stop(ExtremelySimplePipeline) end)
+    end
 
-  defmodule GoToPipeline do
-    use ALF.DSL
+    test "with just module name" do
+      Manager.start(ExtremelySimplePipeline)
+      state = Manager.__state__(ExtremelySimplePipeline)
 
-    @components [
-      goto_point(:point),
-      goto(:goto, to: :point)
-    ]
-  end
+      %Manager{
+        name: ExtremelySimplePipeline,
+        pipeline_module: ExtremelySimplePipeline,
+        pipeline: %ALF.Pipeline{},
+        registry: %{},
+        autoscaling_enabled: false,
+        telemetry_enabled: false
+      } = state
+    end
 
-  setup do
-    on_exit(fn -> Manager.stop(SimplePipeline) end)
+    test "telemetry default" do
+      Manager.start(ExtremelySimplePipeline)
+      state = Manager.__state__(ExtremelySimplePipeline)
+
+      %Manager{telemetry_enabled: false} = state
+    end
+
+    test "telemetry default when it's enabled in configs" do
+      before = Application.get_env(:alf, :telemetry_enabled)
+      Application.put_env(:alf, :telemetry_enabled, true)
+      on_exit(fn -> Application.put_env(:alf, :telemetry_enabled, before) end)
+
+      Manager.start(ExtremelySimplePipeline)
+      state = Manager.__state__(ExtremelySimplePipeline)
+
+      %Manager{telemetry_enabled: true} = state
+    end
+
+    test "with custom name" do
+      Manager.start(ExtremelySimplePipeline, :simple_pipeline)
+      state = Manager.__state__(:simple_pipeline)
+
+      %Manager{
+        name: :simple_pipeline,
+        pipeline_module: ExtremelySimplePipeline,
+        pipeline: %ALF.Pipeline{},
+        registry: %{}
+      } = state
+    end
+
+    test "with opts" do
+      Manager.start(ExtremelySimplePipeline, autoscaling_enabled: true, telemetry_enabled: true)
+      state = Manager.__state__(ExtremelySimplePipeline)
+
+      %Manager{
+        name: ExtremelySimplePipeline,
+        pipeline_module: ExtremelySimplePipeline,
+        pipeline: %ALF.Pipeline{},
+        autoscaling_enabled: true,
+        telemetry_enabled: true,
+        registry: %{}
+      } = state
+    end
+
+    test "with invalid opts" do
+      assert_raise RuntimeError,
+                   "Wrong options for the 'simple_pipeline' pipeline: [:a]. " <>
+                     "Available options are [:autoscaling_enabled, :telemetry_enabled]",
+                   fn ->
+                     Manager.start(ExtremelySimplePipeline, :simple_pipeline, a: :b)
+                   end
+    end
   end
 
   describe "start-up actions" do
+    defmodule SimplePipeline do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one),
+        stage(:mult_two)
+      ]
+
+      def add_one(event, _), do: event + 1
+      def mult_two(event, _), do: event * 2
+    end
+
     setup do
       Manager.start(SimplePipeline)
       state = Manager.__state__(SimplePipeline)
+      on_exit(fn -> Manager.stop(SimplePipeline) end)
       %{state: state}
     end
 
@@ -86,9 +153,20 @@ defmodule ALF.ManagerTest do
   end
 
   describe "stop/1" do
+    defmodule SimplePipelineToStop do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one)
+      ]
+
+      def add_one(event, _), do: event + 1
+    end
+
     setup do
-      Manager.start(SimplePipeline, :pipeline_to_stop)
+      Manager.start(SimplePipelineToStop, :pipeline_to_stop)
       state = Manager.__state__(:pipeline_to_stop)
+      on_exit(fn -> Manager.stop(SimplePipelineToStop) end)
       %{state: state}
     end
 
@@ -106,11 +184,21 @@ defmodule ALF.ManagerTest do
   end
 
   describe "prepare gotos after initialization" do
+    defmodule GoToPipeline do
+      use ALF.DSL
+
+      @components [
+        goto_point(:point),
+        goto(:goto, to: :point)
+      ]
+    end
+
     setup do
       Manager.start(GoToPipeline)
       Process.sleep(5)
 
       state = Manager.__state__(GoToPipeline)
+      on_exit(fn -> Manager.stop(GoToPipeline) end)
       %{state: state}
     end
 
@@ -122,25 +210,38 @@ defmodule ALF.ManagerTest do
   end
 
   describe "stream_to/2" do
+    defmodule SimplePipelineToStream do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one),
+        stage(:mult_two)
+      ]
+
+      def add_one(event, _), do: event + 1
+      def mult_two(event, _), do: event * 2
+    end
+
     def sample_stream, do: [1, 2, 3]
 
     setup do
-      Manager.start(SimplePipeline)
+      Manager.start(SimplePipelineToStream)
+      on_exit(fn -> Manager.stop(SimplePipelineToStream) end)
     end
 
     test "run stream and check events" do
       results =
         sample_stream()
-        |> Manager.stream_to(SimplePipeline)
+        |> Manager.stream_to(SimplePipelineToStream)
         |> Enum.to_list()
 
       assert results == [4, 6, 8]
     end
 
     test "run several streams at once" do
-      stream1 = Manager.stream_to(1..100, SimplePipeline)
-      stream2 = Manager.stream_to(101..200, SimplePipeline)
-      stream3 = Manager.stream_to(201..300, SimplePipeline)
+      stream1 = Manager.stream_to(1..100, SimplePipelineToStream)
+      stream2 = Manager.stream_to(101..200, SimplePipelineToStream)
+      stream3 = Manager.stream_to(201..300, SimplePipelineToStream)
 
       [result1, result2, result3] =
         [stream1, stream2, stream3]
@@ -155,7 +256,7 @@ defmodule ALF.ManagerTest do
     test "run with options" do
       results =
         sample_stream()
-        |> Manager.stream_to(SimplePipeline, %{chunk_every: 5})
+        |> Manager.stream_to(SimplePipelineToStream, %{chunk_every: 5})
         |> Enum.to_list()
 
       assert results == [4, 6, 8]
@@ -164,7 +265,7 @@ defmodule ALF.ManagerTest do
     test "run with return_ips: true option" do
       results =
         sample_stream()
-        |> Manager.stream_to(SimplePipeline, %{return_ips: true})
+        |> Manager.stream_to(SimplePipelineToStream, %{return_ips: true})
         |> Enum.to_list()
 
       assert [
@@ -176,12 +277,25 @@ defmodule ALF.ManagerTest do
   end
 
   describe "steam_with_ids_to/2" do
+    defmodule SimplePipelineToStreamWitIds do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one),
+        stage(:mult_two)
+      ]
+
+      def add_one(event, _), do: event + 1
+      def mult_two(event, _), do: event * 2
+    end
+
     def sample_stream_with_ids(ref, pid) do
       [{ref, 1}, {:my_id, 2}, {pid, 3}]
     end
 
     setup do
-      Manager.start(SimplePipeline)
+      Manager.start(SimplePipelineToStreamWitIds)
+      on_exit(fn -> Manager.stop(SimplePipelineToStreamWitIds) end)
     end
 
     test "run stream and check events" do
@@ -190,7 +304,7 @@ defmodule ALF.ManagerTest do
 
       result =
         sample_stream_with_ids(ref, pid)
-        |> Manager.steam_with_ids_to(SimplePipeline)
+        |> Manager.steam_with_ids_to(SimplePipelineToStreamWitIds)
         |> Enum.to_list()
 
       assert [{^ref, 4}, {:my_id, 6}, {^pid, 8}] = result
@@ -202,7 +316,7 @@ defmodule ALF.ManagerTest do
 
       result =
         sample_stream_with_ids(ref, pid)
-        |> Manager.steam_with_ids_to(SimplePipeline, %{return_ips: true})
+        |> Manager.steam_with_ids_to(SimplePipelineToStreamWitIds, %{return_ips: true})
         |> Enum.to_list()
 
       assert [
@@ -214,47 +328,54 @@ defmodule ALF.ManagerTest do
   end
 
   describe "components/1" do
+    defmodule SimplePipelineWithComponents do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one),
+        stage(:mult_two)
+      ]
+
+      def add_one(event, _), do: event + 1
+      def mult_two(event, _), do: event * 2
+    end
+
     setup do
-      Manager.start(SimplePipeline)
+      Manager.start(SimplePipelineWithComponents)
+      on_exit(fn -> Manager.stop(SimplePipelineWithComponents) end)
     end
 
     test "get components module" do
-      components = Manager.components(SimplePipeline)
+      components = Manager.components(SimplePipelineWithComponents)
       assert length(components) == 4
-    end
-  end
-
-  describe "reload_components_states" do
-    setup do
-      Manager.start(SimplePipeline)
     end
 
     test "reloading" do
-      components = Manager.reload_components_states(SimplePipeline)
+      components = Manager.reload_components_states(SimplePipelineWithComponents)
       assert length(components) == 4
-    end
-  end
-
-  defmodule PipelineToScale do
-    use ALF.DSL
-
-    @components [
-      stage(:add_one),
-      stage(:mult_two)
-    ]
-
-    def add_one(event, _) do
-      Process.sleep(1)
-      event + 1
-    end
-
-    def mult_two(event, _) do
-      Process.sleep(1)
-      event * 2
     end
   end
 
   describe "add_component" do
+    defmodule PipelineToScale do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one),
+        stage(:mult_two)
+      ]
+
+      def add_one(event, _) do
+        Process.sleep(1)
+        event + 1
+      end
+
+      def mult_two(event, _) do
+        Process.sleep(1)
+        event * 2
+      end
+    end
+
     setup do
       Manager.start(PipelineToScale)
       on_exit(fn -> Manager.stop(PipelineToScale) end)
@@ -379,27 +500,47 @@ defmodule ALF.ManagerTest do
   end
 
   describe "remove_component after adding" do
+    defmodule PipelineToScale2 do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one),
+        stage(:mult_two)
+      ]
+
+      def add_one(event, _) do
+        Process.sleep(1)
+        event + 1
+      end
+
+      def mult_two(event, _) do
+        Process.sleep(1)
+        event * 2
+      end
+    end
+
     setup do
-      Manager.start(PipelineToScale)
-      init_components = Manager.components(PipelineToScale)
+      Manager.start(PipelineToScale2)
+      init_components = Manager.components(PipelineToScale2)
       component = Enum.find(init_components, &(&1.name == :add_one))
-      Manager.add_component(PipelineToScale, component.stage_set_ref)
+      Manager.add_component(PipelineToScale2, component.stage_set_ref)
 
-      component = Enum.find(Manager.components(PipelineToScale), &(&1.name == :mult_two))
-      Manager.add_component(PipelineToScale, component.stage_set_ref)
+      component = Enum.find(Manager.components(PipelineToScale2), &(&1.name == :mult_two))
+      Manager.add_component(PipelineToScale2, component.stage_set_ref)
 
-      on_exit(fn -> Manager.stop(PipelineToScale) end)
-      %{components: Manager.reload_components_states(PipelineToScale)}
+      on_exit(fn -> Manager.stop(PipelineToScale2) end)
+      Process.sleep(5)
+      %{components: Manager.reload_components_states(PipelineToScale2)}
     end
 
     test "remove add_one and then to mult_two", %{components: init_components} do
       component = Enum.find(init_components, &(&1.name == :add_one))
-      removed_stage = Manager.remove_component(PipelineToScale, component.stage_set_ref)
+      removed_stage = Manager.remove_component(PipelineToScale2, component.stage_set_ref)
 
       refute Process.alive?(removed_stage.pid)
 
       Process.sleep(1)
-      components = Manager.reload_components_states(PipelineToScale)
+      components = Manager.reload_components_states(PipelineToScale2)
 
       producer = Enum.find(components, &(&1.name == :producer))
       [add_one] = Enum.filter(components, &(&1.name == :add_one))
@@ -423,12 +564,12 @@ defmodule ALF.ManagerTest do
 
       # remove mult_two
       component = Enum.find(components, &(&1.name == :mult_two))
-      removed_stage = Manager.remove_component(PipelineToScale, component.stage_set_ref)
+      removed_stage = Manager.remove_component(PipelineToScale2, component.stage_set_ref)
 
       refute Process.alive?(removed_stage.pid)
 
       Process.sleep(1)
-      components = Manager.reload_components_states(PipelineToScale)
+      components = Manager.reload_components_states(PipelineToScale2)
 
       [add_one] = Enum.filter(components, &(&1.name == :add_one))
       [mult_two] = Enum.filter(components, &(&1.name == :mult_two))
@@ -450,13 +591,13 @@ defmodule ALF.ManagerTest do
 
       # try to remove one more
       assert {:error, :only_one_left} =
-               Manager.remove_component(PipelineToScale, component.stage_set_ref)
+               Manager.remove_component(PipelineToScale2, component.stage_set_ref)
     end
 
     test "there is no lost ips after stopping", %{components: init_components} do
-      stream1 = Manager.stream_to(0..99, PipelineToScale)
-      stream2 = Manager.stream_to(100..199, PipelineToScale)
-      stream3 = Manager.stream_to(200..299, PipelineToScale)
+      stream1 = Manager.stream_to(0..99, PipelineToScale2)
+      stream2 = Manager.stream_to(100..199, PipelineToScale2)
+      stream3 = Manager.stream_to(200..299, PipelineToScale2)
 
       [task1, task2, task3] =
         [stream1, stream2, stream3]
@@ -466,12 +607,12 @@ defmodule ALF.ManagerTest do
 
       Process.sleep(100)
       component = Enum.find(init_components, &(&1.name == :add_one))
-      Manager.remove_component(PipelineToScale, component.stage_set_ref)
+      Manager.remove_component(PipelineToScale2, component.stage_set_ref)
 
       Process.sleep(10)
 
       component = Enum.find(init_components, &(&1.name == :mult_two))
-      Manager.remove_component(PipelineToScale, component.stage_set_ref)
+      Manager.remove_component(PipelineToScale2, component.stage_set_ref)
 
       assert Task.await(task1) -- Enum.map(0..99, fn n -> (n + 1) * 2 end) == []
       assert Task.await(task2) -- Enum.map(100..199, fn n -> (n + 1) * 2 end) == []

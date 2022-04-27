@@ -25,10 +25,6 @@ defmodule ALF.Components.Basic do
     end
   end
 
-  def telemetry_enabled? do
-    Application.get_env(:alf, :telemetry_enabled, false)
-  end
-
   def telemetry_data(%IP{} = ip, state) do
     %{ip: ip_telemetry_data(ip), component: component_telemetry_data(state)}
   end
@@ -99,8 +95,6 @@ defmodule ALF.Components.Basic do
         subscribers = Enum.filter(state.subscribers, &(&1 != from))
         {:noreply, [], %{state | subscribed_to: subscribed_to, subscribers: subscribers}}
       end
-
-      def telemetry_enabled?, do: ALF.Components.Basic.telemetry_enabled?()
 
       def telemetry_data(ip, state), do: ALF.Components.Basic.telemetry_data(ip, state)
 
