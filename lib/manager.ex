@@ -94,6 +94,10 @@ defmodule ALF.Manager do
     GenServer.call(name, :producer_ips_count)
   end
 
+  def send_extra_event(name) when is_atom(name) do
+    GenServer.call(name, :send_extra_event)
+  end
+
   def add_component(name, stage_set_ref) do
     GenServer.call(name, {:add_component, stage_set_ref})
   end
@@ -241,6 +245,11 @@ defmodule ALF.Manager do
   def handle_call(:producer_ips_count, _from, state) do
     count = Producer.ips_count(state.producer_pid)
     {:reply, count, state}
+  end
+
+  def handle_call(:send_extra_event, _from, state) do
+    Producer.send_extra_event(state.producer_pid)
+    {:reply, :ok, state}
   end
 
   def handle_call({:add_component, stage_set_ref}, _from, state) do
