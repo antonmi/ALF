@@ -33,87 +33,51 @@ defmodule ALF.Components.Producer do
     {:reply, length(state.ips), [], state}
   end
 
-  def send_extra_event(pid) do
-    Process.send_after(pid, :send_extra_event, 1)
-  end
-
-  def handle_info(:send_extra_event, state) do
-    IO.inspect("111111111111111111111111111111111111111111111111111111")
-    IO.inspect("111111111111111111111111111111111111111111111111111111")
-    IO.inspect("111111111111111111111111111111111111111111111111111111")
-    IO.inspect("111111111111111111111111111111111111111111111111111111")
-    IO.inspect(state.ips)
-    case state.ips do
-      [] ->
-        {:noreply, [], state}
-      [ip | _] ->
-        {:noreply, [ip], state}
-    end
-  end
-
-  def handle_demand(
-        1,
-        %__MODULE__{ips: [ip | ips], manager_name: manager_name, telemetry_enabled: true} = state
-      ) do
-    :telemetry.span(
-      [:alf, :component],
-      telemetry_data(ip, state),
-      fn ->
-        {:noreply, [ip], state} = send_ip(ip, ips, manager_name, state)
-        {{:noreply, [ip], state}, telemetry_data(ip, state)}
-      end
-    )
-  end
-
-  def handle_demand(
-        1,
-        %__MODULE__{ips: [ip | ips], manager_name: manager_name, telemetry_enabled: false} = state
-      ) do
-    send_ip([ip], ips, manager_name, state)
+  def handle_demand(1, %__MODULE__{ips: [_ip | _], demand: demand} = state) do
+    {ips, new_state} = prepare_state_and_ips(%{state | demand: demand + 1})
+    {:noreply, ips, new_state}
   end
 
   def handle_demand(1, %__MODULE__{ips: [], demand: demand} = state) do
-    state = %{state | demand: state.demand + 1}
+    state = %{state | demand: demand + 1}
     {:noreply, [], state}
   end
 
-  def handle_cast(
-        {:load_ips, [new_ip | new_ips]},
-        %__MODULE__{ips: ips, manager_name: manager_name, telemetry_enabled: true} = state
-      ) do
-    :telemetry.span(
-      [:alf, :component],
-      telemetry_data(new_ip, state),
-      fn ->
-        {:noreply, [ip], state} = send_ip([new_ip | new_ips], ips, manager_name, state)
-        {{:noreply, [ip], state}, telemetry_data(ip, state)}
-      end
-    )
+  def handle_cast({:load_ips, new_ips}, %__MODULE__{ips: ips} = state) do
+    {ips, new_state} = prepare_state_and_ips(%{state | ips: ips ++ new_ips})
+    {:noreply, ips, new_state}
   end
 
-  def handle_cast(
-        {:load_ips, [new_ip | new_ips]},
-        %__MODULE__{ips: ips, manager_name: manager_name, telemetry_enabled: false} = state
-      ) do
-    send_ip([new_ip | new_ips], ips, manager_name, state)
+  defp prepare_state_and_ips(
+         %__MODULE__{ips: ips, manager_name: manager_name, demand: demand} = state
+       ) do
+    case Enum.split(ips, demand) do
+      {[], ips_to_store} ->
+        {[], %{state | demand: demand, ips: ips_to_store}}
+
+      {ips_to_send, ips_to_store} ->
+        ips_to_send = add_ips_to_in_progress_registry(ips_to_send, manager_name)
+
+        if state.telemetry_enabled do
+          send_simple_telemetry_events(ips_to_send, state)
+        end
+
+        {ips_to_send, %{state | demand: demand - length(ips_to_send), ips: ips_to_store}}
+    end
   end
 
-  def handle_cast({:load_ips, []}, state) do
-    {:noreply, [], state}
+  defp add_ips_to_in_progress_registry([ip | _] = ips, manager_name) do
+    Streamer.cast_remove_from_registry(manager_name, ips, ip.stream_ref)
+    ips = Enum.map(ips, fn ip -> %{ip | in_progress: true} end)
+    Streamer.cast_add_to_registry(manager_name, ips, ip.stream_ref)
+    ips
   end
 
-  defp send_ip(new_ips, ips, manager_name, state) do
-    [ip_to_send | ips_to_store] = new_ips ++ ips
-    ip_to_send = add_to_in_progress_registry(ip_to_send, manager_name)
-    state = %{state | ips: ips_to_store}
-    {:noreply, [ip_to_send], state}
-  end
-
-
-  def add_to_in_progress_registry(ip, manager_name) do
-    Streamer.cast_remove_from_registry(manager_name, [ip], ip.stream_ref)
-    ip = %{ip | in_progress: true}
-    Streamer.cast_add_to_registry(manager_name, [ip], ip.stream_ref)
-    ip
+  defp send_simple_telemetry_events(ips_to_send, state) do
+    ips_to_send
+    |> Enum.map(fn ip ->
+      telemetry_data = telemetry_data(ip, state)
+      :telemetry.span([:alf, :component], telemetry_data, fn -> {:ok, telemetry_data} end)
+    end)
   end
 end
