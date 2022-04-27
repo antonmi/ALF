@@ -453,22 +453,28 @@ defmodule ALF.ManagerTest do
                Manager.remove_component(PipelineToScale, component.stage_set_ref)
     end
 
-    test "there is no lost ips after stopping" do
+    test "there is no lost ips after stopping", %{components: init_components} do
       stream1 = Manager.stream_to(0..99, PipelineToScale)
       stream2 = Manager.stream_to(100..199, PipelineToScale)
+      stream3 = Manager.stream_to(200..299, PipelineToScale)
 
-      [task1, task2] =
-        [stream1, stream2]
+      [task1, task2, task3] =
+        [stream1, stream2,stream3]
         |> Enum.map(fn stream ->
           Task.async(fn -> Enum.to_list(stream) end)
         end)
 
-      Process.sleep(10)
-      component = Enum.find(Manager.components(PipelineToScale), &(&1.name == :add_one))
+      Process.sleep(100)
+      IO.inspect("========================================================")
+      component = Enum.find(init_components, &(&1.name == :add_one))
+      Manager.remove_component(PipelineToScale, component.stage_set_ref)
+
+      component = Enum.find(init_components, &(&1.name == :mult_two))
       Manager.remove_component(PipelineToScale, component.stage_set_ref)
 
       assert Task.await(task1) -- Enum.map(0..99, fn n -> (n + 1) * 2 end) == []
       assert Task.await(task2) -- Enum.map(100..199, fn n -> (n + 1) * 2 end) == []
+      assert Task.await(task3) -- Enum.map(200..299, fn n -> (n + 1) * 2 end) == []
     end
   end
 end
