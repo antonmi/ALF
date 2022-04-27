@@ -34,7 +34,7 @@ defmodule ALF.AutoScaler do
   end
 
   def handle_continue(:spawn_monitor, %__MODULE__{} = state) do
-    #    spawn_scaling_attempts(state.pid)
+    spawn_scaling_attempts(state.pid)
     {:noreply, state}
   end
 
@@ -43,28 +43,35 @@ defmodule ALF.AutoScaler do
   end
 
   def handle_info(:monitor_workload, state) do
-    pipeline = hd(state.pipelines)
-    ips_count = Manager.producer_ips_count(pipeline)
-
     new_stats =
-      cond do
-        ips_count > Manager.max_producer_load() * 0.9 ->
-          scale_up(pipeline, Map.get(state.stats, pipeline))
-          Map.put(state.stats, pipeline, nil)
+      state.pipelines
+      |> Enum.reduce(state.stats, fn pipeline, acc ->
+        ips_count = Manager.producer_ips_count(pipeline)
 
-        ips_count < Manager.max_producer_load() * 0.1 ->
-          scale_down(pipeline, Map.get(state.stats, pipeline))
-          Map.put(state.stats, pipeline, nil)
+        cond do
+          ips_count > Manager.max_producer_load() * 0.9 ->
+            scale_up(pipeline, Map.get(state.stats, pipeline))
+            Map.put(acc, pipeline, nil)
 
-        true ->
-          state.stats
-      end
+          ips_count < Manager.max_producer_load() * 0.1 ->
+            case scale_down(pipeline, Map.get(state.stats, pipeline)) do
+              {:error, :only_one_left} ->
+                acc
+
+              _removed_stage ->
+                Map.put(acc, pipeline, nil)
+            end
+
+          true ->
+            acc
+        end
+      end)
 
     spawn_scaling_attempts(state.pid)
     {:noreply, %{state | stats: new_stats}}
   end
 
-  defp scale_up(pipeline, nil), do: :no_stats
+  defp scale_up(_pipeline, nil), do: :no_stats
 
   defp scale_up(pipeline, stats) do
     {slowest_stage_set_ref, _} =
@@ -73,23 +80,25 @@ defmodule ALF.AutoScaler do
         {:since, _time} ->
           :atom_is_more_than_number
 
-        {stage_set_ref, stage_stats} ->
+        {_stage_set_ref, stage_stats} ->
           total_stage_set_speed(stage_stats)
       end)
 
     Manager.add_component(pipeline, slowest_stage_set_ref)
   end
 
-  defp scale_down(pipeline, nil), do: :no_stats
+  defp scale_down(_pipeline, nil), do: :no_stats
 
   defp scale_down(pipeline, stats) do
+    Manager.reload_components_states(pipeline)
+
     {fastest_stage_set_ref, _} =
       stats
       |> Enum.max_by(fn
         {:since, _time} ->
           -1
 
-        {stage_set_ref, stage_stats} ->
+        {_stage_set_ref, stage_stats} ->
           total_stage_set_speed(stage_stats)
       end)
 
@@ -97,7 +106,7 @@ defmodule ALF.AutoScaler do
   end
 
   defp total_stage_set_speed(stage_stats) do
-    Enum.reduce(stage_stats, 0, fn {key, data}, speed ->
+    Enum.reduce(stage_stats, 0, fn {_key, data}, speed ->
       speed + data[:counter] / data[:sum_time_micro]
     end)
   end
@@ -162,6 +171,8 @@ defmodule ALF.AutoScaler do
     {:noreply, %{state | stats: stats}}
   end
 
+  defp ensure_key_exists(state, []), do: state
+
   defp ensure_key_exists(stats, [key | keys]) do
     map = Map.get(stats, key)
 
@@ -175,8 +186,6 @@ defmodule ALF.AutoScaler do
   defp component_key(component) do
     [component.pipeline_module, component.stage_set_ref, {component.name, component.number}]
   end
-
-  defp ensure_key_exists(state, []), do: state
 
   defp do_attach_telemetry(pid) do
     :ok =

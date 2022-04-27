@@ -43,8 +43,8 @@ defmodule ALF.Components.Producer do
     {:noreply, [], state}
   end
 
-  def handle_cast({:load_ips, new_ips}, %__MODULE__{ips: ips} = state) do
-    {ips, new_state} = prepare_state_and_ips(%{state | ips: ips ++ new_ips})
+  def handle_cast({:load_ips, new_ips}, %__MODULE__{ips: ips, demand: demand} = state) do
+    {ips, new_state} = prepare_state_and_ips(%{state | ips: ips ++ new_ips, demand: demand + 0})
     {:noreply, ips, new_state}
   end
 

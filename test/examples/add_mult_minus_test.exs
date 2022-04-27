@@ -29,15 +29,6 @@ defmodule ALF.Examples.AddMultMinusTest do
     assert results == [1, 3, 5]
   end
 
-  test "several inputs2" do
-    results =
-      [1, 2, 3]
-      |> Manager.stream_to(Pipeline)
-      |> Enum.to_list()
-
-    assert results == [1, 3, 5]
-  end
-
   test "several streams of inputs" do
     stream1 = Manager.stream_to(0..9, Pipeline)
     stream2 = Manager.stream_to(10..19, Pipeline)

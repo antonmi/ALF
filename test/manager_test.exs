@@ -459,15 +459,16 @@ defmodule ALF.ManagerTest do
       stream3 = Manager.stream_to(200..299, PipelineToScale)
 
       [task1, task2, task3] =
-        [stream1, stream2,stream3]
+        [stream1, stream2, stream3]
         |> Enum.map(fn stream ->
           Task.async(fn -> Enum.to_list(stream) end)
         end)
 
       Process.sleep(100)
-      IO.inspect("========================================================")
       component = Enum.find(init_components, &(&1.name == :add_one))
       Manager.remove_component(PipelineToScale, component.stage_set_ref)
+
+      Process.sleep(10)
 
       component = Enum.find(init_components, &(&1.name == :mult_two))
       Manager.remove_component(PipelineToScale, component.stage_set_ref)

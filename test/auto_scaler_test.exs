@@ -1,7 +1,7 @@
 defmodule ALF.AutoScalerTest do
   use ExUnit.Case, async: false
 
-  alias ALF.{Manager, AutoScaler}
+  alias ALF.{AutoScaler, Manager, Manager.Client}
 
   defmodule SimplePipeline do
     use ALF.DSL
@@ -19,8 +19,6 @@ defmodule ALF.AutoScalerTest do
     before = Application.get_env(:alf, :telemetry_enabled)
     Application.put_env(:alf, :telemetry_enabled, true)
     on_exit(fn -> Application.put_env(:alf, :telemetry_enabled, before) end)
-    {:ok, agent} = Agent.start_link(fn -> [] end)
-    %{agent: agent}
   end
 
   describe "stats" do
@@ -62,8 +60,43 @@ defmodule ALF.AutoScalerTest do
     end
   end
 
-  describe "scaling" do
-    defmodule PipelineToScale do
+  describe "scaling up" do
+    defmodule PipelineToScaleUp do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one, count: 1),
+        stage(:mult_two, count: 1)
+      ]
+
+      def add_one(event, _) do
+        Process.sleep(10)
+        event + 1
+      end
+
+      def mult_two(event, _) do
+        Process.sleep(15)
+        event * 2
+      end
+    end
+
+    setup do
+      Manager.start(PipelineToScaleUp)
+    end
+
+    test "up" do
+      1..300
+      |> Manager.stream_to(PipelineToScaleUp)
+      |> Enum.to_list()
+
+      components = Manager.reload_components_states(PipelineToScaleUp)
+      assert length(Enum.filter(components, &(&1.name == :add_one))) > 1
+      assert length(Enum.filter(components, &(&1.name == :mult_two))) > 1
+    end
+  end
+
+  describe "scaling down" do
+    defmodule PipelineToScaleDown do
       use ALF.DSL
 
       @components [
@@ -77,45 +110,26 @@ defmodule ALF.AutoScalerTest do
       end
 
       def mult_two(event, _) do
-        Process.sleep(20)
+        Process.sleep(15)
         event * 2
       end
     end
 
     setup do
-      before = Application.get_env(:alf, :telemetry_enabled)
-      Application.put_env(:alf, :telemetry_enabled, true)
-      on_exit(fn -> Application.put_env(:alf, :telemetry_enabled, before) end)
-      Manager.start(PipelineToScale)
+      Manager.start(PipelineToScaleDown)
     end
 
-    test "test" do
-      1..5
-      |> Manager.stream_to(PipelineToScale)
-      |> Enum.to_list()
+    test "down" do
+      {:ok, pid} = Client.start(PipelineToScaleDown)
 
-      Process.sleep(1000)
+      1..50
+      |> Enum.each(fn event ->
+        Client.call(pid, event)
+        Process.sleep(10)
+      end)
 
-      #      IO.inspect("111111111111111111111111111111111111111111111111111111")
-      #      IO.inspect("111111111111111111111111111111111111111111111111111111")
-      #      IO.inspect("111111111111111111111111111111111111111111111111111111")
-      #      IO.inspect("111111111111111111111111111111111111111111111111111111")
-      #      IO.inspect("111111111111111111111111111111111111111111111111111111")
-      #      Process.sleep(1000)
-      #
-      #      1..5
-      #      |> Manager.stream_to(PipelineToScale)
-      #      |> Enum.to_list()
-      #      Process.sleep(1000)
-      #
-      #      1..5
-      #      |> Manager.stream_to(PipelineToScale)
-      #      |> Enum.to_list()
-      #      Process.sleep(1000)
-      #
-      #      1..5
-      #      |> Manager.stream_to(PipelineToScale)
-      #      |> Enum.to_list()
+      components = Manager.reload_components_states(PipelineToScaleDown)
+      assert length(components) == 4
     end
   end
 end

@@ -52,7 +52,7 @@ defmodule ALF.Manager.ClientTest do
       assert Client.call(pid, 1) == 2
 
       fn ->
-        Enum.each(1..10, fn event ->
+        Enum.each(1..100, fn event ->
           assert Client.call(pid, event) == event + 1
         end)
       end
