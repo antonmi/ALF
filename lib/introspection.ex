@@ -55,7 +55,7 @@ defmodule ALF.Introspection do
 
     components =
       pipeline
-      |> ALF.Manager.components()
+      |> ALF.Manager.reload_components_states()
       |> Enum.map(&Map.from_struct/1)
 
     {:reply, components, state}

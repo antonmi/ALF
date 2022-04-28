@@ -15,38 +15,6 @@ defmodule ALF.AutoScalerTest do
     def mult_two(event, _), do: event * 2
   end
 
-  describe "stats" do
-    setup do
-      Manager.start(SimplePipeline, autoscaling_enabled: true, telemetry_enabled: true)
-    end
-
-    test "stats for the pipeline" do
-      [1, 2, 3]
-      |> Manager.stream_to(SimplePipeline)
-      |> Enum.to_list()
-
-      stats = AutoScaler.stats_for(SimplePipeline)
-
-      stats
-      |> Enum.each(fn
-        {:since, date_time} ->
-          assert %DateTime{} = date_time
-
-        {ref, %{{:add_one, 0} => data}} when is_reference(ref) ->
-          assert data[:counter] == 3
-          assert data[:sum_time_micro] > 0
-
-        {ref, %{{:mult_two, 0} => data}} when is_reference(ref) ->
-          assert data[:counter] == 3
-          assert data[:sum_time_micro] > 0
-      end)
-
-      AutoScaler.reset_stats_for(SimplePipeline)
-      stats = AutoScaler.stats_for(SimplePipeline)
-      assert is_nil(stats)
-    end
-  end
-
   describe "register_pipeline/1 and pipelines/0" do
     test "registering" do
       AutoScaler.register_pipeline(SimplePipeline)
