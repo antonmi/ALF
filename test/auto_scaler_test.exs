@@ -87,7 +87,7 @@ defmodule ALF.AutoScalerTest do
     test "down" do
       {:ok, pid} = Client.start(PipelineToScaleDown)
 
-      1..100
+      1..50
       |> Enum.each(fn event ->
         Client.call(pid, event)
         Process.sleep(10)
@@ -95,6 +95,47 @@ defmodule ALF.AutoScalerTest do
 
       components = Manager.reload_components_states(PipelineToScaleDown)
       assert length(components) == 4
+    end
+  end
+
+  describe "scaling down when there is one very fast component" do
+    defmodule PipelineToScaleDown2 do
+      use ALF.DSL
+
+      @components [
+        stage(:do_nothing),
+        stage(:add_one, count: 2),
+        stage(:mult_two, count: 2)
+      ]
+
+      def do_nothing(event, _), do: event
+
+      def add_one(event, _) do
+        Process.sleep(10)
+        event + 1
+      end
+
+      def mult_two(event, _) do
+        Process.sleep(15)
+        event * 2
+      end
+    end
+
+    setup do
+      Manager.start(PipelineToScaleDown2, autoscaling_enabled: true, telemetry_enabled: true)
+    end
+
+    test "down" do
+      {:ok, pid} = Client.start(PipelineToScaleDown2)
+
+      1..50
+      |> Enum.each(fn event ->
+        Client.call(pid, event)
+        Process.sleep(10)
+      end)
+
+      components = Manager.reload_components_states(PipelineToScaleDown2)
+      assert length(components) == 5
     end
   end
 end

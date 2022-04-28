@@ -79,6 +79,9 @@ defmodule ALF.AutoScaler do
 
     {fastest_stage_set_ref, _} =
       stats
+      |> Enum.filter(fn {_stage_set_ref, stage_stats} ->
+        map_size(stage_stats) > 1
+      end)
       |> Enum.max_by(fn
         {:since, _time} ->
           -1
