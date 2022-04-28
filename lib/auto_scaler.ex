@@ -59,6 +59,8 @@ defmodule ALF.AutoScaler do
   defp scale_up(_pipeline, nil), do: :no_stats
 
   defp scale_up(pipeline, stats) do
+    Manager.reload_components_states(pipeline)
+
     {slowest_stage_set_ref, _} =
       stats
       |> Enum.min_by(fn
