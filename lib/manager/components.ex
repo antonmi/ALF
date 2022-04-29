@@ -3,7 +3,7 @@ defmodule ALF.Manager.Components do
     Utils function for working with pipeline components
   """
 
-  alias ALF.Components.{Producer, Stage}
+  alias ALF.Components.Stage
   alias ALF.Builder
 
   def add_component(components, stage_set_ref, pipeline_sup_pid) do
