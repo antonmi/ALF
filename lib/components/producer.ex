@@ -6,7 +6,6 @@ defmodule ALF.Components.Producer do
               [
                 type: :producer,
                 demand: 0,
-                name: :producer,
                 manager_name: nil,
                 ips: []
               ]
@@ -16,7 +15,7 @@ defmodule ALF.Components.Producer do
   end
 
   def init(state) do
-    {:producer, %{state | pid: self()}}
+    {:producer, %{state | pid: self(), name: :producer}}
   end
 
   def load_ips(pid, ips) do
