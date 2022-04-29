@@ -23,6 +23,6 @@ defmodule ALF.TbdTest do
       |> Enum.to_list()
 
     assert result.event == 1
-    assert result.history == [{{:placeholder, 0}, 1}, {{:tbd, 0}, 1}]
+    assert result.history == [{:placeholder, 1}, {:tbd, 1}]
   end
 end

@@ -1,19 +1,14 @@
 defmodule ALF.Components.Decomposer do
   use ALF.Components.Basic
 
-  defstruct type: :decomposer,
-            name: nil,
-            pid: nil,
-            module: nil,
-            function: nil,
-            opts: [],
-            subscribe_to: [],
-            subscribed_to: [],
-            pipe_module: nil,
-            pipeline_module: nil,
-            source_code: nil,
-            subscribers: [],
-            telemetry_enabled: false
+  defstruct Basic.common_attributes() ++
+              [
+                type: :decomposer,
+                module: nil,
+                function: nil,
+                opts: [],
+                source_code: nil
+              ]
 
   alias ALF.{DSLError, Manager.Streamer}
 

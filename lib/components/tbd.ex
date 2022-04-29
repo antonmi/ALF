@@ -1,20 +1,10 @@
 defmodule ALF.Components.Tbd do
   use ALF.Components.Basic
 
-  defstruct type: :tbd,
-            name: nil,
-            count: 1,
-            number: 0,
-            pipe_module: nil,
-            pipeline_module: nil,
-            module: nil,
-            function: nil,
-            opts: %{},
-            pid: nil,
-            subscribe_to: [],
-            subscribed_to: [],
-            subscribers: [],
-            telemetry_enabled: false
+  defstruct Basic.common_attributes() ++
+              [
+                type: :tbd
+              ]
 
   alias ALF.DSLError
 
@@ -29,7 +19,7 @@ defmodule ALF.Components.Tbd do
   end
 
   def handle_events([%IP{} = ip], _from, state) do
-    ip = %{ip | history: [{{state.name, state.number}, ip.event} | ip.history]}
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
     {:noreply, [ip], state}
   end
 

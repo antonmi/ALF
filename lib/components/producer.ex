@@ -2,18 +2,14 @@ defmodule ALF.Components.Producer do
   use ALF.Components.Basic
   alias ALF.Manager.Streamer
 
-  defstruct type: :producer,
-            demand: 0,
-            name: :producer,
-            manager_name: nil,
-            ips: [],
-            pid: nil,
-            pipe_module: nil,
-            pipeline_module: nil,
-            subscribe_to: [],
-            subscribed_to: [],
-            subscribers: [],
-            telemetry_enabled: false
+  defstruct Basic.common_attributes() ++
+              [
+                type: :producer,
+                demand: 0,
+                name: :producer,
+                manager_name: nil,
+                ips: []
+              ]
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)

@@ -1,21 +1,16 @@
 defmodule ALF.Components.Goto do
   use ALF.Components.Basic
 
-  defstruct type: :goto,
-            name: nil,
-            to: nil,
-            to_pid: nil,
-            module: nil,
-            function: true,
-            opts: [],
-            pipe_module: nil,
-            pipeline_module: nil,
-            pid: nil,
-            source_code: nil,
-            subscribe_to: [],
-            subscribed_to: [],
-            subscribers: [],
-            telemetry_enabled: false
+  defstruct Basic.common_attributes() ++
+              [
+                type: :goto,
+                to: nil,
+                to_pid: nil,
+                module: nil,
+                function: true,
+                opts: [],
+                source_code: nil
+              ]
 
   alias ALF.Components.GotoPoint
 

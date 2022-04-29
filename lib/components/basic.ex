@@ -1,6 +1,19 @@
 defmodule ALF.Components.Basic do
   alias ALF.IP
 
+  @common_attributes [
+    name: nil,
+    pid: nil,
+    pipe_module: nil,
+    pipeline_module: nil,
+    subscribe_to: [],
+    subscribed_to: [],
+    subscribers: [],
+    telemetry_enabled: false
+  ]
+
+  def common_attributes, do: @common_attributes
+
   def build_component(component_module, atom, name, opts, current_module) do
     name = if name, do: name, else: atom
 
@@ -49,7 +62,7 @@ defmodule ALF.Components.Basic do
     quote do
       use GenStage
 
-      alias ALF.{IP, ErrorIP, Manager.Streamer, SourceCode}
+      alias ALF.{Components.Basic, IP, ErrorIP, Manager.Streamer, SourceCode}
 
       def __state__(pid) when is_pid(pid) do
         GenStage.call(pid, :__state__)

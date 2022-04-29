@@ -1,16 +1,11 @@
 defmodule ALF.Components.Clone do
   use ALF.Components.Basic
 
-  defstruct type: :clone,
-            name: nil,
-            pid: nil,
-            to: [],
-            subscribe_to: [],
-            subscribed_to: [],
-            pipe_module: nil,
-            pipeline_module: nil,
-            subscribers: [],
-            telemetry_enabled: false
+  defstruct Basic.common_attributes() ++
+              [
+                type: :clone,
+                to: []
+              ]
 
   alias ALF.DSLError
 

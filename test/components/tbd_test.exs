@@ -22,10 +22,6 @@ defmodule ALF.Components.TbdTest do
   setup %{producer_pid: producer_pid} do
     stage = %Tbd{
       name: :tbd,
-      module: __MODULE__,
-      pipeline_module: __MODULE__,
-      function: :tdb_function,
-      opts: %{},
       subscribe_to: [{producer_pid, max_demand: 1}]
     }
 
@@ -38,6 +34,6 @@ defmodule ALF.Components.TbdTest do
     Process.sleep(10)
     [ip] = TestConsumer.ips(consumer_pid)
     assert ip.event == "foo"
-    assert ip.history == [{{:tbd, 0}, "foo"}]
+    assert ip.history == [{:tbd, "foo"}]
   end
 end

@@ -1,18 +1,13 @@
 defmodule ALF.Components.Unplug do
   use ALF.Components.Basic
 
-  defstruct type: :unplug,
-            name: nil,
-            module: nil,
-            opts: [],
-            pipe_module: nil,
-            pipeline_module: nil,
-            pid: nil,
-            source_code: nil,
-            subscribe_to: [],
-            subscribed_to: [],
-            subscribers: [],
-            telemetry_enabled: false
+  defstruct Basic.common_attributes() ++
+              [
+                type: :unplug,
+                module: nil,
+                opts: [],
+                source_code: nil
+              ]
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)

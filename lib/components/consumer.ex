@@ -3,23 +3,19 @@ defmodule ALF.Components.Consumer do
 
   alias ALF.{ErrorIP, IP, Manager.Streamer}
 
-  defstruct type: :consumer,
-            name: :consumer,
-            manager_name: nil,
-            pid: nil,
-            pipe_module: nil,
-            subscribe_to: [],
-            subscribed_to: [],
-            subscribers: [],
-            pipeline_module: nil,
-            telemetry_enabled: false
+  defstruct Basic.common_attributes() ++
+              [
+                type: :consumer,
+                manager_name: nil
+              ]
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
   def init(state) do
-    {:consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
+    state = %{state | pid: self(), name: :consumer}
+    {:consumer, state, subscribe_to: state.subscribe_to}
   end
 
   def handle_events([ip], _from, %__MODULE__{telemetry_enabled: true} = state)

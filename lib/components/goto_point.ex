@@ -1,15 +1,10 @@
 defmodule ALF.Components.GotoPoint do
   use ALF.Components.Basic
 
-  defstruct type: :goto_point,
-            name: nil,
-            pid: nil,
-            subscribe_to: [],
-            subscribed_to: [],
-            subscribers: [],
-            pipe_module: nil,
-            pipeline_module: nil,
-            telemetry_enabled: false
+  defstruct Basic.common_attributes() ++
+              [
+                type: :goto_point
+              ]
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)

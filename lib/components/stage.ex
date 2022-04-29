@@ -1,22 +1,17 @@
 defmodule ALF.Components.Stage do
   use ALF.Components.Basic
 
-  defstruct type: :stage,
-            name: nil,
-            count: 1,
-            number: 0,
-            stage_set_ref: nil,
-            pipe_module: nil,
-            pipeline_module: nil,
-            module: nil,
-            function: nil,
-            opts: %{},
-            pid: nil,
-            source_code: nil,
-            subscribe_to: [],
-            subscribed_to: [],
-            subscribers: [],
-            telemetry_enabled: false
+  defstruct Basic.common_attributes() ++
+              [
+                type: :stage,
+                module: nil,
+                function: nil,
+                count: 1,
+                number: 0,
+                stage_set_ref: nil,
+                opts: %{},
+                source_code: nil
+              ]
 
   alias ALF.{Manager.Streamer, DoneStatement, DSLError}
 

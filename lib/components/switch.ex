@@ -1,20 +1,15 @@
 defmodule ALF.Components.Switch do
   use ALF.Components.Basic
 
-  defstruct type: :switch,
-            name: nil,
-            pid: nil,
-            module: nil,
-            function: nil,
-            opts: %{},
-            source_code: nil,
-            subscribe_to: [],
-            subscribed_to: [],
-            subscribers: [],
-            branches: %{},
-            pipe_module: nil,
-            pipeline_module: nil,
-            telemetry_enabled: false
+  defstruct Basic.common_attributes() ++
+              [
+                type: :switch,
+                module: nil,
+                function: nil,
+                opts: %{},
+                source_code: nil,
+                branches: %{}
+              ]
 
   alias ALF.{DSLError}
 

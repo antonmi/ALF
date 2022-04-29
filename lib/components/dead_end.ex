@@ -1,15 +1,10 @@
 defmodule ALF.Components.DeadEnd do
   use ALF.Components.Basic
 
-  defstruct type: :dead_end,
-            name: nil,
-            pid: nil,
-            pipe_module: nil,
-            pipeline_module: nil,
-            subscribe_to: [],
-            subscribed_to: [],
-            subscribers: [],
-            telemetry_enabled: false
+  defstruct Basic.common_attributes() ++
+              [
+                type: :dead_end
+              ]
 
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
