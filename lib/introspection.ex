@@ -4,6 +4,8 @@ defmodule ALF.Introspection do
   defstruct pipelines: MapSet.new(),
             pid: nil
 
+  alias ALF.PerformanceStats
+
   def start_link([]) do
     GenServer.start_link(__MODULE__, %__MODULE__{}, name: __MODULE__)
   end
@@ -15,19 +17,30 @@ defmodule ALF.Introspection do
   end
 
   @spec add(atom()) :: atom()
-  def add(pipeline), do: GenServer.call(__MODULE__, {:add, pipeline})
+  def add(pipeline) when is_atom(pipeline) do
+    GenServer.call(__MODULE__, {:add, pipeline})
+  end
 
   @spec remove(atom()) :: atom()
-  def remove(pipeline), do: GenServer.call(__MODULE__, {:remove, pipeline})
+  def remove(pipeline) when is_atom(pipeline) do
+    GenServer.call(__MODULE__, {:remove, pipeline})
+  end
 
   @spec pipelines() :: MapSet.t()
   def pipelines, do: GenServer.call(__MODULE__, :pipelines)
 
   @spec info(atom) :: list(map())
-  def info(pipeline), do: GenServer.call(__MODULE__, {:info, pipeline})
+  def info(pipeline) when is_atom(pipeline) do
+    GenServer.call(__MODULE__, {:info, pipeline})
+  end
 
   @spec reset() :: :ok
   def reset(), do: GenServer.call(__MODULE__, :reset)
+
+  @spec performance_stats(atom) :: map()
+  def performance_stats(pipeline) when is_atom(pipeline) do
+    GenServer.call(__MODULE__, {:performance_stats, pipeline})
+  end
 
   def handle_call({:add, pipeline}, _from, state) do
     state = %{state | pipelines: MapSet.put(state.pipelines, pipeline)}
@@ -59,5 +72,10 @@ defmodule ALF.Introspection do
       |> Enum.map(&Map.from_struct/1)
 
     {:reply, components, state}
+  end
+
+  def handle_call({:performance_stats, pipeline}, _from, state) do
+    stats = PerformanceStats.stats_for(pipeline)
+    {:reply, stats, state}
   end
 end

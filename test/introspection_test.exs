@@ -29,16 +29,12 @@ defmodule ALF.IntrospectionTest do
 
   setup_all do
     Introspection.reset()
+    Manager.start(SimplePipeline)
+    Manager.start(AnotherPipeline)
     :ok
   end
 
   describe "pipelines and info" do
-    setup do
-      Manager.start(SimplePipeline)
-      Manager.start(AnotherPipeline)
-      :ok
-    end
-
     test "it returns pipelines list" do
       set = Introspection.pipelines()
       assert MapSet.member?(set, SimplePipeline)
@@ -61,6 +57,24 @@ defmodule ALF.IntrospectionTest do
       Manager.stop(AnotherPipeline)
       set = Introspection.pipelines()
       assert MapSet.size(set) == 0
+    end
+  end
+
+  describe "performance_stats/1" do
+    setup do
+      Manager.stop(SimplePipeline)
+      Manager.start(SimplePipeline, telemetry_enabled: true)
+
+      [1, 2, 3]
+      |> Manager.stream_to(SimplePipeline)
+      |> Enum.to_list()
+
+      :ok
+    end
+
+    test "stats" do
+      stats = Introspection.performance_stats(SimplePipeline)
+      assert stats[:since]
     end
   end
 end
