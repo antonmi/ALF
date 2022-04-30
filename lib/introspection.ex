@@ -29,9 +29,9 @@ defmodule ALF.Introspection do
   @spec pipelines() :: MapSet.t()
   def pipelines, do: GenServer.call(__MODULE__, :pipelines)
 
-  @spec info(atom) :: list(map())
-  def info(pipeline) when is_atom(pipeline) do
-    GenServer.call(__MODULE__, {:info, pipeline})
+  @spec components(atom) :: list(map())
+  def components(pipeline) when is_atom(pipeline) do
+    GenServer.call(__MODULE__, {:components, pipeline})
   end
 
   @spec reset() :: :ok
@@ -61,7 +61,7 @@ defmodule ALF.Introspection do
     {:reply, :ok, state}
   end
 
-  def handle_call({:info, pipeline}, _from, state) do
+  def handle_call({:components, pipeline}, _from, state) do
     unless MapSet.member?(state.pipelines, pipeline) do
       raise "No such pipeline: #{pipeline}"
     end

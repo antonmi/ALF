@@ -27,22 +27,28 @@ defmodule ALF.IntrospectionTest do
     def mult_three(event, _), do: event * 3
   end
 
-  setup_all do
-    Introspection.reset()
-    Manager.start(SimplePipeline)
-    Manager.start(AnotherPipeline)
-    :ok
-  end
+  describe "pipelines and components" do
+    setup do
+      Introspection.reset()
+      Manager.start(SimplePipeline)
+      Manager.start(AnotherPipeline)
 
-  describe "pipelines and info" do
+      on_exit(fn ->
+        Manager.stop(SimplePipeline)
+        Manager.stop(AnotherPipeline)
+      end)
+
+      :ok
+    end
+
     test "it returns pipelines list" do
       set = Introspection.pipelines()
       assert MapSet.member?(set, SimplePipeline)
       assert MapSet.member?(set, AnotherPipeline)
     end
 
-    test "it returns pipeline info" do
-      list = Introspection.info(SimplePipeline)
+    test "it returns pipeline components" do
+      list = Introspection.components(SimplePipeline)
 
       names = Enum.map(list, & &1[:name])
       assert names == [:producer, :add_one, :add_one, :mult_two, :consumer]
@@ -62,14 +68,13 @@ defmodule ALF.IntrospectionTest do
 
   describe "performance_stats/1" do
     setup do
-      Manager.stop(SimplePipeline)
       Manager.start(SimplePipeline, telemetry_enabled: true)
 
       [1, 2, 3]
       |> Manager.stream_to(SimplePipeline)
       |> Enum.to_list()
 
-      :ok
+      on_exit(fn -> Manager.stop(SimplePipeline) end)
     end
 
     test "stats" do
