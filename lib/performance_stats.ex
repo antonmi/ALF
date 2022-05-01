@@ -5,10 +5,12 @@ defmodule ALF.PerformanceStats do
             stats: %{}
 
   defmodule Handler do
+    @monitored_components [:producer, :stage, :consumer]
+
     def handle_event([:alf, :component, :stop], measurements, metadata, %{pid: pid}) do
       component = metadata[:component]
 
-      if component.type == :stage do
+      if Enum.member?(@monitored_components, component.type) do
         duration_micro = div(measurements[:duration], 1000)
         GenServer.cast(pid, {:update_component_stats, component, duration_micro})
       end
@@ -67,10 +69,19 @@ defmodule ALF.PerformanceStats do
     sum_time_micro = component_stats[:sum_time_micro] || 0
 
     stats =
-      put_in(stats, key, %{
-        counter: counter + 1,
-        sum_time_micro: sum_time_micro + duration_micro
-      })
+      case component.type do
+        :stage ->
+          put_in(stats, key, %{
+            counter: counter + 1,
+            sum_time_micro: sum_time_micro + duration_micro
+          })
+
+        :producer ->
+          put_in(stats, key, %{counter: counter + 1, ips_count: component[:ips_count]})
+
+        :consumer ->
+          put_in(stats, key, %{counter: counter + 1})
+      end
 
     {:noreply, %{state | stats: stats}}
   end
@@ -87,8 +98,16 @@ defmodule ALF.PerformanceStats do
     end
   end
 
-  defp component_key(component) do
+  defp component_key(%{type: :stage} = component) do
     [component.pipeline_module, component.stage_set_ref, {component.name, component.number}]
+  end
+
+  defp component_key(%{type: :producer} = component) do
+    [component.pipeline_module, :producer]
+  end
+
+  defp component_key(%{type: :consumer} = component) do
+    [component.pipeline_module, :consumer]
   end
 
   defp do_attach_telemetry(pid) do

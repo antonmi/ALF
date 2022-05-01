@@ -32,6 +32,13 @@ defmodule ALF.PerformanceStatsTest do
         {:since, date_time} ->
           assert %DateTime{} = date_time
 
+        {:producer, data} ->
+          assert data[:counter] == 3
+          assert data[:ips_count] > 0
+
+        {:consumer, data} ->
+          assert data[:counter] == 3
+
         {ref, %{{:add_one, 0} => data}} when is_reference(ref) ->
           assert data[:counter] == 3
           assert data[:sum_time_micro] > 0

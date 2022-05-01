@@ -64,7 +64,7 @@ defmodule ALF.AutoScaler do
     {slowest_stage_set_ref, _} =
       stats
       |> Enum.min_by(fn
-        {:since, _time} ->
+        {ignored, _time} when ignored in [:since, :producer, :consumer] ->
           :atom_is_more_than_number
 
         {_stage_set_ref, stage_stats} ->
@@ -85,7 +85,7 @@ defmodule ALF.AutoScaler do
         map_size(stage_stats) > 1
       end)
       |> Enum.max_by(fn
-        {:since, _time} ->
+        {ignored, _time} when ignored in [:since, :producer, :consumer] ->
           -1
 
         {_stage_set_ref, stage_stats} ->

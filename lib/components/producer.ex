@@ -71,7 +71,11 @@ defmodule ALF.Components.Producer do
   defp send_simple_telemetry_events(ips_to_send, state) do
     ips_to_send
     |> Enum.map(fn ip ->
-      telemetry_data = telemetry_data(ip, state)
+      telemetry_data =
+        ip
+        |> telemetry_data(state)
+        |> put_in([:component, :ips_count], Enum.count(state.ips))
+
       :telemetry.span([:alf, :component], telemetry_data, fn -> {:ok, telemetry_data} end)
     end)
   end
