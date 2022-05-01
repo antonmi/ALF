@@ -77,7 +77,7 @@ defmodule ALF.PerformanceStats do
           })
 
         :producer ->
-          put_in(stats, key, %{counter: counter + 1, ips_count: component[:ips_count]})
+          put_in(stats, key, %{counter: counter + 1})
 
         :consumer ->
           put_in(stats, key, %{counter: counter + 1})

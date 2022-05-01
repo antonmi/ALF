@@ -34,7 +34,6 @@ defmodule ALF.PerformanceStatsTest do
 
         {:producer, data} ->
           assert data[:counter] == 3
-          assert data[:ips_count] > 0
 
         {:consumer, data} ->
           assert data[:counter] == 3
