@@ -1,22 +1,46 @@
-Code.compile_file("test/source_code_test_module.ex")
+Code.ensure_loaded(ALF.Test.Foo)
+Code.ensure_loaded(ALF.Test.Bar.Baz)
+Code.ensure_loaded(ALF.Test2)
 
 defmodule ALF.SourceCodeTest do
   use ExUnit.Case, async: false
   alias ALF.SourceCode
 
-  alias Test.Foo
-  alias Test.Bar.Baz
+  alias ALF.Test.Foo
+  alias ALF.Test.Bar.Baz
+  alias ALF.Test2
+
+  describe "module_doc/1" do
+    test "success case" do
+      assert SourceCode.module_doc(Foo) == "Docs for Foo"
+      assert is_nil(SourceCode.module_doc(Baz))
+      assert SourceCode.module_doc(Test2) == "Docs for Test2"
+    end
+
+    test "not found" do
+      assert is_nil(SourceCode.module_doc(NotFound))
+    end
+  end
+
+  describe "module_doc/2" do
+    test "success case" do
+      assert SourceCode.function_doc(Foo, :foo_fun) == "it's foo_fun function"
+      assert SourceCode.function_doc(Foo, :bar) == "it's bar function"
+      assert is_nil(SourceCode.function_doc(Baz, :baz))
+      assert SourceCode.function_doc(Test2, :aaa) == "it's aaa function"
+    end
+
+    test "not found" do
+      assert is_nil(SourceCode.function_doc(NotFound, :not_found))
+      assert is_nil(SourceCode.function_doc(Foo, :not_foo_fun))
+    end
+  end
 
   describe "module_source/1" do
     test "success cases" do
-      assert SourceCode.module_source(Foo) ==
-               "defmodule(Foo) do\n  def(foo_fun(:a)) do\n    :a\n  end\n  def(foo_fun(:b)) do\n    :b\n  end\n  def(bar) do\n    :bar\n  end\nend"
-
-      assert SourceCode.module_source(Baz) ==
-               "defmodule(Bar.Baz) do\n  def(baz(a, b)) do\n    div(a, b)\n  end\nend"
-
-      assert SourceCode.module_source(Test2) ==
-               "defmodule(Test2) do\n  def(aaa) do\n    :aaa\n  end\nend"
+      assert String.starts_with?(SourceCode.module_source(Foo), "defmodule(Foo) do")
+      assert String.starts_with?(SourceCode.module_source(Baz), "defmodule(Bar.Baz) do")
+      assert String.starts_with?(SourceCode.module_source(Test2), "defmodule(ALF.Test2) do")
     end
 
     test "not found" do
@@ -31,9 +55,9 @@ defmodule ALF.SourceCodeTest do
   describe "function_source/2" do
     test "success cases for Test.Mod1" do
       assert SourceCode.function_source(Foo, :foo_fun) ==
-               "def(foo_fun(:a)) do\n  :a\nend\ndef(foo_fun(:b)) do\n  :b\nend"
+               "def(foo_fun(:a, :opts)) do\n  :a\nend\ndef(foo_fun(:b, :opts)) do\n  :b\nend"
 
-      assert SourceCode.function_source(Foo, :bar) == "def(bar) do\n  :bar\nend"
+      assert SourceCode.function_source(Foo, :bar) == "def(bar(:bar, :opts)) do\n  :bar\nend"
       assert SourceCode.function_source(Baz, :baz) == "def(baz(a, b)) do\n  div(a, b)\nend"
     end
 

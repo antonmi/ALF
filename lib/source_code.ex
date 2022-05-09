@@ -1,6 +1,42 @@
 defmodule ALF.SourceCode do
   @moduledoc "Extracts source code"
 
+  @spec module_doc(atom()) :: String.t() | nil
+  def module_doc(module) when is_atom(module) do
+    case Code.fetch_docs(module) do
+      {:docs_v1, _, _, _, %{} = doc, _, _} ->
+        doc["en"]
+
+      {:docs_v1, _, _, _, _, _, _} ->
+        nil
+
+      {:error, :module_not_found} ->
+        nil
+    end
+  end
+
+  @spec function_doc(atom(), atom()) :: String.t() | nil
+  def function_doc(module, function) when is_atom(module) do
+    case Code.fetch_docs(module) do
+      {:docs_v1, _, _, _, _, _, docs} ->
+        case Enum.find(docs, fn
+               {{kind, function_name, arity}, _, _, _, _} ->
+                 kind == :function and
+                   function_name == function and
+                   arity == 2
+             end) do
+          {_, _, _, %{} = doc, _} ->
+            doc["en"]
+
+          nil ->
+            nil
+        end
+
+      {:error, :module_not_found} ->
+        nil
+    end
+  end
+
   @spec module_source(atom()) :: String.t() | nil
   def module_source(module) when is_atom(module) do
     case module_ast(module) do
