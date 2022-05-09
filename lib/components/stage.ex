@@ -10,6 +10,7 @@ defmodule ALF.Components.Stage do
                 number: 0,
                 stage_set_ref: nil,
                 opts: %{},
+                doc: nil,
                 source_code: nil
               ]
 
@@ -26,6 +27,7 @@ defmodule ALF.Components.Stage do
       state
       | pid: self(),
         opts: init_opts(state.module, state.opts),
+        doc: read_doc(state.module, state.function),
         source_code: read_source_code(state.module, state.function),
         subscribers: []
     }

@@ -119,6 +119,14 @@ defmodule ALF.Components.Basic do
         SourceCode.function_source(module, function)
       end
 
+      def read_doc(module, :call) do
+        SourceCode.module_doc(module)
+      end
+
+      def read_doc(module, function) do
+        SourceCode.function_doc(module, function)
+      end
+
       defp build_error_ip(ip, error, stacktrace, state) do
         %ErrorIP{
           ip: ip,

@@ -7,6 +7,7 @@ defmodule ALF.Components.Recomposer do
                 module: nil,
                 function: nil,
                 opts: [],
+                doc: nil,
                 source_code: nil,
                 collected_ips: []
               ]
@@ -24,6 +25,7 @@ defmodule ALF.Components.Recomposer do
       state
       | pid: self(),
         opts: init_opts(state.module, state.opts),
+        doc: read_doc(state.module, state.function),
         source_code: read_source_code(state.module, state.function)
     }
 
