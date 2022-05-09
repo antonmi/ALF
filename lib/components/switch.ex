@@ -7,7 +7,6 @@ defmodule ALF.Components.Switch do
                 module: nil,
                 function: nil,
                 opts: %{},
-                doc: nil,
                 source_code: nil,
                 branches: %{}
               ]
@@ -41,7 +40,6 @@ defmodule ALF.Components.Switch do
       state
       | pid: self(),
         opts: init_opts(state.module, state.opts),
-        doc: read_doc(state.module, state.function),
         source_code: read_source_code(state.module, state.function)
     }
 

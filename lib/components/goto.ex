@@ -9,7 +9,6 @@ defmodule ALF.Components.Goto do
                 module: nil,
                 function: true,
                 opts: [],
-                doc: nil,
                 source_code: nil
               ]
 
@@ -29,7 +28,6 @@ defmodule ALF.Components.Goto do
       state
       | pid: self(),
         opts: init_opts(state.module, state.opts),
-        doc: read_doc(state.module, state.function),
         source_code: read_source_code(state.module, state.function)
     }
 

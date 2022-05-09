@@ -6,7 +6,6 @@ defmodule ALF.Components.Unplug do
                 type: :unplug,
                 module: nil,
                 opts: [],
-                doc: nil,
                 source_code: nil
               ]
 
@@ -19,7 +18,6 @@ defmodule ALF.Components.Unplug do
       state
       | pid: self(),
         opts: init_opts(state.module, state.opts),
-        doc: read_doc(state.module, :unplug),
         source_code: read_source_code(state.module, :unplug)
     }
 

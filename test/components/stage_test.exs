@@ -56,6 +56,6 @@ defmodule ALF.Components.StageTest do
 
   test "set source_code", %{pid: pid} do
     %{source_code: source_code} = Stage.__state__(pid)
-    assert String.starts_with?(source_code, "defmodule(Component)")
+    assert String.starts_with?(source_code, "defmodule(Component) do")
   end
 end
