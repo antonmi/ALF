@@ -116,7 +116,14 @@ defmodule ALF.Components.Basic do
       end
 
       def read_source_code(module, function) do
-        SourceCode.function_source(module, function)
+        doc = SourceCode.function_doc(module, function)
+        source = SourceCode.function_source(module, function)
+
+        if doc do
+          "@doc \"#{doc}\"\n#{source}"
+        else
+          source
+        end
       end
 
       defp build_error_ip(ip, error, stacktrace, state) do
