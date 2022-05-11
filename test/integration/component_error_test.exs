@@ -119,7 +119,7 @@ defmodule ALF.ComponentErrorTest do
     test "returns error" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(ErrorInStageMultTwoPipeline, %{return_ips: true})
+        |> Manager.stream_to(ErrorInStageMultTwoPipeline, return_ips: true)
         |> Enum.to_list()
 
       assert [
@@ -172,7 +172,7 @@ defmodule ALF.ComponentErrorTest do
     test "error results" do
       results =
         [1, 2]
-        |> Manager.stream_to(ErrorInSwitchPipeline, %{return_ips: true})
+        |> Manager.stream_to(ErrorInSwitchPipeline, return_ips: true)
         |> Enum.to_list()
 
       assert [

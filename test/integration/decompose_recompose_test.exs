@@ -34,7 +34,7 @@ defmodule ALF.DecomposeRecomposeTest do
     test "returns strings" do
       [ip1, ip2] =
         ["foo foo", "bar bar", "baz baz"]
-        |> Manager.stream_to(Pipeline, %{return_ips: true})
+        |> Manager.stream_to(Pipeline, return_ips: true)
         |> Enum.to_list()
 
       assert ip1.event == "foo foo bar"

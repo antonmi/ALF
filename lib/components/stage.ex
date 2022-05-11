@@ -9,7 +9,7 @@ defmodule ALF.Components.Stage do
                 count: 1,
                 number: 0,
                 stage_set_ref: nil,
-                opts: %{},
+                opts: [],
                 source_code: nil
               ]
 

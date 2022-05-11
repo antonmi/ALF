@@ -1,5 +1,5 @@
 TODOs:
-- Use keyword as options everywhere
+- Set source_code for producer as actual pipeline code
 - Forbid 'count' opts for the first stage after "switch" (check "clone")
 - done! statement in other components (not stage)
 - Forbid scaling for the first stage after "switch" (check "clone")

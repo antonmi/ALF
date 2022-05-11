@@ -106,13 +106,13 @@ defmodule ALF.Manager do
   end
 
   @spec stream_to(Enumerable.t(), atom(), map() | keyword()) :: Enumerable.t()
-  def stream_to(stream, name, opts \\ %{}) when is_atom(name) do
+  def stream_to(stream, name, opts \\ []) when is_atom(name) do
     GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts), false})
   end
 
   @spec steam_with_ids_to(Enumerable.t({term, term}), atom(), map() | keyword()) ::
           Enumerable.t()
-  def steam_with_ids_to(stream, name, opts \\ %{}) when is_atom(name) do
+  def steam_with_ids_to(stream, name, opts \\ []) when is_atom(name) do
     GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts), true})
   end
 

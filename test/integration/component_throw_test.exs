@@ -129,7 +129,7 @@ defmodule ALF.ComponentThrowTest do
     test "error results" do
       results =
         [1, 2]
-        |> Manager.stream_to(ThrowInSwitchPipeline, %{return_ips: true})
+        |> Manager.stream_to(ThrowInSwitchPipeline, return_ips: true)
         |> Enum.to_list()
 
       assert [

@@ -256,7 +256,7 @@ defmodule ALF.ManagerTest do
     test "run with options" do
       results =
         sample_stream()
-        |> Manager.stream_to(SimplePipelineToStream, %{chunk_every: 5})
+        |> Manager.stream_to(SimplePipelineToStream, chunk_every: 5)
         |> Enum.to_list()
 
       assert results == [4, 6, 8]
@@ -265,7 +265,7 @@ defmodule ALF.ManagerTest do
     test "run with return_ips: true option" do
       results =
         sample_stream()
-        |> Manager.stream_to(SimplePipelineToStream, %{return_ips: true})
+        |> Manager.stream_to(SimplePipelineToStream, return_ips: true)
         |> Enum.to_list()
 
       assert [
@@ -316,7 +316,7 @@ defmodule ALF.ManagerTest do
 
       result =
         sample_stream_with_ids(ref, pid)
-        |> Manager.steam_with_ids_to(SimplePipelineToStreamWitIds, %{return_ips: true})
+        |> Manager.steam_with_ids_to(SimplePipelineToStreamWitIds, return_ips: true)
         |> Enum.to_list()
 
       assert [

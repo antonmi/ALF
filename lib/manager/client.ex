@@ -74,7 +74,7 @@ defmodule ALF.Manager.Client do
         end,
         fn _client_pid -> :ok end
       )
-      |> Manager.steam_with_ids_to(state.pipeline, %{chunk_every: 1})
+      |> Manager.steam_with_ids_to(state.pipeline, chunk_every: 1)
       |> Stream.each(fn {pid, event} ->
         send(pid, {:result, event})
       end)

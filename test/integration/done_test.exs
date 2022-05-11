@@ -23,7 +23,7 @@ defmodule ALF.DoneTest do
     test "returns result immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(DoneInStagePipeline, %{return_ips: true})
+        |> Manager.stream_to(DoneInStagePipeline, return_ips: true)
         |> Enum.to_list()
 
       assert [
@@ -66,7 +66,7 @@ defmodule ALF.DoneTest do
     test "returns result immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(DoneInLastStagePipeline, %{return_ips: true})
+        |> Manager.stream_to(DoneInLastStagePipeline, return_ips: true)
         |> Enum.to_list()
 
       assert [
