@@ -1,7 +1,8 @@
 defmodule ALF.ErrorIP do
   @moduledoc "Defines internal pipeline struct"
 
-  defstruct ip: nil,
+  defstruct type: :error_ip,
+            ip: nil,
             error: nil,
             stacktrace: nil,
             component: nil,

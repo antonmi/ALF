@@ -1,5 +1,5 @@
 defmodule ALF.Components.Basic do
-  alias ALF.IP
+  alias ALF.{ErrorIP, IP}
 
   @common_attributes [
     name: nil,
@@ -38,19 +38,21 @@ defmodule ALF.Components.Basic do
     end
   end
 
-  def telemetry_data(%IP{} = ip, state) do
-    %{ip: ip_telemetry_data(ip), component: component_telemetry_data(state)}
-  end
-
-  def telemetry_data([%IP{} | _] = ips, state) do
-    %{ips: Enum.map(ips, &ip_telemetry_data/1), component: component_telemetry_data(state)}
-  end
-
   def telemetry_data(nil, state) do
     %{ip: nil, component: component_telemetry_data(state)}
   end
 
-  defp ip_telemetry_data(ip), do: Map.take(ip, [:event, :ref])
+  def telemetry_data(ips, state) when is_list(ips) do
+    %{ips: Enum.map(ips, &ip_telemetry_data/1), component: component_telemetry_data(state)}
+  end
+
+  def telemetry_data(ip, state) do
+    %{ip: ip_telemetry_data(ip), component: component_telemetry_data(state)}
+  end
+
+  defp ip_telemetry_data(ip) do
+    Map.take(ip, [:type, :event, :ref, :done!, :error, :stacktrace])
+  end
 
   defp component_telemetry_data(state) do
     Map.take(state, [:pid, :name, :number, :pipeline_module, :type, :stage_set_ref])
@@ -83,6 +85,7 @@ defmodule ALF.Components.Basic do
       def send_error_result(ip, error, stacktrace, state) do
         error_ip = build_error_ip(ip, error, stacktrace, state)
         Streamer.cast_result_ready(error_ip.manager_name, error_ip)
+        error_ip
       end
 
       def handle_call(:subscribers, _form, state) do

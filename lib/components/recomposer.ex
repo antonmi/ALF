@@ -11,7 +11,7 @@ defmodule ALF.Components.Recomposer do
                 collected_ips: []
               ]
 
-  alias ALF.{DSLError, Manager.Streamer}
+  alias ALF.{DSLError, IP, ErrorIP, Manager.Streamer}
 
   @dsl_options [:name, :opts]
 
@@ -35,22 +35,34 @@ defmodule ALF.Components.Recomposer do
       [:alf, :component],
       telemetry_data(ip, state),
       fn ->
-        case do_handle_event(ip, state) do
-          {:noreply, [ip], state} = result ->
-            {result, telemetry_data(ip, state)}
+        case process_ip(ip, state) do
+          {nil, state} ->
+            {{:noreply, [], state}, telemetry_data(nil, state)}
 
-          {:noreply, [], state} = result ->
-            {result, telemetry_data(nil, state)}
+          {%IP{} = ip, state} ->
+            {{:noreply, [ip], state}, telemetry_data(ip, state)}
+
+          {%ErrorIP{} = error_ip, state} ->
+            {{:noreply, [], state}, telemetry_data(error_ip, state)}
         end
       end
     )
   end
 
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
-    do_handle_event(ip, state)
+    case process_ip(ip, state) do
+      {nil, state} ->
+        {:noreply, [], state}
+
+      {%IP{} = ip, state} ->
+        {:noreply, [ip], state}
+
+      {%ErrorIP{}, state} ->
+        {:noreply, [], state}
+    end
   end
 
-  defp do_handle_event(ip, state) do
+  defp process_ip(ip, state) do
     collected_data = Enum.map(state.collected_ips, & &1.event)
 
     case call_function(
@@ -62,7 +74,7 @@ defmodule ALF.Components.Recomposer do
          ) do
       {:ok, :continue} ->
         collected_ips = state.collected_ips ++ [ip]
-        {:noreply, [], %{state | collected_ips: collected_ips}}
+        {nil, %{state | collected_ips: collected_ips}}
 
       {:ok, {event, events}} ->
         Streamer.cast_remove_from_registry(
@@ -80,7 +92,7 @@ defmodule ALF.Components.Recomposer do
           end)
 
         Streamer.cast_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
-        {:noreply, [ip], %{state | collected_ips: collected}}
+        {ip, %{state | collected_ips: collected}}
 
       {:ok, event} ->
         Streamer.cast_remove_from_registry(
@@ -93,11 +105,11 @@ defmodule ALF.Components.Recomposer do
           build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
 
         Streamer.cast_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
-        {:noreply, [ip], %{state | collected_ips: []}}
+        {ip, %{state | collected_ips: []}}
 
       {:error, error, stacktrace} ->
-        send_error_result(ip, error, stacktrace, state)
-        {:noreply, [], state}
+        error_ip = send_error_result(ip, error, stacktrace, state)
+        {error_ip, state}
     end
   end
 

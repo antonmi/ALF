@@ -54,7 +54,7 @@ defmodule ALF.ComposersTelemetryTest do
       on_exit(fn -> :telemetry.detach("test-events-handler") end)
     end
 
-    test "check if the pipeline works", %{agent: agent} do
+    test "check recomposer events", %{agent: agent} do
       [result] =
         [2]
         |> Manager.stream_to(Pipeline)

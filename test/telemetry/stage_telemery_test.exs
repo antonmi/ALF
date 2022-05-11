@@ -10,6 +10,14 @@ defmodule ALF.ComponentTelemetryTest do
     ]
 
     def just_stage(event, _) do
+      if event == 2 do
+        raise "Ooops!"
+      end
+
+      if event == 3 do
+        done!(3)
+      end
+
       event + 1
     end
   end
@@ -44,7 +52,7 @@ defmodule ALF.ComponentTelemetryTest do
       on_exit(fn -> :telemetry.detach("test-events-handler") end)
     end
 
-    test "check if the pipeline works", %{agent: agent} do
+    test "check telemetry events", %{agent: agent} do
       [result] =
         [1]
         |> Manager.stream_to(Pipeline)
@@ -70,7 +78,7 @@ defmodule ALF.ComponentTelemetryTest do
                    number: 0,
                    pipeline_module: __MODULE__.Pipeline
                  },
-                 ip: %{event: 2},
+                 ip: %{event: 2, type: :ip},
                  telemetry_span_context: _ref
                }
              } = stage_stop
@@ -80,7 +88,7 @@ defmodule ALF.ComponentTelemetryTest do
                %{system_time: _system_time},
                %{
                  component: _component,
-                 ip: %{event: 1},
+                 ip: %{event: 1, type: :ip},
                  telemetry_span_context: _ref
                }
              } = stage_start
@@ -95,7 +103,7 @@ defmodule ALF.ComponentTelemetryTest do
                    name: :producer,
                    pipeline_module: __MODULE__.Pipeline
                  },
-                 ip: %{event: 1},
+                 ip: %{event: 1, type: :ip},
                  telemetry_span_context: _ref
                }
              } = producer_stop
@@ -108,7 +116,7 @@ defmodule ALF.ComponentTelemetryTest do
                    name: :producer,
                    pipeline_module: __MODULE__.Pipeline
                  },
-                 ip: %{event: 1},
+                 ip: %{event: 1, type: :ip},
                  telemetry_span_context: _ref
                }
              } = producer_start
@@ -120,7 +128,7 @@ defmodule ALF.ComponentTelemetryTest do
                %{duration: _duration},
                %{
                  component: %{name: :consumer, pipeline_module: __MODULE__.Pipeline},
-                 ip: %{event: 2},
+                 ip: %{event: 2, type: :ip},
                  telemetry_span_context: _ref
                }
              } = consumer_stop
@@ -130,10 +138,39 @@ defmodule ALF.ComponentTelemetryTest do
                %{system_time: _system_time},
                %{
                  component: %{name: :consumer, pipeline_module: __MODULE__.Pipeline},
-                 ip: %{event: 2},
+                 ip: %{event: 2, type: :ip},
                  telemetry_span_context: _ref
                }
              } = consumer_start
+    end
+
+    test "check events if error happens", %{agent: agent} do
+      [result] =
+        [2]
+        |> Manager.stream_to(Pipeline)
+        |> Enum.to_list()
+
+      assert %ALF.ErrorIP{} = result
+
+      [stage_stop, _, _, _] = Agent.get(agent, & &1)
+      {:stop, _, %{ip: ip}} = stage_stop
+      assert ip[:error] == %RuntimeError{message: "Ooops!"}
+      assert ip[:stacktrace]
+      assert ip[:type] == :error_ip
+    end
+
+    test "done! event", %{agent: agent} do
+      [result] =
+        [3]
+        |> Manager.stream_to(Pipeline)
+        |> Enum.to_list()
+
+      assert result == 3
+
+      [stage_stop, _, _, _] = Agent.get(agent, & &1)
+      {:stop, _, %{ip: ip}} = stage_stop
+      assert ip[:type] == :ip
+      assert ip[:done!] == true
     end
   end
 end

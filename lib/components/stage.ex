@@ -51,27 +51,29 @@ defmodule ALF.Components.Stage do
       [:alf, :component],
       telemetry_data(ip, state),
       fn ->
-        case do_handle_event(ip, state) do
-          {:noreply, [ip], state} = result ->
-            {result, telemetry_data(ip, state)}
+        case process_ip(ip, state) do
+          %IP{done!: false} = ip ->
+            {{:noreply, [ip], state}, telemetry_data(ip, state)}
 
-          {:noreply, [], state} = result ->
-            {result, telemetry_data(nil, state)}
+          %IP{done!: true} = ip ->
+            {{:noreply, [], state}, telemetry_data(ip, state)}
+
+          %ErrorIP{} = ip ->
+            {{:noreply, [], state}, telemetry_data(ip, state)}
         end
       end
     )
   end
 
   def handle_events([%IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
-    do_handle_event(ip, state)
-  end
-
-  defp do_handle_event(ip, state) do
     case process_ip(ip, state) do
-      %IP{} = ip ->
+      %IP{done!: false} = ip ->
         {:noreply, [ip], state}
 
-      nil ->
+      %IP{done!: true} ->
+        {:noreply, [], state}
+
+      %ErrorIP{} ->
         {:noreply, [], state}
     end
   end
@@ -94,17 +96,16 @@ defmodule ALF.Components.Stage do
     ip = %{ip | history: [{{state.name, state.number}, ip.event} | ip.history]}
 
     case try_apply(ip.event, {state.module, state.function, state.opts}) do
-      {:ok, new_datum} ->
-        %{ip | event: new_datum}
+      {:ok, new_event} ->
+        %{ip | event: new_event}
 
       {:error, %DoneStatement{event: event}, _stacktrace} ->
-        ip = %{ip | event: event}
+        ip = %{ip | event: event, done!: true}
         Streamer.cast_result_ready(ip.manager_name, ip)
-        nil
+        ip
 
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)
-        nil
     end
   end
 
