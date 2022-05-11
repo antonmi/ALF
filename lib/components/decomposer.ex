@@ -34,22 +34,28 @@ defmodule ALF.Components.Decomposer do
       [:alf, :component],
       telemetry_data(ip, state),
       fn ->
-        case do_handle_event(ip, state) do
-          {:noreply, [], state} = result ->
-            {result, telemetry_data(nil, state)}
+        case process_ip(ip, state) do
+          {[], state} ->
+            {{:noreply, [], state}, telemetry_data(nil, state)}
 
-          {:noreply, ips, state} = result ->
-            {result, telemetry_data(ips, state)}
+          {ips, state} ->
+            {{:noreply, ips, state}, telemetry_data(ips, state)}
         end
       end
     )
   end
 
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
-    do_handle_event(ip, state)
+    case process_ip(ip, state) do
+      {[], state} ->
+        {:noreply, [], state}
+
+      {ips, state} ->
+        {:noreply, ips, state}
+    end
   end
 
-  defp do_handle_event(ip, state) do
+  defp process_ip(ip, state) do
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:ok, events} when is_list(events) ->
         Streamer.cast_remove_from_registry(ip.manager_name, [ip], ip.stream_ref)
@@ -58,7 +64,7 @@ defmodule ALF.Components.Decomposer do
           build_ips(events, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
 
         Streamer.cast_add_to_registry(ip.manager_name, ips, ip.stream_ref)
-        {:noreply, ips, state}
+        {ips, state}
 
       {:ok, {events, event}} when is_list(events) ->
         ips =
@@ -66,11 +72,11 @@ defmodule ALF.Components.Decomposer do
 
         ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
         Streamer.cast_add_to_registry(ip.manager_name, ips, ip.stream_ref)
-        {:noreply, ips ++ [ip], state}
+        {ips ++ [ip], state}
 
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)
-        {:noreply, [], state}
+        {[], state}
     end
   end
 

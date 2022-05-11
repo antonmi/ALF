@@ -21,6 +21,7 @@ defmodule ALF.Components.GotoPoint do
       [:alf, :component],
       telemetry_data(ip, state),
       fn ->
+        ip = %{ip | history: [{state.name, ip.event} | ip.history]}
         {{:noreply, [ip], state}, telemetry_data(ip, state)}
       end
     )

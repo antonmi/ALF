@@ -30,19 +30,19 @@ defmodule ALF.Components.Clone do
       [:alf, :component],
       telemetry_data(ip, state),
       fn ->
-        {:noreply, [ip], state} = do_handle_event(ip, state)
+        ip = process_ip(ip, state)
         {{:noreply, [ip], state}, telemetry_data(ip, state)}
       end
     )
   end
 
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
-    do_handle_event(ip, state)
+    ip = process_ip(ip, state)
+    {:noreply, [ip], state}
   end
 
-  defp do_handle_event(ip, state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
-    {:noreply, [ip], state}
+  defp process_ip(ip, state) do
+    %{ip | history: [{state.name, ip.event} | ip.history]}
   end
 
   def validate_options(name, options) do

@@ -24,27 +24,33 @@ defmodule ALF.Components.Unplug do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
-  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
+  def handle_events([%IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],
       telemetry_data(ip, state),
       fn ->
-        case do_handle_event(ip, state) do
-          {:noreply, [ip], state} = result ->
-            {result, telemetry_data(ip, state)}
+        case process_ip(ip, state) do
+          %IP{} = ip ->
+            {{:noreply, [ip], state}, telemetry_data(ip, state)}
 
-          {:noreply, [], state} = result ->
-            {result, telemetry_data(nil, state)}
+          %ErrorIP{} = ip ->
+            {{:noreply, [], state}, telemetry_data(ip, state)}
         end
       end
     )
   end
 
-  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
-    do_handle_event(ip, state)
+  def handle_events([%IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
+    case process_ip(ip, state) do
+      %IP{} = ip ->
+        {:noreply, [ip], state}
+
+      %ErrorIP{} ->
+        {:noreply, [], state}
+    end
   end
 
-  defp do_handle_event(ip, state) do
+  defp process_ip(ip, state) do
     ip = %{ip | history: [{state.name, ip.event} | ip.history]}
 
     prev_event = Map.fetch!(ip.plugs, state.name)
@@ -54,10 +60,9 @@ defmodule ALF.Components.Unplug do
     case call_unplug_function(state.module, ip.event, prev_event, state.opts) do
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)
-        {:noreply, [], state}
 
       new_datum ->
-        {:noreply, [%{ip | event: new_datum}], state}
+        %{ip | event: new_datum}
     end
   end
 

@@ -610,7 +610,7 @@ defmodule ALF.ManagerTest do
       Manager.remove_component(PipelineToScale2, component.stage_set_ref)
       components = Manager.reload_components_states(PipelineToScale2)
 
-      Process.sleep(10)
+      Process.sleep(100)
 
       component = Enum.find(components, &(&1.name == :mult_two))
       Manager.remove_component(PipelineToScale2, component.stage_set_ref)

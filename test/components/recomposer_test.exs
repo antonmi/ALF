@@ -79,7 +79,7 @@ defmodule ALF.Components.RecomposerTest do
     Manager.__set_state__(EmptyPipeline, new_state)
 
     GenServer.cast(producer_pid, ips)
-    Process.sleep(30)
+    Process.sleep(50)
 
     TestConsumer.ips(consumer_pid)
   end

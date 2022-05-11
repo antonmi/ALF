@@ -24,7 +24,7 @@ defmodule ALF.Components.Consumer do
       [:alf, :component],
       telemetry_data(ip, state),
       fn ->
-        {:noreply, [], state} = do_handle_event(ip, state)
+        ip = cast_result_ready(ip, state)
         {{:noreply, [], state}, telemetry_data(ip, state)}
       end
     )
@@ -32,12 +32,12 @@ defmodule ALF.Components.Consumer do
 
   def handle_events([ip], _from, %__MODULE__{telemetry_enabled: false} = state)
       when is_struct(ip, IP) or is_struct(ip, ErrorIP) do
-    do_handle_event(ip, state)
+    cast_result_ready(ip, state)
+    {:noreply, [], state}
   end
 
-  defp do_handle_event(ip, state) do
+  defp cast_result_ready(ip, state) do
     Streamer.cast_result_ready(state.manager_name, ip)
-
-    {:noreply, [], state}
+    ip
   end
 end
