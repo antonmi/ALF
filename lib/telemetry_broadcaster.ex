@@ -57,7 +57,7 @@ defmodule ALF.TelemetryBroadcaster do
   def handle_cast({:handle_event, [:alf, :component, type], measurements, metadata}, state) do
     {name, module, function, opts} = state.remote_function
 
-    if opts[:interval] do
+    if opts[:interval] && (opts[:interval] > 0) do
       do_handle_cast_with_interval(
         {type, measurements, metadata},
         {name, module, function},
