@@ -114,6 +114,10 @@ defmodule ALF.Components.Basic do
 
       def telemetry_data(ip, state), do: ALF.Components.Basic.telemetry_data(ip, state)
 
+      def read_source_code(module) do
+        SourceCode.module_source(module)
+      end
+
       def read_source_code(module, :call) do
         SourceCode.module_source(module)
       end
