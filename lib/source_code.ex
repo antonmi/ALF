@@ -1,6 +1,8 @@
 defmodule ALF.SourceCode do
   @moduledoc "Extracts source code"
 
+  @line_length 60
+
   @spec module_doc(atom()) :: String.t() | nil
   def module_doc(module) when is_atom(module) do
     case Code.fetch_docs(module) do
@@ -44,7 +46,7 @@ defmodule ALF.SourceCode do
         nil
 
       ast ->
-        Macro.to_string(ast)
+        format_ast(ast)
     end
   end
 
@@ -56,13 +58,20 @@ defmodule ALF.SourceCode do
 
       asts ->
         asts
-        |> Enum.map(&Macro.to_string(&1))
-        |> Enum.join("\n")
+        |> Enum.map(&format_ast/1)
+        |> Enum.join("\n\n")
     end
   end
 
   def function_source(module, function) when is_atom(module) and is_function(function) do
     inspect(function)
+  end
+
+  defp format_ast(ast) do
+    ast
+    |> Macro.to_string()
+    |> Code.format_string!(line_length: @line_length)
+    |> Enum.join()
   end
 
   defp function_asts(module, function) do

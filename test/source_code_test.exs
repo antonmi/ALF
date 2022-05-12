@@ -55,7 +55,7 @@ defmodule ALF.SourceCodeTest do
   describe "function_source/2" do
     test "success cases for Test.Mod1" do
       assert SourceCode.function_source(Foo, :foo_fun) ==
-               "def(foo_fun(:a, :opts)) do\n  :a\nend\ndef(foo_fun(:b, :opts)) do\n  :b\nend"
+               "def(foo_fun(:a, :opts)) do\n  :a\nend\n\ndef(foo_fun(:b, :opts)) do\n  :b\nend"
 
       assert SourceCode.function_source(Foo, :bar) == "def(bar(:bar, :opts)) do\n  :bar\nend"
       assert SourceCode.function_source(Baz, :baz) == "def(baz(a, b)) do\n  div(a, b)\nend"
