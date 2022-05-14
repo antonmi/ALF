@@ -6,6 +6,7 @@ defmodule ALF.Manager do
             pid: nil,
             pipeline: nil,
             components: [],
+            stages_to_be_deleted: [],
             pipeline_sup_pid: nil,
             sup_pid: nil,
             producer_pid: nil,
@@ -137,6 +138,10 @@ defmodule ALF.Manager do
 
   def remove_component(name, stage_set_ref) do
     GenServer.call(name, {:remove_component, stage_set_ref})
+  end
+
+  def delete_marked_to_be_deleted(name) when is_atom(name) do
+    GenServer.call(name, :delete_marked_to_be_deleted)
   end
 
   def terminate(:normal, state) do
@@ -289,13 +294,25 @@ defmodule ALF.Manager do
   end
 
   def handle_call({:remove_component, stage_set_ref}, _from, state) do
-    case Components.remove_component(state.components, stage_set_ref, state.pipeline_sup_pid) do
+    case Components.remove_component(state.components, stage_set_ref) do
       {:ok, {stage_to_delete, new_components}} ->
-        {:reply, stage_to_delete, %{state | components: new_components}}
+        stages_to_be_deleted = [stage_to_delete | state.stages_to_be_deleted]
+
+        {:reply, stage_to_delete,
+         %{state | components: new_components, stages_to_be_deleted: stages_to_be_deleted}}
 
       {:error, :only_one_left} ->
         {:reply, {:error, :only_one_left}, state}
     end
+  end
+
+  def handle_call(:delete_marked_to_be_deleted, _from, state) do
+    state.stages_to_be_deleted
+    |> Enum.each(fn stage ->
+      DynamicSupervisor.terminate_child(state.pipeline_sup_pid, stage.pid)
+    end)
+
+    {:reply, state.stages_to_be_deleted, state}
   end
 
   def handle_cast({:add_to_registry, ips, stream_ref}, state) do

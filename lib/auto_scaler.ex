@@ -35,6 +35,7 @@ defmodule ALF.AutoScaler do
 
       cond do
         ips_count > Manager.max_producer_load() * 0.9 ->
+          Manager.delete_marked_to_be_deleted(pipeline)
           scale_up(pipeline, stats)
           PerformanceStats.reset_stats_for(pipeline)
 

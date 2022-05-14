@@ -479,9 +479,7 @@ defmodule ALF.ManagerTest do
 
     test "remove add_one", %{components: init_components} do
       component = Enum.find(init_components, &(&1.name == :add_one))
-      removed_stage = Manager.remove_component(PipelineToRemove, component.stage_set_ref)
-
-      refute Process.alive?(removed_stage.pid)
+      _removed_stage = Manager.remove_component(PipelineToRemove, component.stage_set_ref)
 
       Process.sleep(1)
       [producer, add_one, consumer] = Manager.reload_components_states(PipelineToRemove)
@@ -535,9 +533,7 @@ defmodule ALF.ManagerTest do
 
     test "remove add_one and then to mult_two", %{components: init_components} do
       component = Enum.find(init_components, &(&1.name == :add_one))
-      removed_stage = Manager.remove_component(PipelineToScale2, component.stage_set_ref)
-
-      refute Process.alive?(removed_stage.pid)
+      _removed_stage = Manager.remove_component(PipelineToScale2, component.stage_set_ref)
 
       Process.sleep(1)
       components = Manager.reload_components_states(PipelineToScale2)
@@ -564,9 +560,7 @@ defmodule ALF.ManagerTest do
 
       # remove mult_two
       component = Enum.find(components, &(&1.name == :mult_two))
-      removed_stage = Manager.remove_component(PipelineToScale2, component.stage_set_ref)
-
-      refute Process.alive?(removed_stage.pid)
+      _removed_stage = Manager.remove_component(PipelineToScale2, component.stage_set_ref)
 
       Process.sleep(1)
       components = Manager.reload_components_states(PipelineToScale2)
@@ -594,32 +588,31 @@ defmodule ALF.ManagerTest do
                Manager.remove_component(PipelineToScale2, component.stage_set_ref)
     end
 
-    # TODO there are some rundom issues here, it needs special attention
-#    test "there is no lost ips after stopping", %{components: init_components} do
-#      stream1 = Manager.stream_to(0..99, PipelineToScale2)
-#      stream2 = Manager.stream_to(100..199, PipelineToScale2)
-#      stream3 = Manager.stream_to(200..299, PipelineToScale2)
-#
-#      [task1, task2, task3] =
-#        [stream1, stream2, stream3]
-#        |> Enum.map(fn stream ->
-#          Task.async(fn -> Enum.to_list(stream) end)
-#        end)
-#
-#      Process.sleep(100)
-#      component = Enum.find(init_components, &(&1.name == :add_one))
-#      Manager.remove_component(PipelineToScale2, component.stage_set_ref)
-#      components = Manager.reload_components_states(PipelineToScale2)
-#
-#      Process.sleep(100)
-#
-#      component = Enum.find(components, &(&1.name == :mult_two))
-#      Manager.remove_component(PipelineToScale2, component.stage_set_ref)
-#      Manager.reload_components_states(PipelineToScale2)
-#
-#      assert Task.await(task1) -- Enum.map(0..99, fn n -> (n + 1) * 2 end) == []
-#      assert Task.await(task2) -- Enum.map(100..199, fn n -> (n + 1) * 2 end) == []
-#      assert Task.await(task3) -- Enum.map(200..299, fn n -> (n + 1) * 2 end) == []
-#    end
+    test "there is no lost ips after stopping", %{components: init_components} do
+      stream1 = Manager.stream_to(0..99, PipelineToScale2)
+      stream2 = Manager.stream_to(100..199, PipelineToScale2)
+      stream3 = Manager.stream_to(200..299, PipelineToScale2)
+
+      [task1, task2, task3] =
+        [stream1, stream2, stream3]
+        |> Enum.map(fn stream ->
+          Task.async(fn -> Enum.to_list(stream) end)
+        end)
+
+      Process.sleep(100)
+      component = Enum.find(init_components, &(&1.name == :add_one))
+      Manager.remove_component(PipelineToScale2, component.stage_set_ref)
+      components = Manager.reload_components_states(PipelineToScale2)
+
+      Process.sleep(100)
+
+      component = Enum.find(components, &(&1.name == :mult_two))
+      Manager.remove_component(PipelineToScale2, component.stage_set_ref)
+      Manager.reload_components_states(PipelineToScale2)
+
+      assert Task.await(task1) -- Enum.map(0..99, fn n -> (n + 1) * 2 end) == []
+      assert Task.await(task2) -- Enum.map(100..199, fn n -> (n + 1) * 2 end) == []
+      assert Task.await(task3) -- Enum.map(200..299, fn n -> (n + 1) * 2 end) == []
+    end
   end
 end

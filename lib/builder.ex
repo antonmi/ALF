@@ -56,10 +56,6 @@ defmodule ALF.Builder do
     %{stage | pid: stage_pid}
   end
 
-  def delete_stage_worker(supervisor_pid, stage) do
-    DynamicSupervisor.terminate_child(supervisor_pid, stage.pid)
-  end
-
   defp start_producer(supervisor_pid, manager_name, pipeline_module, telemetry_enabled) do
     producer = %Producer{
       manager_name: manager_name,

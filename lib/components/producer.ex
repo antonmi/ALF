@@ -16,11 +16,13 @@ defmodule ALF.Components.Producer do
   end
 
   def init(state) do
-    {:producer, %{
-      state | pid: self(),
-      name: :producer,
-      source_code: read_source_code(state.pipeline_module)
-    }}
+    {:producer,
+     %{
+       state
+       | pid: self(),
+         name: :producer,
+         source_code: read_source_code(state.pipeline_module)
+     }}
   end
 
   def load_ips(pid, ips) do

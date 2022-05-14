@@ -44,7 +44,7 @@ defmodule ALF.Manager.Components do
     {new_stage, new_components}
   end
 
-  def remove_component(components, stage_set_ref, pipeline_sup_pid) do
+  def remove_component(components, stage_set_ref) do
     existing_workers = find_and_reload_existing_workers(components, stage_set_ref)
 
     if length(existing_workers) > 1 do
@@ -77,8 +77,6 @@ defmodule ALF.Manager.Components do
           end
         end)
         |> Enum.reverse()
-
-      :ok = Builder.delete_stage_worker(pipeline_sup_pid, stage_to_delete)
 
       {:ok, {stage_to_delete, new_components}}
     else

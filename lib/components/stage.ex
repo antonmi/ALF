@@ -33,8 +33,8 @@ defmodule ALF.Components.Stage do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
-  def inc_count(state), do: GenStage.call(state.pid, :inc_count)
-  def dec_count(state), do: GenStage.call(state.pid, :dec_count)
+  def inc_count(%__MODULE__{pid: pid}), do: GenStage.call(pid, :inc_count)
+  def dec_count(%__MODULE__{pid: pid}), do: GenStage.call(pid, :dec_count)
 
   def handle_call(:inc_count, _from, state) do
     state = %{state | count: state.count + 1}

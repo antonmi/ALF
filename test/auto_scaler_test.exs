@@ -82,9 +82,28 @@ defmodule ALF.AutoScalerTest do
 
     setup do
       Manager.start(PipelineToScaleDown, autoscaling_enabled: true, telemetry_enabled: true)
+      on_exit(fn -> Manager.stop(PipelineToScaleDown) end)
     end
 
     test "down" do
+      {:ok, pid} = Client.start(PipelineToScaleDown)
+
+      1..100
+      |> Enum.each(fn event ->
+        Client.call(pid, event)
+        Process.sleep(10)
+      end)
+
+      components = Manager.reload_components_states(PipelineToScaleDown)
+      assert length(components) == 4
+    end
+
+    test "down and then up, check stages_to_be_deleted" do
+      init_components_pids =
+        PipelineToScaleDown
+        |> Manager.components()
+        |> Enum.map(& &1.pid)
+
       {:ok, pid} = Client.start(PipelineToScaleDown)
 
       1..50
@@ -95,6 +114,24 @@ defmodule ALF.AutoScalerTest do
 
       components = Manager.reload_components_states(PipelineToScaleDown)
       assert length(components) == 4
+
+      1..300
+      |> Manager.stream_to(PipelineToScaleDown)
+      |> Enum.to_list()
+
+      components = Manager.reload_components_states(PipelineToScaleDown)
+      assert length(Enum.filter(components, &(&1.name == :add_one))) > 1
+      assert length(Enum.filter(components, &(&1.name == :mult_two))) > 1
+
+      components_pids =
+        PipelineToScaleDown
+        |> Manager.components()
+        |> Enum.map(& &1.pid)
+
+      (init_components_pids -- components_pids)
+      |> Enum.each(fn pid ->
+        refute Process.alive?(pid)
+      end)
     end
   end
 
