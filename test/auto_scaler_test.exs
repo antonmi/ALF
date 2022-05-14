@@ -47,6 +47,7 @@ defmodule ALF.AutoScalerTest do
 
     setup do
       Manager.start(PipelineToScaleUp, autoscaling_enabled: true, telemetry_enabled: true)
+      on_exit(fn -> Manager.stop(PipelineToScaleUp) end)
     end
 
     test "up" do
