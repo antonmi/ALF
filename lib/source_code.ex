@@ -153,5 +153,13 @@ defmodule ALF.SourceCode do
 
   defp traverse_modules(_tree, _modules_acc, _aliases), do: %{}
 
-  defp module_exist?(module), do: function_exported?(module, :__info__, 1)
+  defp module_exist?(module) do
+    case Code.ensure_compiled(module) do
+      {:module, ^module} ->
+        true
+
+      {:error, _} ->
+        false
+    end
+  end
 end
