@@ -1,7 +1,7 @@
 defmodule ALF.AutoScalerTest do
   use ExUnit.Case, async: false
 
-  alias ALF.{AutoScaler, Manager, Manager.Client}
+  alias ALF.{AutoScaler, Manager}
 
   defmodule SimplePipeline do
     use ALF.DSL
@@ -87,13 +87,12 @@ defmodule ALF.AutoScalerTest do
     end
 
     test "down" do
-      {:ok, pid} = Client.start(PipelineToScaleDown)
-
-      1..100
-      |> Enum.each(fn event ->
-        Client.call(pid, event)
-        Process.sleep(10)
+      Task.async(fn ->
+        Enum.each(1..100, fn event ->
+          Enum.to_list(Manager.stream_to([event], PipelineToScaleDown))
+        end)
       end)
+      |> Task.await(:infinity)
 
       components = Manager.reload_components_states(PipelineToScaleDown)
       assert length(components) == 4
@@ -105,13 +104,12 @@ defmodule ALF.AutoScalerTest do
         |> Manager.components()
         |> Enum.map(& &1.pid)
 
-      {:ok, pid} = Client.start(PipelineToScaleDown)
-
-      1..50
-      |> Enum.each(fn event ->
-        Client.call(pid, event)
-        Process.sleep(10)
+      Task.async(fn ->
+        Enum.each(1..100, fn event ->
+          Enum.to_list(Manager.stream_to([event], PipelineToScaleDown))
+        end)
       end)
+      |> Task.await(:infinity)
 
       components = Manager.reload_components_states(PipelineToScaleDown)
       assert length(components) == 4
@@ -164,13 +162,12 @@ defmodule ALF.AutoScalerTest do
     end
 
     test "down" do
-      {:ok, pid} = Client.start(PipelineToScaleDown2)
-
-      1..50
-      |> Enum.each(fn event ->
-        Client.call(pid, event)
-        Process.sleep(10)
+      Task.async(fn ->
+        Enum.each(1..100, fn event ->
+          Enum.to_list(Manager.stream_to([event], PipelineToScaleDown2))
+        end)
       end)
+      |> Task.await(:infinity)
 
       components = Manager.reload_components_states(PipelineToScaleDown2)
       assert length(components) == 5

@@ -16,7 +16,7 @@ defmodule ALF.Examples.AddMultMinusTest do
   use ExUnit.Case
 
   alias ALF.Examples.AddMultMinus.Pipeline
-  alias ALF.{Manager, Manager.Client}
+  alias ALF.Manager
 
   setup do: Manager.start(Pipeline)
 
@@ -26,13 +26,6 @@ defmodule ALF.Examples.AddMultMinusTest do
       |> Manager.stream_to(Pipeline)
       |> Enum.to_list()
 
-    assert results == [1, 3, 5]
-  end
-
-  test "with client inputs" do
-    {:ok, pid} = Client.start(Pipeline)
-
-    results = Enum.map([1, 2, 3], &Client.call(pid, &1))
     assert results == [1, 3, 5]
   end
 

@@ -102,16 +102,6 @@ output_stream =  Manager.steam_with_ids_to(inputs, ThePipeline)
 Enum.to_list(output_stream) # it returns [{ref, 1}, {:my_id, 3}, {pid, 5}]
 ```
 
-Another way is to use `Manager.Client`. The `Client` has a simple `call(client_pid, event)` interface and return the result synchronously.
-```elixir
-# you have to start the manager first
-Manager.start(ThePipeline)
-{:ok, pid} = Manager.Client.start(ThePipeline)
-Manager.Client.call(pid, 1) #it returns 2
-```
-Under the hood, each client starts its own infinite stream to the manager.
-When one calls the client, it pushes an event to the stream and waits until it has been processed.
-
 ### Parallel processing of several streams
 
 The ALF pipeline can handle arbitrary amount of events streams in parallel.
