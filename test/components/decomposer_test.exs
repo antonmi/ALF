@@ -37,7 +37,14 @@ defmodule ALF.Components.DecomposerTest do
   def run_and_wait_for_ips(state, producer_pid, consumer_pid, stream_ref, ip_ref) do
     new_state = %{state | registry: %{stream_ref => %StreamRegistry{}}}
     Manager.__set_state__(EmptyPipeline, new_state)
-    ip = %IP{event: 1, manager_name: EmptyPipeline, stream_ref: stream_ref, ref: ip_ref}
+
+    ip = %IP{
+      event: 1,
+      manager_name: EmptyPipeline,
+      stream_ref: stream_ref,
+      ref: ip_ref,
+      in_progress: true
+    }
 
     Streamer.call_add_to_registry(EmptyPipeline, [ip], stream_ref)
     GenServer.cast(producer_pid, [ip])

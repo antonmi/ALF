@@ -37,7 +37,6 @@ defmodule ALF.Manager.Streamer do
 
     registry =
       Map.put(state.registry, stream_ref, %StreamRegistry{
-        inputs: %{},
         queue: :queue.new(),
         ref: stream_ref
       })

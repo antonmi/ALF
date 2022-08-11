@@ -32,7 +32,7 @@ defmodule ALF.Examples.AddMultMinusTest do
   test "with client inputs" do
     {:ok, pid} = Client.start(Pipeline)
 
-    results =  Enum.map([1, 2, 3], &Client.call(pid, &1))
+    results = Enum.map([1, 2, 3], &Client.call(pid, &1))
     assert results == [1, 3, 5]
   end
 
