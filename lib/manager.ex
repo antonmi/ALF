@@ -250,20 +250,20 @@ defmodule ALF.Manager do
     registry = state.registry[stream_ref]
 
     if registry do
-      events =
-        case :queue.to_list(registry.queue) do
-          [] ->
-            if StreamRegistry.empty?(registry), do: :done, else: {:ok, []}
+      events = :queue.to_list(registry.queue)
 
-          events when is_list(events) ->
-            {:ok, events}
+      response =
+        if StreamRegistry.empty?(registry) do
+          {:done, events}
+        else
+          {:not_done_yet, events}
         end
 
       new_registry = Map.put(state.registry, stream_ref, %{registry | queue: :queue.new()})
 
-      {:reply, events, %{state | registry: new_registry}}
+      {:reply, response, %{state | registry: new_registry}}
     else
-      {:reply, {:ok, []}, state}
+      {:reply, {:done, []}, state}
     end
   end
 
@@ -315,14 +315,14 @@ defmodule ALF.Manager do
     {:reply, state.stages_to_be_deleted, state}
   end
 
-  def handle_cast({:add_to_registry, ips, stream_ref}, state) do
+  def handle_call({:add_to_registry, ips, stream_ref}, _from, state) do
     new_registry = Streamer.add_to_registry(state.registry, stream_ref, ips)
-    {:noreply, %{state | registry: new_registry}}
+    {:reply, new_registry, %{state | registry: new_registry}}
   end
 
-  def handle_cast({:remove_from_registry, ips, stream_ref}, state) do
+  def handle_call({:remove_from_registry, ips, stream_ref}, _from, state) do
     new_registry = Streamer.remove_from_registry(state.registry, stream_ref, ips)
-    {:noreply, %{state | registry: new_registry}}
+    {:reply, new_registry, %{state | registry: new_registry}}
   end
 
   def handle_cast({:result_ready, ip}, state) do
