@@ -83,12 +83,11 @@ defmodule ALF.Components.Recomposer do
           ip.stream_ref
         )
 
-        ip =
-          build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
+        ip = build_ip(event, ip, [{state.name, ip.event} | ip.history])
 
         collected =
           Enum.map(events, fn event ->
-            build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
+            build_ip(event, ip, [{state.name, ip.event} | ip.history])
           end)
 
         Streamer.call_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
@@ -101,8 +100,7 @@ defmodule ALF.Components.Recomposer do
           ip.stream_ref
         )
 
-        ip =
-          build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
+        ip = build_ip(event, ip, [{state.name, ip.event} | ip.history])
 
         Streamer.call_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
         {ip, %{state | collected_ips: []}}
@@ -113,15 +111,53 @@ defmodule ALF.Components.Recomposer do
     end
   end
 
-  defp build_ip(event, stream_ref, manager_name, history) do
+  def sync_process(ip, state) do
+    collected_ips = Process.get(state.pid, [])
+    collected_data = Enum.map(collected_ips, & &1.event)
+
+    case call_function(
+           state.module,
+           state.function,
+           ip.event,
+           collected_data,
+           state.opts
+         ) do
+      {:ok, :continue} ->
+        collected_ips = collected_ips ++ [ip]
+        Process.put(state.pid, collected_ips)
+        nil
+
+      {:ok, {event, events}} ->
+        ip = build_ip(event, ip, [{state.name, ip.event} | ip.history])
+
+        collected =
+          Enum.map(events, fn event ->
+            build_ip(event, ip, [{state.name, ip.event} | ip.history])
+          end)
+
+        Process.put(state.pid, collected)
+        ip
+
+      {:ok, event} ->
+        Process.put(state.pid, [])
+        build_ip(event, ip, [{state.name, ip.event} | ip.history])
+
+      {:error, error, stacktrace} ->
+        error_ip = send_error_result(ip, error, stacktrace, state)
+        {error_ip, state}
+    end
+  end
+
+  defp build_ip(event, ip, history) do
     %IP{
-      stream_ref: stream_ref,
+      stream_ref: ip.stream_ref,
       ref: make_ref(),
       init_datum: event,
       event: event,
-      manager_name: manager_name,
+      manager_name: ip.manager_name,
       recomposed: true,
-      history: history
+      history: history,
+      sync_path: ip.sync_path
     }
   end
 

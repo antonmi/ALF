@@ -66,6 +66,22 @@ defmodule ALF.Components.Unplug do
     end
   end
 
+  def sync_process(ip, state) do
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+
+    prev_event = Map.fetch!(ip.plugs, state.name)
+    ip_plugs = Map.delete(ip.plugs, state.name)
+    ip = %{ip | plugs: ip_plugs}
+
+    case call_unplug_function(state.module, ip.event, prev_event, state.opts) do
+      {:error, error, stacktrace} ->
+        build_error_ip(ip, error, stacktrace, state)
+
+      new_datum ->
+        %{ip | event: new_datum}
+    end
+  end
+
   defp call_unplug_function(module, event, prev_event, opts) do
     apply(module, :unplug, [event, prev_event, opts])
   rescue

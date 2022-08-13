@@ -13,14 +13,15 @@ defmodule ALF.Manager do
             registry: %{},
             registry_dump: %{},
             autoscaling_enabled: nil,
-            telemetry_enabled: nil
+            telemetry_enabled: nil,
+            sync: false
 
   alias ALF.AutoScaler
   alias ALF.Manager.{Components, Streamer, ProcessingOptions, StreamRegistry}
   alias ALF.Components.{Goto, Producer}
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
 
-  @available_options [:autoscaling_enabled, :telemetry_enabled]
+  @available_options [:autoscaling_enabled, :telemetry_enabled, :sync]
 
   @max_producer_load 100
   def max_producer_load, do: @max_producer_load
@@ -81,7 +82,8 @@ defmodule ALF.Manager do
                     autoscaling_enabled: Keyword.get(opts, :autoscaling_enabled, false),
                     telemetry_enabled:
                       Keyword.get(opts, :telemetry_enabled, nil) ||
-                        telemetry_enabled_in_configs?()
+                        telemetry_enabled_in_configs?(),
+                    sync: Keyword.get(opts, :sync, false)
                   }
                 ]},
              restart: :transient
@@ -148,6 +150,10 @@ defmodule ALF.Manager do
     Supervisor.stop(state.pipeline_sup_pid)
   end
 
+  def run_sync(name, ips) do
+    GenServer.cast(name, {:run_sync, ips})
+  end
+
   def __state__(name_or_pid) when is_atom(name_or_pid) or is_pid(name_or_pid) do
     GenServer.call(name_or_pid, :__state__)
   end
@@ -156,7 +162,11 @@ defmodule ALF.Manager do
     GenServer.call(name_or_pid, {:__set_state__, new_state})
   end
 
-  def handle_continue(:init_pipeline, %__MODULE__{} = state) do
+  def handle_continue(:init_pipeline, %__MODULE__{sync: true} = state) do
+    {:noreply, state}
+  end
+
+  def handle_continue(:init_pipeline, %__MODULE__{sync: false} = state) do
     {:noreply, start_pipeline(state), {:continue, :register_auto_scaling}}
   end
 
@@ -332,6 +342,23 @@ defmodule ALF.Manager do
 
   def handle_cast({:result_ready, ip}, state) do
     new_registry = Streamer.rebuild_registry_on_result_ready(state.registry, ip)
+    {:noreply, %{state | registry: new_registry}}
+  end
+
+  def handle_cast({:run_sync, ips}, %__MODULE__{sync: true} = state) do
+    alf_components = state.pipeline_module.alf_components()
+
+    new_registry =
+      Enum.reduce(ips, state.registry, fn ip, registry ->
+        case ALF.SyncRunner.run(ip, alf_components) do
+          [] ->
+            registry
+
+          ips ->
+            Enum.map(ips, &Streamer.rebuild_registry_on_result_ready(registry, &1))
+        end
+      end)
+
     {:noreply, %{state | registry: new_registry}}
   end
 

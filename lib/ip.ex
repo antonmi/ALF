@@ -12,5 +12,6 @@ defmodule ALF.IP do
             in_progress: false,
             decomposed: false,
             recomposed: false,
-            plugs: %{}
+            plugs: %{},
+            sync_path: nil
 end

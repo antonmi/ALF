@@ -109,6 +109,19 @@ defmodule ALF.Components.Stage do
     end
   end
 
+  def sync_process(ip, state) do
+    case try_apply(ip.event, {state.module, state.function, state.opts}) do
+      {:ok, new_event} ->
+        %{ip | event: new_event}
+
+      {:error, %DoneStatement{event: event}, _stacktrace} ->
+        %{ip | event: event, done!: true}
+
+      {:error, error, stacktrace} ->
+        build_error_ip(ip, error, stacktrace, state)
+    end
+  end
+
   defp try_apply(event, {module, function, opts}) do
     new_datum = apply(module, function, [event, opts])
     {:ok, new_datum}

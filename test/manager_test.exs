@@ -75,7 +75,7 @@ defmodule ALF.ManagerTest do
     test "with invalid opts" do
       assert_raise RuntimeError,
                    "Wrong options for the 'simple_pipeline' pipeline: [:a]. " <>
-                     "Available options are [:autoscaling_enabled, :telemetry_enabled]",
+                     "Available options are [:autoscaling_enabled, :telemetry_enabled, :sync]",
                    fn ->
                      Manager.start(ExtremelySimplePipeline, :simple_pipeline, a: :b)
                    end

@@ -163,4 +163,41 @@ defmodule ALF.BuilderTest do
       refute Enum.member?(stage2.subscribe_to, {stage1_pid, max_demand: 1, cancel: :transient})
     end
   end
+
+  describe "build_sync" do
+    test "build with spec_simple_sync" do
+      [stage] = Builder.build_sync(spec_simple(), :pipeline, true)
+      assert stage.pid
+      assert stage.telemetry_enabled
+    end
+
+    test "build with spec_with_switch" do
+      [switch] = Builder.build_sync(spec_with_switch(), :pipeline, true)
+
+      assert switch.telemetry_enabled
+
+      %{branches: %{part1: [stage1], part2: [stage2]}} = switch
+
+      assert stage1.name == :stage_in_part1
+      assert stage1.pid
+      assert stage2.name == :stage_in_part2
+      assert stage2.pid
+    end
+
+    test "build with spec_with_clone" do
+      [clone, stage] = Builder.build_sync(spec_with_clone(), :pipeline, true)
+
+      assert clone.telemetry_enabled
+      [to_stage] = clone.to
+      assert to_stage.name == :stage1
+      assert to_stage.pid
+      assert stage.name == :stage2
+      assert stage.pid
+    end
+
+    test "spec_with_clone_and_dead_end" do
+      [clone, _stage] = Builder.build_sync(spec_with_clone_and_dead_end(), :pipeline, true)
+      assert [%Stage{}, %DeadEnd{}] = clone.to
+    end
+  end
 end

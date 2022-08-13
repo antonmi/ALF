@@ -103,6 +103,21 @@ defmodule ALF.Components.Goto do
     end
   end
 
+  def sync_process(ip, state) do
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+
+    case call_function(state.module, state.function, ip.event, state.opts) do
+      {:error, error, stacktrace} ->
+        {false, build_error_ip(ip, error, stacktrace, state)}
+
+      true ->
+        {true, ip}
+
+      false ->
+        {false, ip}
+    end
+  end
+
   def validate_options(atom, options) do
     required_left = @dsl_requited_options -- Keyword.keys(options)
     wrong_options = Keyword.keys(options) -- @dsl_options

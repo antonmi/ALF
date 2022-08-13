@@ -41,6 +41,13 @@ defmodule ALF.Components.Clone do
     {:noreply, [ip], state}
   end
 
+  def sync_process(ip, state) do
+    [
+      %{ip | history: [{state.name, ip.event} | ip.history]},
+      %{ip | history: [{state.name, ip.event} | ip.history]}
+    ]
+  end
+
   defp process_ip(ip, state) do
     %{ip | history: [{state.name, ip.event} | ip.history]}
   end

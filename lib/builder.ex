@@ -38,6 +38,44 @@ defmodule ALF.Builder do
     {:ok, pipeline}
   end
 
+  def build_sync(pipe_spec, pipeline_module, telemetry_enabled \\ nil) when is_list(pipe_spec) do
+    pipe_spec
+    |> Enum.reduce([], fn stage_spec, stages ->
+      case stage_spec do
+        # TODO init_opts
+        %Stage{} = stage ->
+          new_stage = %{stage | pid: make_ref(), telemetry_enabled: telemetry_enabled}
+          stages ++ [new_stage]
+
+        %Switch{branches: branches} = switch ->
+          branches =
+            Enum.reduce(branches, %{}, fn {key, inner_pipe_spec}, branch_pipes ->
+              branch_stages = build_sync(inner_pipe_spec, pipeline_module, telemetry_enabled)
+
+              Map.put(branch_pipes, key, branch_stages)
+            end)
+
+          switch = %{
+            switch
+            | branches: branches,
+              pid: make_ref(),
+              telemetry_enabled: telemetry_enabled
+          }
+
+          stages ++ [switch]
+
+        %Clone{to: pipe_stages} = clone ->
+          to_stages = build_sync(pipe_stages, pipeline_module, telemetry_enabled)
+          clone = %{clone | to: to_stages, pid: make_ref(), telemetry_enabled: telemetry_enabled}
+          stages ++ [clone]
+
+        component ->
+          component = %{component | pid: make_ref(), telemetry_enabled: telemetry_enabled}
+          stages ++ [component]
+      end
+    end)
+  end
+
   def add_stage_worker(supervisor_pid, [%Stage{} = existing_stage | _] = existing_stages) do
     subscribe_to =
       Enum.map(existing_stage.subscribed_to, fn {pid, _ref} ->

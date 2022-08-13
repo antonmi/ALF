@@ -27,6 +27,10 @@ defmodule ALF.Components.GotoPoint do
     )
   end
 
+  def sync_process(ip, state) do
+    %{ip | history: [{state.name, ip.event} | ip.history]}
+  end
+
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
     ip = %{ip | history: [{state.name, ip.event} | ip.history]}
     {:noreply, [ip], state}

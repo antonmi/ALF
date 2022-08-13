@@ -64,6 +64,20 @@ defmodule ALF.Components.Plug do
     end
   end
 
+  def sync_process(ip, state) do
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    ip_plugs = Map.put(ip.plugs, state.name, ip.event)
+    ip = %{ip | plugs: ip_plugs}
+
+    case call_plug_function(state.module, ip.event, state.opts) do
+      {:error, error, stacktrace} ->
+        build_error_ip(ip, error, stacktrace, state)
+
+      new_datum ->
+        %{ip | event: new_datum}
+    end
+  end
+
   defp call_plug_function(module, event, opts) do
     apply(module, :plug, [event, opts])
   rescue

@@ -60,15 +60,13 @@ defmodule ALF.Components.Decomposer do
       {:ok, events} when is_list(events) ->
         Streamer.call_remove_from_registry(ip.manager_name, [ip], ip.stream_ref)
 
-        ips =
-          build_ips(events, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
+        ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
 
         Streamer.call_add_to_registry(ip.manager_name, ips, ip.stream_ref)
         {ips, state}
 
       {:ok, {events, event}} when is_list(events) ->
-        ips =
-          build_ips(events, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
+        ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
 
         ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
         Streamer.call_add_to_registry(ip.manager_name, ips, ip.stream_ref)
@@ -80,17 +78,34 @@ defmodule ALF.Components.Decomposer do
     end
   end
 
-  defp build_ips(events, stream_ref, manager_name, history) do
+  def sync_process(ip, state) do
+    case call_function(state.module, state.function, ip.event, state.opts) do
+      {:ok, events} when is_list(events) ->
+        build_ips(events, ip, [{state.name, ip.event} | ip.history])
+
+      {:ok, {events, event}} when is_list(events) ->
+        ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
+
+        ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
+        [ip | ips]
+
+      {:error, error, stacktrace} ->
+        build_error_ip(ip, error, stacktrace, state)
+    end
+  end
+
+  defp build_ips(events, ip, history) do
     events
     |> Enum.map(fn event ->
       %IP{
-        stream_ref: stream_ref,
+        stream_ref: ip.stream_ref,
         ref: make_ref(),
         init_datum: event,
         event: event,
-        manager_name: manager_name,
+        manager_name: ip.manager_name,
         decomposed: true,
-        history: history
+        history: history,
+        sync_path: ip.sync_path
       }
     end)
   end
