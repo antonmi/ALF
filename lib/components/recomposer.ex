@@ -112,7 +112,7 @@ defmodule ALF.Components.Recomposer do
   end
 
   def sync_process(ip, state) do
-    collected_ips = Process.get(state.pid, [])
+    collected_ips = get_from_process_dict({state.pid, ip.stream_ref})
     collected_data = Enum.map(collected_ips, & &1.event)
 
     case call_function(
@@ -124,7 +124,7 @@ defmodule ALF.Components.Recomposer do
          ) do
       {:ok, :continue} ->
         collected_ips = collected_ips ++ [ip]
-        Process.put(state.pid, collected_ips)
+        put_to_process_dict({state.pid, ip.stream_ref}, collected_ips)
         nil
 
       {:ok, {event, events}} ->
@@ -135,11 +135,11 @@ defmodule ALF.Components.Recomposer do
             build_ip(event, ip, [{state.name, ip.event} | ip.history])
           end)
 
-        Process.put(state.pid, collected)
+        put_to_process_dict({state.pid, ip.stream_ref}, collected)
         ip
 
       {:ok, event} ->
-        Process.put(state.pid, [])
+        put_to_process_dict({state.pid, ip.stream_ref}, [])
         build_ip(event, ip, [{state.name, ip.event} | ip.history])
 
       {:error, error, stacktrace} ->
@@ -185,4 +185,8 @@ defmodule ALF.Components.Recomposer do
     kind, value ->
       {:error, kind, value}
   end
+
+  defp get_from_process_dict(key), do: Process.get(key, [])
+
+  defp put_to_process_dict(key, ips), do: Process.put(key, ips)
 end

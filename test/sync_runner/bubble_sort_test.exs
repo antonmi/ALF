@@ -61,7 +61,7 @@ defmodule ALF.SyncRunner.BubbleSortTest do
       |> SyncRunner.stream_to(Pipeline)
       |> Enum.to_list()
 
-    assert results = [Enum.to_list(@range)]
+    assert results == [Enum.to_list(@range)]
   end
 
   test "sort many lists" do

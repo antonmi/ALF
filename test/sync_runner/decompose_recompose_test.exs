@@ -40,5 +40,18 @@ defmodule ALF.SyncRunner.DecomposeRecomposeTest do
       assert event1 == "foo foo bar"
       assert event2 == "bar baz baz"
     end
+
+    test "several streams returns strings" do
+      stream1 = SyncRunner.stream_to(["foo foo", "bar bar", "baz baz"], Pipeline)
+      stream2 = SyncRunner.stream_to(["foo foo", "bar bar", "baz baz"], Pipeline)
+      stream3 = SyncRunner.stream_to(["foo foo", "bar bar", "baz baz"], Pipeline)
+
+      [result1, result2, result3] =
+        [stream1, stream2, stream3]
+        |> Enum.map(&Task.async(fn -> Enum.to_list(&1) end))
+        |> Task.await_many()
+
+      assert ^result1 = ^result2 = ^result3 = ["foo foo bar", "bar baz baz"]
+    end
   end
 end

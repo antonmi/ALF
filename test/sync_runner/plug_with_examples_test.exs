@@ -20,7 +20,8 @@ defmodule ALF.SyncRunner.PlugWith.Pipeline do
   @components [
     stage(:build_struct),
     plug_with(InputToName, do: [stage(HelloComponent)]),
-    stage(:format_output)
+    stage(:format_output),
+    tbd(:todo)
   ]
 
   def build_struct(event, _), do: %__MODULE__{input: event}

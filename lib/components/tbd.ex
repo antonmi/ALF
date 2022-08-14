@@ -23,6 +23,10 @@ defmodule ALF.Components.Tbd do
     {:noreply, [ip], state}
   end
 
+  def sync_process(ip, state) do
+    %{ip | history: [{state.name, ip.event} | ip.history]}
+  end
+
   def validate_name(atom) do
     unless is_atom(atom) do
       raise DSLError, "Tbd name must be an atom: #{inspect(atom)}"

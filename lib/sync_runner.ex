@@ -1,18 +1,9 @@
 defmodule ALF.SyncRunner do
   alias ALF.Components.{
-    Producer,
-    Stage,
     Goto,
-    DeadEnd,
     GotoPoint,
     Switch,
-    Clone,
-    Consumer,
-    Plug,
-    Unplug,
-    Decomposer,
-    Recomposer,
-    Tbd
+    Clone
   }
 
   alias ALF.Builder
@@ -21,7 +12,6 @@ defmodule ALF.SyncRunner do
   alias ALF.Pipeline
 
   def stream_to(stream, pipeline) do
-    # TODO no need in stream_ref for sync case
     stream_ref = make_ref()
     pipeline = Builder.build_sync(pipeline.alf_components(), pipeline, true)
     transform_stream(stream, pipeline, stream_ref)
@@ -50,11 +40,11 @@ defmodule ALF.SyncRunner do
     run(pipeline, ip)
   end
 
-  def run([first | _] = pipeline, ip) do
+  def run(pipeline, ip) do
     do_run(pipeline, ip, [], [])
   end
 
-  defp do_run(pipeline, %IP{sync_path: sync_path} = ip, queue, results) do
+  defp do_run(pipeline, %IP{sync_path: sync_path, done!: false} = ip, queue, results) do
     case sync_path do
       [] ->
         do_run(pipeline, nil, queue, [ip | results])
@@ -76,17 +66,20 @@ defmodule ALF.SyncRunner do
     end
   end
 
-  defp do_run(pipeline, nil, [], results), do: Enum.reverse(results)
+  defp do_run(pipeline, %IP{done!: true} = ip, queue, results) do
+    do_run(pipeline, nil, queue, [ip | results])
+  end
+
+  defp do_run(_pipeline, nil, [], results), do: Enum.reverse(results)
 
   defp do_run(pipeline, nil, [ip | ips], results) do
     do_run(pipeline, ip, ips, results)
   end
 
   defp do_run(pipeline, %ErrorIP{} = error_ip, queue, results) do
-    Enum.reverse([error_ip | results])
+    do_run(pipeline, nil, queue, [error_ip | results])
   end
 
-  #  defp do_run(pipeline, %IP{done!: true} = ip, queue, results)
 
   def run_component(component, ip, pipeline) do
     case component do
@@ -98,9 +91,9 @@ defmodule ALF.SyncRunner do
         [ip, cloned_ip]
 
       %Switch{} = switch ->
-        case component.__struct__.sync_process(ip, component) do
+        case switch.__struct__.sync_process(ip, switch) do
           partition when is_atom(partition) ->
-            [first | _] = Map.fetch!(component.branches, partition)
+            [first | _] = Map.fetch!(switch.branches, partition)
             {sync_path, true} = path(pipeline, first.pid)
             %{ip | sync_path: sync_path}
 
@@ -119,29 +112,8 @@ defmodule ALF.SyncRunner do
             %{ip | sync_path: sync_path}
         end
 
-      %DeadEnd{} ->
-        nil
-
-      %Plug{} = component ->
+      component ->
         component.__struct__.sync_process(ip, component)
-
-      %Unplug{} = component ->
-        component.__struct__.sync_process(ip, component)
-
-      %GotoPoint{} = component ->
-        component.__struct__.sync_process(ip, component)
-
-      %Stage{} = component ->
-        component.__struct__.sync_process(ip, component)
-
-      %Decomposer{} = component ->
-        component.__struct__.sync_process(ip, component)
-
-      %Recomposer{} = component ->
-        component.__struct__.sync_process(ip, component)
-
-      _other ->
-        raise "TODO"
     end
   end
 
@@ -154,7 +126,7 @@ defmodule ALF.SyncRunner do
             {ref_list ++ [switch.pid], true}
           else
             {inner_path, found_inside} =
-              Enum.reduce(branches, {[], false}, fn {key, inner_pipeline},
+              Enum.reduce(branches, {[], false}, fn {_key, inner_pipeline},
                                                     {ref_list, found_in_branch} ->
                 case path(inner_pipeline, pid) do
                   {path, true} ->

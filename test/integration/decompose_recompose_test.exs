@@ -40,5 +40,18 @@ defmodule ALF.DecomposeRecomposeTest do
       assert ip1.event == "foo foo bar"
       assert ip2.event == "bar baz baz"
     end
+
+    test "several streams returns strings" do
+      stream1 = Manager.stream_to(["foo foo", "bar bar", "baz baz"], Pipeline)
+      stream2 = Manager.stream_to(["foo foo", "bar bar", "baz baz"], Pipeline)
+      stream3 = Manager.stream_to(["foo foo", "bar bar", "baz baz"], Pipeline)
+
+      [result1, result2, result3] =
+        [stream1, stream2, stream3]
+        |> Enum.map(&Task.async(fn -> Enum.to_list(&1) end))
+        |> Task.await_many()
+
+      assert ^result1 = ^result2 = ^result3 = ["foo foo bar", "bar baz baz"]
+    end
   end
 end

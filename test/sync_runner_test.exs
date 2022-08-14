@@ -1,7 +1,7 @@
 defmodule ALF.SyncRunnerTest do
   use ExUnit.Case
 
-  alias ALF.{Builder, IP, SyncRunner}
+  alias ALF.{Builder, SyncRunner}
   alias ALF.Components.{Stage, Switch, Clone, DeadEnd}
 
   def spec1 do

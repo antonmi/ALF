@@ -27,4 +27,6 @@ defmodule ALF.Components.DeadEnd do
   def handle_events([%ALF.IP{} = _ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
     {:noreply, [], state}
   end
+
+  def sync_process(ip, state), do: nil
 end
