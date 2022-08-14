@@ -6,10 +6,9 @@ defmodule ALF.SyncRunner do
     Clone
   }
 
-  alias ALF.Builder
+  alias ALF.{Builder, Pipeline}
   alias ALF.{ErrorIP, IP}
   alias ALF.Manager.Streamer
-  alias ALF.Pipeline
 
   def stream_to(stream, pipeline) do
     stream_ref = make_ref()
@@ -168,8 +167,7 @@ defmodule ALF.SyncRunner do
   end
 
   def find_component(pipeline, ref) do
-    # TODO implement more performant Pipeline.find_component(ref)
-    Enum.find(Pipeline.stages_to_list(pipeline), &(&1.pid == ref))
+    Pipeline.find_component_by_pid(pipeline, ref)
   end
 
   def find_goto_point(pipeline, name) do
