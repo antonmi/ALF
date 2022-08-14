@@ -10,12 +10,6 @@ defmodule ALF.Manager.SyncRunner do
   alias ALF.{ErrorIP, IP}
   alias ALF.Manager.Streamer
 
-  def stream_to(stream, pipeline) do
-    stream_ref = make_ref()
-    pipeline = Builder.build_sync(pipeline.alf_components(), pipeline, true)
-    transform_stream(stream, pipeline, stream_ref)
-  end
-
   def transform_stream(stream, pipeline, stream_ref) do
     stream
     |> Stream.chunk_while(

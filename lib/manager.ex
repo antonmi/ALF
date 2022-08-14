@@ -166,7 +166,6 @@ defmodule ALF.Manager do
     pipeline =
       Builder.build_sync(
         state.pipeline_module.alf_components(),
-        state.pipeline_module,
         state.telemetry_enabled
       )
 

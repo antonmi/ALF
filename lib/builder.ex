@@ -38,20 +38,21 @@ defmodule ALF.Builder do
     {:ok, pipeline}
   end
 
-  # TODO no need in pipeline_module
-  def build_sync(pipe_spec, pipeline_module, telemetry_enabled \\ nil) when is_list(pipe_spec) do
+  def build_sync(pipe_spec, telemetry_enabled \\ nil) when is_list(pipe_spec) do
     pipe_spec
-    |> Enum.reduce([], fn stage_spec, stages ->
-      case stage_spec do
-        # TODO init_opts
+    |> Enum.reduce([], fn comp, stages ->
+      case comp do
         %Stage{} = stage ->
-          new_stage = %{stage | pid: make_ref(), telemetry_enabled: telemetry_enabled}
+          opts = stage.__struct__.init_opts(stage.module, stage.opts)
+          new_stage = %{stage | pid: make_ref(), opts: opts, telemetry_enabled: telemetry_enabled}
           stages ++ [new_stage]
 
         %Switch{branches: branches} = switch ->
+          opts = switch.__struct__.init_opts(switch.module, switch.opts)
+
           branches =
             Enum.reduce(branches, %{}, fn {key, inner_pipe_spec}, branch_pipes ->
-              branch_stages = build_sync(inner_pipe_spec, pipeline_module, telemetry_enabled)
+              branch_stages = build_sync(inner_pipe_spec, telemetry_enabled)
 
               Map.put(branch_pipes, key, branch_stages)
             end)
@@ -59,6 +60,7 @@ defmodule ALF.Builder do
           switch = %{
             switch
             | branches: branches,
+              opts: opts,
               pid: make_ref(),
               telemetry_enabled: telemetry_enabled
           }
@@ -66,9 +68,21 @@ defmodule ALF.Builder do
           stages ++ [switch]
 
         %Clone{to: pipe_stages} = clone ->
-          to_stages = build_sync(pipe_stages, pipeline_module, telemetry_enabled)
+          to_stages = build_sync(pipe_stages, telemetry_enabled)
           clone = %{clone | to: to_stages, pid: make_ref(), telemetry_enabled: telemetry_enabled}
           stages ++ [clone]
+
+        %{module: module, opts: opts} = component ->
+          opts = component.__struct__.init_opts(module, opts)
+
+          component = %{
+            component
+            | pid: make_ref(),
+              opts: opts,
+              telemetry_enabled: telemetry_enabled
+          }
+
+          stages ++ [component]
 
         component ->
           component = %{component | pid: make_ref(), telemetry_enabled: telemetry_enabled}

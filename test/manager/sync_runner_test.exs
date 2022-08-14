@@ -27,7 +27,7 @@ defmodule ALF.Manager.SyncRunnerTest do
   end
 
   setup do
-    pipeline = Builder.build_sync(spec1(), :pipeline, true)
+    pipeline = Builder.build_sync(spec1(), true)
 
     [
       %Stage{name: :stage1, pid: stage1_pid},
