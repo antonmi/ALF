@@ -1,4 +1,4 @@
-defmodule ALF.SyncRunner do
+defmodule ALF.Manager.SyncRunner do
   alias ALF.Components.{
     Goto,
     GotoPoint,
@@ -78,7 +78,6 @@ defmodule ALF.SyncRunner do
   defp do_run(pipeline, %ErrorIP{} = error_ip, queue, results) do
     do_run(pipeline, nil, queue, [error_ip | results])
   end
-
 
   def run_component(component, ip, pipeline) do
     case component do

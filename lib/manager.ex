@@ -17,7 +17,7 @@ defmodule ALF.Manager do
             sync: false
 
   alias ALF.AutoScaler
-  alias ALF.Manager.{Components, Streamer, ProcessingOptions, StreamRegistry}
+  alias ALF.Manager.{Components, Streamer, ProcessingOptions, StreamRegistry, SyncRunner}
   alias ALF.Components.{Goto, Producer}
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
 
@@ -163,7 +163,14 @@ defmodule ALF.Manager do
   end
 
   def handle_continue(:init_pipeline, %__MODULE__{sync: true} = state) do
-    {:noreply, state}
+    pipeline =
+      Builder.build_sync(
+        state.pipeline_module.alf_components(),
+        state.pipeline_module,
+        state.telemetry_enabled
+      )
+
+    {:noreply, %{state | pipeline: pipeline}}
   end
 
   def handle_continue(:init_pipeline, %__MODULE__{sync: false} = state) do
@@ -251,8 +258,19 @@ defmodule ALF.Manager do
     {:stop, :normal, state, state}
   end
 
-  def handle_call({:stream_to, stream, opts, custom_ids?}, _from, %__MODULE__{} = state) do
+  def handle_call(
+        {:stream_to, stream, opts, custom_ids?},
+        _from,
+        %__MODULE__{sync: false} = state
+      ) do
     {stream, state} = Streamer.prepare_streams(state, stream, opts, custom_ids?)
+    {:reply, stream, state}
+  end
+
+  def handle_call({:stream_to, stream, opts, custom_ids?}, _from, %__MODULE__{sync: true} = state) do
+    stream_ref = make_ref()
+    # TODO custom_ids?
+    stream = SyncRunner.transform_stream(stream, state.pipeline, stream_ref)
     {:reply, stream, state}
   end
 
@@ -342,23 +360,6 @@ defmodule ALF.Manager do
 
   def handle_cast({:result_ready, ip}, state) do
     new_registry = Streamer.rebuild_registry_on_result_ready(state.registry, ip)
-    {:noreply, %{state | registry: new_registry}}
-  end
-
-  def handle_cast({:run_sync, ips}, %__MODULE__{sync: true} = state) do
-    alf_components = state.pipeline_module.alf_components()
-
-    new_registry =
-      Enum.reduce(ips, state.registry, fn ip, registry ->
-        case ALF.SyncRunner.run(ip, alf_components) do
-          [] ->
-            registry
-
-          ips ->
-            Enum.map(ips, &Streamer.rebuild_registry_on_result_ready(registry, &1))
-        end
-      end)
-
     {:noreply, %{state | registry: new_registry}}
   end
 

@@ -71,30 +71,33 @@ defmodule ALF.PipelineTest do
   describe "find_component_by_pid" do
     test "for stage1_pid", %{
       pipeline: pipeline,
-      stage1_pid: stage1_pid,
+      stage1_pid: stage1_pid
     } do
       assert %Stage{name: :stage1} = Pipeline.find_component_by_pid(pipeline, stage1_pid)
     end
 
     test "for switch_stage1_pid", %{
       pipeline: pipeline,
-      stage_in_part1_pid: stage_in_part1_pid,
+      stage_in_part1_pid: stage_in_part1_pid
     } do
-      assert %Stage{name: :stage_in_part1} = Pipeline.find_component_by_pid(pipeline, stage_in_part1_pid)
+      assert %Stage{name: :stage_in_part1} =
+               Pipeline.find_component_by_pid(pipeline, stage_in_part1_pid)
     end
 
     test "for stage_in_part2_pid", %{
       pipeline: pipeline,
-      stage_in_part2_pid: stage_in_part2_pid,
+      stage_in_part2_pid: stage_in_part2_pid
     } do
-      assert %Stage{name: :stage_in_part2} = Pipeline.find_component_by_pid(pipeline, stage_in_part2_pid)
+      assert %Stage{name: :stage_in_part2} =
+               Pipeline.find_component_by_pid(pipeline, stage_in_part2_pid)
     end
 
     test "for stage_in_clone_pid", %{
       pipeline: pipeline,
-      stage_in_clone_pid: stage_in_clone_pid,
+      stage_in_clone_pid: stage_in_clone_pid
     } do
-      assert %Stage{name: :stage_in_clone} = Pipeline.find_component_by_pid(pipeline, stage_in_clone_pid)
+      assert %Stage{name: :stage_in_clone} =
+               Pipeline.find_component_by_pid(pipeline, stage_in_clone_pid)
     end
 
     test "for last_stage_pid", %{

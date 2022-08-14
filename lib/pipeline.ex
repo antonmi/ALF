@@ -19,7 +19,7 @@ defmodule ALF.Pipeline do
         component
     end
   end
-  
+
   def do_find_component_by_pid(components, pid) do
     Enum.each(components, fn component ->
       if component.pid == pid do

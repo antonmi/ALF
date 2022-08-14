@@ -1,4 +1,4 @@
-defmodule ALF.SyncRunner.ErrorAndDone.Pipeline do
+defmodule ALF.SyncRun.ErrorAndDone.Pipeline do
   use ALF.DSL
 
   @components [
@@ -7,16 +7,15 @@ defmodule ALF.SyncRunner.ErrorAndDone.Pipeline do
     stage(:minus_three)
   ]
 
-  def add_one(event, _), do: (if event == 3, do: done!(event), else: event + 1)
-  def mult_by_two(event, _), do: (if event == 3, do: raise("error"), else: event * 2)
+  def add_one(event, _), do: if(event == 3, do: done!(event), else: event + 1)
+  def mult_by_two(event, _), do: if(event == 3, do: raise("error"), else: event * 2)
   def minus_three(event, _), do: event - 3
 end
 
-defmodule ALF.SyncRunner.ErrorAndDoneTest do
+defmodule ALF.SyncRun.ErrorAndDoneTest do
   use ExUnit.Case
 
-  alias ALF.SyncRunner
-  alias ALF.SyncRunner.ErrorAndDone.Pipeline
+  alias ALF.SyncRun.ErrorAndDone.Pipeline
   alias ALF.Manager
 
   setup do: Manager.start(Pipeline, sync: true)
@@ -24,7 +23,7 @@ defmodule ALF.SyncRunner.ErrorAndDoneTest do
   test "sync run" do
     results =
       [1, 2, 3]
-      |> SyncRunner.stream_to(Pipeline)
+      |> Manager.stream_to(Pipeline)
       |> Enum.to_list()
 
     assert [1, error_ip, 3] = results

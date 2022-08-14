@@ -38,6 +38,7 @@ defmodule ALF.Builder do
     {:ok, pipeline}
   end
 
+  # TODO no need in pipeline_module
   def build_sync(pipe_spec, pipeline_module, telemetry_enabled \\ nil) when is_list(pipe_spec) do
     pipe_spec
     |> Enum.reduce([], fn stage_spec, stages ->

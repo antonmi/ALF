@@ -1,18 +1,18 @@
-defmodule ALF.SyncRunner.PlugWith.HelloComponent do
+defmodule ALF.SyncRun.PlugWith.HelloComponent do
   def call(%{name: name}, _) do
     "Hello #{name}!"
   end
 end
 
-defmodule ALF.SyncRunner.PlugWith.Pipeline do
+defmodule ALF.SyncRun.PlugWith.Pipeline do
   use ALF.DSL
 
-  alias ALF.SyncRunner.PlugWith.HelloComponent
+  alias ALF.SyncRun.PlugWith.HelloComponent
 
   defstruct [:input, :output]
 
   defmodule InputToName do
-    alias ALF.SyncRunner.PlugWith.Pipeline
+    alias ALF.SyncRun.PlugWith.Pipeline
     def plug(%Pipeline{input: input}, _), do: %{name: input}
     def unplug(string, prev_event, _), do: %{prev_event | output: string}
   end
@@ -28,20 +28,20 @@ defmodule ALF.SyncRunner.PlugWith.Pipeline do
   def format_output(%__MODULE__{output: event}, _), do: event
 end
 
-defmodule ALF.SyncRunner.PlugWithExamplesTest do
+defmodule ALF.SyncRun.PlugWithExamplesTest do
   use ExUnit.Case
 
-  alias ALF.SyncRunner.PlugWith.Pipeline
-  alias ALF.{Manager, SyncRunner}
+  alias ALF.SyncRun.PlugWith.Pipeline
+  alias ALF.Manager
 
-  setup do: Manager.start(Pipeline)
+  setup do: Manager.start(Pipeline, sync: true)
 
   test "process input" do
     inputs = ["Anton", "Baton"]
 
     results =
       inputs
-      |> SyncRunner.stream_to(Pipeline)
+      |> Manager.stream_to(Pipeline)
       |> Enum.to_list()
 
     assert results == ["Hello Anton!", "Hello Baton!"]

@@ -1,4 +1,4 @@
-defmodule ALF.SyncRunner.SimplePipeline.Pipeline do
+defmodule ALF.SyncRun.SimplePipeline.Pipeline do
   use ALF.DSL
 
   @components [
@@ -12,11 +12,10 @@ defmodule ALF.SyncRunner.SimplePipeline.Pipeline do
   def minus_three(event, _), do: event - 3
 end
 
-defmodule ALF.SyncRunner.SimplePipelineTest do
+defmodule ALF.SyncRun.SimplePipelineTest do
   use ExUnit.Case
 
-  alias ALF.SyncRunner
-  alias ALF.SyncRunner.SimplePipeline.Pipeline
+  alias ALF.SyncRun.SimplePipeline.Pipeline
   alias ALF.Manager
 
   setup do: Manager.start(Pipeline, sync: true)
@@ -24,16 +23,16 @@ defmodule ALF.SyncRunner.SimplePipelineTest do
   test "sync run" do
     results =
       [1, 2, 3]
-      |> SyncRunner.stream_to(Pipeline)
+      |> Manager.stream_to(Pipeline)
       |> Enum.to_list()
 
     assert results == [1, 3, 5]
   end
 
   test "several streams of inputs" do
-    stream1 = SyncRunner.stream_to(0..9, Pipeline)
-    stream2 = SyncRunner.stream_to(10..19, Pipeline)
-    stream3 = SyncRunner.stream_to(20..29, Pipeline)
+    stream1 = Manager.stream_to(0..9, Pipeline)
+    stream2 = Manager.stream_to(10..19, Pipeline)
+    stream3 = Manager.stream_to(20..29, Pipeline)
 
     [result1, result2, result3] =
       [stream1, stream2, stream3]
