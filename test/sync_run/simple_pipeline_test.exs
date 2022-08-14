@@ -16,7 +16,7 @@ defmodule ALF.SyncRun.SimplePipelineTest do
   use ExUnit.Case
 
   alias ALF.SyncRun.SimplePipeline.Pipeline
-  alias ALF.Manager
+  alias ALF.{IP, Manager}
 
   setup do: Manager.start(Pipeline, sync: true)
 
@@ -42,5 +42,42 @@ defmodule ALF.SyncRun.SimplePipelineTest do
     assert result1 == Enum.map(0..9, fn n -> (n + 1) * 2 - 3 end)
     assert result2 == Enum.map(10..19, fn n -> (n + 1) * 2 - 3 end)
     assert result3 == Enum.map(20..29, fn n -> (n + 1) * 2 - 3 end)
+  end
+
+  test "return_ips" do
+    results =
+      [1, 2, 3]
+      |> Manager.stream_to(Pipeline, return_ips: true)
+      |> Enum.to_list()
+
+    assert [%IP{event: 1}, %IP{event: 3}, %IP{event: 5}] = results
+  end
+
+  test "steam_with_ids_to" do
+    ref = make_ref()
+    pid = self()
+
+    results =
+      [{ref, 1}, {:my_id, 2}, {pid, 3}]
+      |> Manager.steam_with_ids_to(Pipeline)
+      |> Enum.to_list()
+
+    assert [{^ref, 1}, {:my_id, 3}, {^pid, 5}] = results
+  end
+
+  test "steam_with_ids_to with return_ips: true" do
+    ref = make_ref()
+    pid = self()
+
+    results =
+      [{ref, 1}, {:my_id, 2}, {pid, 3}]
+      |> Manager.steam_with_ids_to(Pipeline, return_ips: true)
+      |> Enum.to_list()
+
+    assert [
+             {^ref, %IP{event: 1, ref: ^ref}},
+             {:my_id, %IP{event: 3, ref: :my_id}},
+             {^pid, %IP{event: 5, ref: ^pid}}
+           ] = results
   end
 end

@@ -6,18 +6,22 @@ defmodule ALF.Manager.SyncRunner do
     Clone
   }
 
-  alias ALF.{Builder, Pipeline}
+  alias ALF.Pipeline
   alias ALF.{ErrorIP, IP}
   alias ALF.Manager.Streamer
 
-  def transform_stream(stream, pipeline, stream_ref) do
+  def transform_sync_stream(
+        {stream, stream_ref},
+        {manager_name, pipeline},
+        {return_ips?, custom_ids?}
+      ) do
     stream
     |> Stream.chunk_while(
       [],
       fn event, acc ->
-        [ip] = Streamer.build_ips([event], stream_ref, pipeline)
+        [ip] = Streamer.build_ips([event], stream_ref, manager_name)
         ips = run(pipeline, ip)
-        acc = acc ++ Streamer.format_output(ips, false, false)
+        acc = acc ++ Streamer.format_output(ips, return_ips?, custom_ids?)
         {:cont, acc, []}
       end,
       fn [] ->

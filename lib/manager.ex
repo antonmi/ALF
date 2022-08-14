@@ -268,8 +268,14 @@ defmodule ALF.Manager do
 
   def handle_call({:stream_to, stream, opts, custom_ids?}, _from, %__MODULE__{sync: true} = state) do
     stream_ref = make_ref()
-    # TODO custom_ids?
-    stream = SyncRunner.transform_stream(stream, state.pipeline, stream_ref)
+
+    stream =
+      SyncRunner.transform_sync_stream(
+        {stream, stream_ref},
+        {state.name, state.pipeline},
+        {opts.return_ips, custom_ids?}
+      )
+
     {:reply, stream, state}
   end
 

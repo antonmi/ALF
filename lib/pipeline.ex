@@ -26,15 +26,15 @@ defmodule ALF.Pipeline do
         throw(component)
       else
         case component do
-          %Switch{branches: branches} = switch ->
+          %Switch{branches: branches} ->
             Enum.each(branches, fn {_key, partition_comps} ->
               do_find_component_by_pid(partition_comps, pid)
             end)
 
-          %Clone{to: to_components} = stage ->
+          %Clone{to: to_components} ->
             do_find_component_by_pid(to_components, pid)
 
-          component ->
+          _component ->
             nil
         end
       end

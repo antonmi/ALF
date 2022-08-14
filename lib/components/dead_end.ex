@@ -28,5 +28,7 @@ defmodule ALF.Components.DeadEnd do
     {:noreply, [], state}
   end
 
-  def sync_process(ip, state), do: nil
+  def sync_process(_ip, _state) do
+    nil
+  end
 end
