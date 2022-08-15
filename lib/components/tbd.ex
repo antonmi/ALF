@@ -18,6 +18,10 @@ defmodule ALF.Components.Tbd do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, _telemetry_enabled) do
+    %{state | pid: make_ref()}
+  end
+
   def handle_events([%IP{} = ip], _from, state) do
     ip = %{ip | history: [{state.name, ip.event} | ip.history]}
     {:noreply, [ip], state}

@@ -3,6 +3,8 @@ defmodule ALF.AutoScalerTest do
 
   alias ALF.{AutoScaler, Manager}
 
+  @moduletag timeout: 10_000
+
   defmodule SimplePipeline do
     use ALF.DSL
 

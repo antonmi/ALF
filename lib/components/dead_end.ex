@@ -14,6 +14,10 @@ defmodule ALF.Components.DeadEnd do
     {:consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{state | pid: make_ref(), telemetry_enabled: telemetry_enabled}
+  end
+
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],

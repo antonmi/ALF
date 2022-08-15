@@ -25,6 +25,16 @@ defmodule ALF.Components.Producer do
      }}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{
+      state
+      | pid: make_ref(),
+        name: :producer,
+        source_code: read_source_code(state.module, state.function),
+        telemetry_enabled: telemetry_enabled
+    }
+  end
+
   def load_ips(pid, ips) do
     GenServer.cast(pid, {:load_ips, ips})
   end

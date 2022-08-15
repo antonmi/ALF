@@ -50,13 +50,10 @@ defmodule ALF.Builder do
     |> Enum.reduce([], fn comp, stages ->
       case comp do
         %Stage{} = stage ->
-          opts = stage.__struct__.init_opts(stage.module, stage.opts)
-          new_stage = %{stage | pid: make_ref(), opts: opts, telemetry_enabled: telemetry_enabled}
+          new_stage = stage.__struct__.init_sync(stage, telemetry_enabled)
           stages ++ [new_stage]
 
         %Switch{branches: branches} = switch ->
-          opts = switch.__struct__.init_opts(switch.module, switch.opts)
-
           branches =
             Enum.reduce(branches, %{}, fn {key, inner_pipe_spec}, branch_pipes ->
               branch_stages = do_build_sync(inner_pipe_spec, telemetry_enabled)
@@ -64,35 +61,16 @@ defmodule ALF.Builder do
               Map.put(branch_pipes, key, branch_stages)
             end)
 
-          switch = %{
-            switch
-            | branches: branches,
-              opts: opts,
-              pid: make_ref(),
-              telemetry_enabled: telemetry_enabled
-          }
-
+          switch = switch.__struct__.init_sync(switch, branches, telemetry_enabled)
           stages ++ [switch]
 
         %Clone{to: pipe_stages} = clone ->
           to_stages = do_build_sync(pipe_stages, telemetry_enabled)
-          clone = %{clone | to: to_stages, pid: make_ref(), telemetry_enabled: telemetry_enabled}
+          clone = clone.__struct__.init_sync(clone, to_stages, telemetry_enabled)
           stages ++ [clone]
 
-        %{module: module, opts: opts} = component ->
-          opts = component.__struct__.init_opts(module, opts)
-
-          component = %{
-            component
-            | pid: make_ref(),
-              opts: opts,
-              telemetry_enabled: telemetry_enabled
-          }
-
-          stages ++ [component]
-
         component ->
-          component = %{component | pid: make_ref(), telemetry_enabled: telemetry_enabled}
+          component = component.__struct__.init_sync(component, telemetry_enabled)
           stages ++ [component]
       end
     end)

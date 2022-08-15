@@ -14,6 +14,14 @@ defmodule ALF.Components.GotoPoint do
     {:producer_consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{
+      state
+      | pid: make_ref(),
+        telemetry_enabled: telemetry_enabled
+    }
+  end
+
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     ip = %{ip | history: [{state.name, ip.event} | ip.history]}
 

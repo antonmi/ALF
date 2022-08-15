@@ -18,6 +18,10 @@ defmodule ALF.Components.Consumer do
     {:consumer, state, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{state | pid: make_ref(), name: :consumer, telemetry_enabled: telemetry_enabled}
+  end
+
   def handle_events([ip], _from, %__MODULE__{telemetry_enabled: true} = state)
       when is_struct(ip, IP) or is_struct(ip, ErrorIP) do
     :telemetry.span(

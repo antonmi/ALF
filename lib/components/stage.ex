@@ -33,6 +33,16 @@ defmodule ALF.Components.Stage do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{
+      state
+      | pid: make_ref(),
+        opts: init_opts(state.module, state.opts),
+        source_code: read_source_code(state.module, state.function),
+        telemetry_enabled: telemetry_enabled
+    }
+  end
+
   def inc_count(%__MODULE__{pid: pid}), do: GenStage.call(pid, :inc_count)
   def dec_count(%__MODULE__{pid: pid}), do: GenStage.call(pid, :dec_count)
 

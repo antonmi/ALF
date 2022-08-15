@@ -24,6 +24,16 @@ defmodule ALF.Components.Unplug do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{
+      state
+      | pid: make_ref(),
+        opts: init_opts(state.module, state.opts),
+        source_code: read_source_code(state.module, :unplug),
+        telemetry_enabled: telemetry_enabled
+    }
+  end
+
   def handle_events([%IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],
