@@ -2,7 +2,7 @@ defmodule ALF.PipelineTest do
   use ExUnit.Case
 
   alias ALF.{Builder, Pipeline}
-  alias ALF.Components.{Stage, Switch, Clone, DeadEnd}
+  alias ALF.Components.{Producer, Stage, Switch, Clone, DeadEnd, Consumer}
 
   def spec1 do
     [
@@ -30,6 +30,7 @@ defmodule ALF.PipelineTest do
     pipeline = Builder.build_sync(spec1(), true)
 
     [
+      %Producer{},
       %Stage{name: :stage1, pid: stage1_pid},
       %Switch{
         name: :switch,
@@ -51,7 +52,8 @@ defmodule ALF.PipelineTest do
         },
         function: :cond_function
       },
-      %Stage{name: :last_stage, pid: last_stage_pid}
+      %Stage{name: :last_stage, pid: last_stage_pid},
+      %Consumer{}
     ] = pipeline
 
     %{

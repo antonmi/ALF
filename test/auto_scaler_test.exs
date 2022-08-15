@@ -35,12 +35,12 @@ defmodule ALF.AutoScalerTest do
       ]
 
       def add_one(event, _) do
-        Process.sleep(10)
+        Process.sleep(2)
         event + 1
       end
 
       def mult_two(event, _) do
-        Process.sleep(15)
+        Process.sleep(3)
         event * 2
       end
     end
@@ -72,12 +72,12 @@ defmodule ALF.AutoScalerTest do
       ]
 
       def add_one(event, _) do
-        Process.sleep(10)
+        Process.sleep(2)
         event + 1
       end
 
       def mult_two(event, _) do
-        Process.sleep(15)
+        Process.sleep(3)
         event * 2
       end
     end
@@ -132,12 +132,12 @@ defmodule ALF.AutoScalerTest do
       def do_nothing(event, _), do: event
 
       def add_one(event, _) do
-        Process.sleep(10)
+        Process.sleep(2)
         event + 1
       end
 
       def mult_two(event, _) do
-        Process.sleep(15)
+        Process.sleep(3)
         event * 2
       end
     end
@@ -147,7 +147,7 @@ defmodule ALF.AutoScalerTest do
     end
 
     test "down" do
-      Enum.each(1..100, fn event ->
+      Enum.each(1..50, fn event ->
         Enum.to_list(Manager.stream_to([event], PipelineToScaleDown2))
       end)
 

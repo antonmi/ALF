@@ -50,6 +50,10 @@ defmodule ALF.Components.Producer do
     {:noreply, ips, new_state}
   end
 
+  def sync_process(ip, _state) do
+    ip
+  end
+
   defp prepare_state_and_ips(
          %__MODULE__{ips: ips, manager_name: manager_name, demand: demand} = state
        ) do

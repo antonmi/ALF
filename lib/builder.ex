@@ -39,6 +39,13 @@ defmodule ALF.Builder do
   end
 
   def build_sync(pipe_spec, telemetry_enabled \\ nil) when is_list(pipe_spec) do
+    components = do_build_sync(pipe_spec, telemetry_enabled)
+    # sync_init
+    [%Producer{pid: make_ref(), name: :producer} | components] ++
+      [%Consumer{pid: make_ref(), name: :consumer}]
+  end
+
+  defp do_build_sync(pipe_spec, telemetry_enabled) when is_list(pipe_spec) do
     pipe_spec
     |> Enum.reduce([], fn comp, stages ->
       case comp do
@@ -52,7 +59,7 @@ defmodule ALF.Builder do
 
           branches =
             Enum.reduce(branches, %{}, fn {key, inner_pipe_spec}, branch_pipes ->
-              branch_stages = build_sync(inner_pipe_spec, telemetry_enabled)
+              branch_stages = do_build_sync(inner_pipe_spec, telemetry_enabled)
 
               Map.put(branch_pipes, key, branch_stages)
             end)
@@ -68,7 +75,7 @@ defmodule ALF.Builder do
           stages ++ [switch]
 
         %Clone{to: pipe_stages} = clone ->
-          to_stages = build_sync(pipe_stages, telemetry_enabled)
+          to_stages = do_build_sync(pipe_stages, telemetry_enabled)
           clone = %{clone | to: to_stages, pid: make_ref(), telemetry_enabled: telemetry_enabled}
           stages ++ [clone]
 

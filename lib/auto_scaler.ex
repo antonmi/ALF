@@ -6,7 +6,7 @@ defmodule ALF.AutoScaler do
 
   alias ALF.{Manager, PerformanceStats}
 
-  @interval 1000
+  @interval Application.compile_env!(:alf, :auto_scaler_interval)
 
   def start_link([]) do
     GenServer.start_link(__MODULE__, %__MODULE__{}, name: __MODULE__)

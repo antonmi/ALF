@@ -36,6 +36,10 @@ defmodule ALF.Components.Consumer do
     {:noreply, [], state}
   end
 
+  def sync_process(ip, _state) do
+    ip
+  end
+
   defp cast_result_ready(ip, state) do
     Streamer.cast_result_ready(state.manager_name, ip)
     ip

@@ -166,13 +166,19 @@ defmodule ALF.BuilderTest do
 
   describe "build_sync" do
     test "build with spec_simple_sync" do
-      [stage] = Builder.build_sync(spec_simple(), true)
-      assert stage.pid
+      [producer, stage, consumer] = Builder.build_sync(spec_simple(), true)
+      assert producer.name == :producer
+      assert is_reference(producer.pid)
+
+      assert consumer.name == :consumer
+      assert is_reference(consumer.pid)
+
+      assert is_reference(stage.pid)
       assert stage.telemetry_enabled
     end
 
     test "build with spec_with_switch" do
-      [switch] = Builder.build_sync(spec_with_switch(), true)
+      [_, switch, _] = Builder.build_sync(spec_with_switch(), true)
 
       assert switch.telemetry_enabled
 
@@ -185,7 +191,7 @@ defmodule ALF.BuilderTest do
     end
 
     test "build with spec_with_clone" do
-      [clone, stage] = Builder.build_sync(spec_with_clone(), true)
+      [_, clone, stage, _] = Builder.build_sync(spec_with_clone(), true)
 
       assert clone.telemetry_enabled
       [to_stage] = clone.to
@@ -196,7 +202,7 @@ defmodule ALF.BuilderTest do
     end
 
     test "spec_with_clone_and_dead_end" do
-      [clone, _stage] = Builder.build_sync(spec_with_clone_and_dead_end(), true)
+      [_, clone, _stage, _] = Builder.build_sync(spec_with_clone_and_dead_end(), true)
       assert [%Stage{}, %DeadEnd{}] = clone.to
     end
   end

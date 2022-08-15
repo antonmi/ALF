@@ -2,7 +2,7 @@ defmodule ALF.Manager.SyncRunnerTest do
   use ExUnit.Case
 
   alias ALF.{Builder, Manager.SyncRunner}
-  alias ALF.Components.{Stage, Switch, Clone, DeadEnd}
+  alias ALF.Components.{Producer, Stage, Switch, Clone, DeadEnd, Consumer}
 
   def spec1 do
     [
@@ -30,6 +30,7 @@ defmodule ALF.Manager.SyncRunnerTest do
     pipeline = Builder.build_sync(spec1(), true)
 
     [
+      %Producer{pid: producer_pid},
       %Stage{name: :stage1, pid: stage1_pid},
       %Switch{
         name: :switch,
@@ -51,10 +52,12 @@ defmodule ALF.Manager.SyncRunnerTest do
         },
         function: :cond_function
       },
-      %Stage{name: :last_stage, pid: last_stage_pid}
+      %Stage{name: :last_stage, pid: last_stage_pid},
+      %Consumer{pid: consumer_pid}
     ] = pipeline
 
     %{
+      producer_pid: producer_pid,
       pipeline: pipeline,
       stage1_pid: stage1_pid,
       switch_stage1_pid: switch_stage1_pid,
@@ -64,33 +67,56 @@ defmodule ALF.Manager.SyncRunnerTest do
       stage_in_clone_pid: stage_in_clone_pid,
       dead_end_pid: dead_end_pid,
       another_stage_in_part2_pid: another_stage_in_part2_pid,
-      last_stage_pid: last_stage_pid
+      last_stage_pid: last_stage_pid,
+      consumer_pid: consumer_pid
     }
   end
 
   describe "path" do
+    test "for producer_pid", %{
+      pipeline: pipeline,
+      producer_pid: producer_pid,
+      stage1_pid: stage1_pid,
+      switch_stage1_pid: switch_stage1_pid,
+      last_stage_pid: last_stage_pid,
+      consumer_pid: consumer_pid
+    } do
+      {path, true} = SyncRunner.path(pipeline, producer_pid)
+
+      assert path == [
+               producer_pid,
+               stage1_pid,
+               switch_stage1_pid,
+               last_stage_pid,
+               consumer_pid
+             ]
+    end
+
     test "for stage1_pid", %{
       pipeline: pipeline,
       stage1_pid: stage1_pid,
       switch_stage1_pid: switch_stage1_pid,
-      last_stage_pid: last_stage_pid
+      last_stage_pid: last_stage_pid,
+      consumer_pid: consumer_pid
     } do
       {path, true} = SyncRunner.path(pipeline, stage1_pid)
 
       assert path == [
                stage1_pid,
                switch_stage1_pid,
-               last_stage_pid
+               last_stage_pid,
+               consumer_pid
              ]
     end
 
     test "for switch_stage1_pid", %{
       pipeline: pipeline,
       stage_in_part1_pid: stage_in_part1_pid,
-      last_stage_pid: last_stage_pid
+      last_stage_pid: last_stage_pid,
+      consumer_pid: consumer_pid
     } do
       {path, true} = SyncRunner.path(pipeline, stage_in_part1_pid)
-      assert path == [stage_in_part1_pid, last_stage_pid]
+      assert path == [stage_in_part1_pid, last_stage_pid, consumer_pid]
     end
 
     test "for stage_in_part2_pid", %{
@@ -98,7 +124,8 @@ defmodule ALF.Manager.SyncRunnerTest do
       stage_in_part2_pid: stage_in_part2_pid,
       clone_pid: clone_pid,
       another_stage_in_part2_pid: another_stage_in_part2_pid,
-      last_stage_pid: last_stage_pid
+      last_stage_pid: last_stage_pid,
+      consumer_pid: consumer_pid
     } do
       {path, true} = SyncRunner.path(pipeline, stage_in_part2_pid)
 
@@ -106,7 +133,8 @@ defmodule ALF.Manager.SyncRunnerTest do
                stage_in_part2_pid,
                clone_pid,
                another_stage_in_part2_pid,
-               last_stage_pid
+               last_stage_pid,
+               consumer_pid
              ]
     end
 
@@ -115,7 +143,8 @@ defmodule ALF.Manager.SyncRunnerTest do
       stage_in_clone_pid: stage_in_clone_pid,
       dead_end_pid: dead_end_pid,
       another_stage_in_part2_pid: another_stage_in_part2_pid,
-      last_stage_pid: last_stage_pid
+      last_stage_pid: last_stage_pid,
+      consumer_pid: consumer_pid
     } do
       {path, true} = SyncRunner.path(pipeline, stage_in_clone_pid)
 
@@ -123,7 +152,8 @@ defmodule ALF.Manager.SyncRunnerTest do
                stage_in_clone_pid,
                dead_end_pid,
                another_stage_in_part2_pid,
-               last_stage_pid
+               last_stage_pid,
+               consumer_pid
              ]
     end
   end
