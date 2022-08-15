@@ -6,9 +6,31 @@ defmodule ALF.Manager.SyncRunner do
     Clone
   }
 
-  alias ALF.Pipeline
+  alias ALF.{Builder, Pipeline}
   alias ALF.{ErrorIP, IP}
   alias ALF.Manager.Streamer
+
+  def stream_to(
+        stream,
+        pipeline_module,
+        telemetry_enabled \\ false,
+        return_ips? \\ false,
+        custom_ids? \\ false
+      ) do
+    pipeline =
+      Builder.build_sync(
+        pipeline_module.alf_components(),
+        telemetry_enabled
+      )
+
+    stream_ref = make_ref()
+
+    transform_sync_stream(
+      {stream, stream_ref},
+      {pipeline_module, pipeline},
+      {return_ips?, custom_ids?}
+    )
+  end
 
   def transform_sync_stream(
         {stream, stream_ref},

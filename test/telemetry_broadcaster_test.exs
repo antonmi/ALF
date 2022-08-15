@@ -10,7 +10,9 @@ defmodule ALF.TelemetryBroadcasterTest do
       stage(:add_one)
     ]
 
-    def add_one(event, _), do: %{event | number: event.number + 1}
+    def add_one(event, _) do
+      %{event | number: event.number + 1}
+    end
   end
 
   defmodule TelemetryHandler do
