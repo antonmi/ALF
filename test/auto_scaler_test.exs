@@ -94,14 +94,14 @@ defmodule ALF.AutoScalerTest do
         |> Manager.components()
         |> Enum.map(& &1.pid)
 
-      Enum.each(1..100, fn event ->
+      Enum.each(1..150, fn event ->
         Enum.to_list(Manager.stream_to([event], PipelineToScaleDown))
       end)
 
       components = Manager.reload_components_states(PipelineToScaleDown)
       assert length(components) == 4
 
-      1..200
+      1..250
       |> Manager.stream_to(PipelineToScaleDown)
       |> Enum.to_list()
 
