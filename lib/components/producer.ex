@@ -50,18 +50,28 @@ defmodule ALF.Components.Producer do
     {:noreply, ips, new_state}
   end
 
-  defp prepare_state_and_ips(%__MODULE__{ips: ips, demand: demand} = state) do
+  defp prepare_state_and_ips(
+         %__MODULE__{ips: ips, manager_name: manager_name, demand: demand} = state
+       ) do
     case Enum.split(ips, demand) do
       {[], ips_to_store} ->
         {[], %{state | demand: demand, ips: ips_to_store}}
 
       {ips_to_send, ips_to_store} ->
+        ips_to_send = add_ips_to_in_progress_registry(ips_to_send, manager_name)
+
         if state.telemetry_enabled do
           send_simple_telemetry_events(ips_to_send, state)
         end
 
         {ips_to_send, %{state | demand: demand - length(ips_to_send), ips: ips_to_store}}
     end
+  end
+
+  defp add_ips_to_in_progress_registry([ip | _] = ips, manager_name) do
+    ips = Enum.map(ips, fn ip -> %{ip | in_progress: true} end)
+    Streamer.cast_move_to_in_progress_registry(manager_name, ips, ip.stream_ref)
+    ips
   end
 
   defp send_simple_telemetry_events(ips_to_send, state) do

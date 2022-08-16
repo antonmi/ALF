@@ -15,6 +15,10 @@ defmodule ALF.Manager.Streamer do
     GenServer.call(name, {:remove_from_registry, ips, stream_ref})
   end
 
+  def cast_move_to_in_progress_registry(name, ips, stream_ref) do
+    GenServer.cast(name, {:move_to_in_progress_registry, ips, stream_ref})
+  end
+
   def cast_result_ready(name, ip) when is_atom(name) do
     GenServer.cast(name, {:result_ready, ip})
   end
@@ -29,6 +33,13 @@ defmodule ALF.Manager.Streamer do
     stream_registry = state_registry[stream_ref]
 
     stream_reg = StreamRegistry.remove_from_registry(stream_registry, ips)
+    Map.put(state_registry, stream_ref, stream_reg)
+  end
+
+  def move_to_in_progress_registry(state_registry, stream_ref, ips) do
+    stream_registry = state_registry[stream_ref]
+
+    stream_reg = StreamRegistry.move_to_in_progress_registry(stream_registry, ips)
     Map.put(state_registry, stream_ref, stream_reg)
   end
 
@@ -110,8 +121,8 @@ defmodule ALF.Manager.Streamer do
   defp send_events(name, events, stream_ref, producer_pid)
        when is_atom(name) and is_list(events) do
     ips = build_ips(events, stream_ref, name)
-    call_add_to_registry(name, ips, stream_ref)
     :ok = wait_until_producer_load_is_ok(producer_pid)
+    call_add_to_registry(name, ips, stream_ref)
     Producer.load_ips(producer_pid, ips)
   catch
     :exit, {reason, details} ->
@@ -130,11 +141,12 @@ defmodule ALF.Manager.Streamer do
   def resend_packets(%Manager{} = state) do
     new_registry =
       state.registry
-      |> Enum.reduce(%{}, fn {stream_ref, %StreamRegistry{} = registry}, acc ->
-        ips = build_ips(registry.in_progress, stream_ref, state.name)
+      |> Enum.reduce(%{}, fn {stream_ref, %StreamRegistry{inputs: inputs, queue: queue, ref: ref}},
+                             acc ->
+        ips = build_ips(inputs, stream_ref, state.name)
         Producer.load_ips(state.producer_pid, ips)
-        # forget about composed and recomposed currently
-        Map.put(acc, stream_ref, registry)
+        # forget about in_progress, composed and recomposed currently
+        Map.put(acc, stream_ref, %StreamRegistry{inputs: inputs, queue: queue, ref: ref})
       end)
 
     %{state | registry: new_registry}
@@ -147,7 +159,7 @@ defmodule ALF.Manager.Streamer do
         case event do
           {id, event} ->
             %IP{
-              in_progress: true,
+              #              in_progress: true,
               stream_ref: stream_ref,
               ref: id,
               init_datum: event,
@@ -166,7 +178,7 @@ defmodule ALF.Manager.Streamer do
               end
 
             %IP{
-              in_progress: true,
+              #              in_progress: true,
               stream_ref: stream_ref,
               ref: reference,
               init_datum: event,

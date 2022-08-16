@@ -325,6 +325,11 @@ defmodule ALF.Manager do
     {:reply, new_registry, %{state | registry: new_registry}}
   end
 
+  def handle_cast({:move_to_in_progress_registry, ips, stream_ref}, state) do
+    new_registry = Streamer.move_to_in_progress_registry(state.registry, stream_ref, ips)
+    {:noreply, %{state | registry: new_registry}}
+  end
+
   def handle_cast({:result_ready, ip}, state) do
     new_registry = Streamer.rebuild_registry_on_result_ready(state.registry, ip)
     {:noreply, %{state | registry: new_registry}}
