@@ -40,8 +40,18 @@ defmodule ALF.Components.Consumer do
     {:noreply, [], state}
   end
 
-  def sync_process(ip, _state) do
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false}) do
     ip
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        {ip, telemetry_data(ip, state)}
+      end
+    )
   end
 
   defp cast_result_ready(ip, state) do

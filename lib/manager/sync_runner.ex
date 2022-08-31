@@ -17,11 +17,7 @@ defmodule ALF.Manager.SyncRunner do
         return_ips? \\ false,
         custom_ids? \\ false
       ) do
-    pipeline =
-      Builder.build_sync(
-        pipeline_module.alf_components(),
-        telemetry_enabled
-      )
+    pipeline = Builder.build_sync(pipeline_module, telemetry_enabled)
 
     stream_ref = make_ref()
 

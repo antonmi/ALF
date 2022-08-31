@@ -88,7 +88,22 @@ defmodule ALF.Components.Decomposer do
     end
   end
 
-  def sync_process(ip, state) do
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+    do_sync_process(ip, state)
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        ips = do_sync_process(ip, state)
+        {ips, telemetry_data(ips, state)}
+      end
+    )
+  end
+
+  defp do_sync_process(ip, state) do
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:ok, events} when is_list(events) ->
         build_ips(events, ip, [{state.name, ip.event} | ip.history])

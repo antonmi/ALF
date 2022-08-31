@@ -45,7 +45,18 @@ defmodule ALF.Components.GotoPoint do
     {:reply, :ok, [ip], state}
   end
 
-  def sync_process(ip, state) do
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
     %{ip | history: [{state.name, ip.event} | ip.history]}
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+        {ip, telemetry_data(ip, state)}
+      end
+    )
   end
 end

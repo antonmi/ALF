@@ -113,7 +113,22 @@ defmodule ALF.Components.Goto do
     end
   end
 
-  def sync_process(ip, state) do
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+    do_sync_process(ip, state)
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        {success, ip} = do_sync_process(ip, state)
+        {{success, ip}, telemetry_data(ip, state)}
+      end
+    )
+  end
+
+  def do_sync_process(ip, state) do
     ip = %{ip | history: [{state.name, ip.event} | ip.history]}
 
     case call_function(state.module, state.function, ip.event, state.opts) do

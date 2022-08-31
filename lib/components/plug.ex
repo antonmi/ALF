@@ -74,7 +74,22 @@ defmodule ALF.Components.Plug do
     end
   end
 
-  def sync_process(ip, state) do
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+    do_sync_process(ip, state)
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        ip = do_sync_process(ip, state)
+        {ip, telemetry_data(ip, state)}
+      end
+    )
+  end
+
+  defp do_sync_process(ip, state) do
     ip = %{ip | history: [{state.name, ip.event} | ip.history]}
     ip_plugs = Map.put(ip.plugs, state.name, ip.event)
     ip = %{ip | plugs: ip_plugs}

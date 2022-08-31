@@ -165,7 +165,7 @@ defmodule ALF.Manager do
   def handle_continue(:init_pipeline, %__MODULE__{sync: true} = state) do
     pipeline =
       Builder.build_sync(
-        state.pipeline_module.alf_components(),
+        state.pipeline_module,
         state.telemetry_enabled
       )
 
@@ -207,10 +207,9 @@ defmodule ALF.Manager do
   defp build_pipeline(%__MODULE__{} = state) do
     {:ok, pipeline} =
       Builder.build(
-        state.pipeline_module.alf_components,
+        state.pipeline_module,
         state.pipeline_sup_pid,
         state.name,
-        state.pipeline_module,
         state.telemetry_enabled
       )
 

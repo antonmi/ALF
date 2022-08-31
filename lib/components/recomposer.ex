@@ -121,7 +121,22 @@ defmodule ALF.Components.Recomposer do
     end
   end
 
-  def sync_process(ip, state) do
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+    do_sync_process(ip, state)
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        ip = do_sync_process(ip, state)
+        {ip, telemetry_data(ip, state)}
+      end
+    )
+  end
+
+  defp do_sync_process(ip, state) do
     collected_ips = get_from_process_dict({state.pid, ip.stream_ref})
     collected_data = Enum.map(collected_ips, & &1.event)
 
@@ -153,8 +168,7 @@ defmodule ALF.Components.Recomposer do
         build_ip(event, ip, [{state.name, ip.event} | ip.history])
 
       {:error, error, stacktrace} ->
-        error_ip = send_error_result(ip, error, stacktrace, state)
-        {error_ip, state}
+        send_error_result(ip, error, stacktrace, state)
     end
   end
 

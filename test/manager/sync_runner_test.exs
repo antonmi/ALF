@@ -4,30 +4,32 @@ defmodule ALF.Manager.SyncRunnerTest do
   alias ALF.{Builder, Manager.SyncRunner}
   alias ALF.Components.{Producer, Stage, Switch, Clone, DeadEnd, Consumer}
 
-  def spec1 do
-    [
-      %Stage{name: :stage1},
-      %Switch{
-        name: :switch,
-        branches: %{
-          part1: [%Stage{name: :stage_in_part1}],
-          part2: [
-            %Stage{name: :stage_in_part2},
-            %Clone{
-              name: :clone,
-              to: [%Stage{name: :stage_in_clone}, %DeadEnd{name: :dead_end}]
-            },
-            %Stage{name: :another_stage_in_part2}
-          ]
+  defmodule Pipeline1 do
+    def alf_components do
+      [
+        %Stage{name: :stage1},
+        %Switch{
+          name: :switch,
+          branches: %{
+            part1: [%Stage{name: :stage_in_part1}],
+            part2: [
+              %Stage{name: :stage_in_part2},
+              %Clone{
+                name: :clone,
+                to: [%Stage{name: :stage_in_clone}, %DeadEnd{name: :dead_end}]
+              },
+              %Stage{name: :another_stage_in_part2}
+            ]
+          },
+          function: :cond_function
         },
-        function: :cond_function
-      },
-      %Stage{name: :last_stage}
-    ]
+        %Stage{name: :last_stage}
+      ]
+    end
   end
 
   setup do
-    pipeline = Builder.build_sync(spec1(), true)
+    pipeline = Builder.build_sync(Pipeline1, true)
 
     [
       %Producer{pid: producer_pid},

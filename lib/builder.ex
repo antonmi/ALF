@@ -17,8 +17,8 @@ defmodule ALF.Builder do
     Tbd
   }
 
-  def build(pipe_spec, supervisor_pid, manager_name, pipeline_module, telemetry_enabled \\ nil)
-      when is_list(pipe_spec) do
+  def build(pipeline_module, supervisor_pid, manager_name, telemetry_enabled \\ nil) do
+    pipe_spec = pipeline_module.alf_components()
     producer = start_producer(supervisor_pid, manager_name, pipeline_module, telemetry_enabled)
 
     {last_stages, final_stages} =
@@ -38,11 +38,12 @@ defmodule ALF.Builder do
     {:ok, pipeline}
   end
 
-  def build_sync(pipe_spec, telemetry_enabled \\ nil) when is_list(pipe_spec) do
+  def build_sync(pipeline_module, telemetry_enabled \\ nil) do
+    pipe_spec = pipeline_module.alf_components()
     components = do_build_sync(pipe_spec, telemetry_enabled)
-    # sync_init
-    [%Producer{pid: make_ref(), name: :producer} | components] ++
-      [%Consumer{pid: make_ref(), name: :consumer}]
+    producer = Producer.init_sync(%Producer{pipeline_module: pipeline_module}, telemetry_enabled)
+    consumer = Consumer.init_sync(%Consumer{pipeline_module: pipeline_module}, telemetry_enabled)
+    [producer | components] ++ [consumer]
   end
 
   defp do_build_sync(pipe_spec, telemetry_enabled) when is_list(pipe_spec) do

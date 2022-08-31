@@ -9,8 +9,8 @@ defmodule ALF.BuilderTest do
     %{sup_pid: sup_pid}
   end
 
-  describe "simple pipeline" do
-    def spec_simple do
+  defmodule SimplePipeline do
+    def alf_components do
       [
         %Stage{
           name: :stage1,
@@ -21,9 +21,50 @@ defmodule ALF.BuilderTest do
         }
       ]
     end
+  end
 
+  defmodule PipelineWithSwitch do
+    def alf_components do
+      [
+        %Switch{
+          name: :switch,
+          branches: %{
+            part1: [%Stage{name: :stage_in_part1}],
+            part2: [%Stage{name: :stage_in_part2}]
+          },
+          function: :cond_function
+        }
+      ]
+    end
+  end
+
+  defmodule PipelineWithClone do
+    def alf_components do
+      [
+        %Clone{
+          name: :clone,
+          to: [%Stage{name: :stage1}]
+        },
+        %Stage{name: :stage2}
+      ]
+    end
+  end
+
+  defmodule PipelineWithCloneAndDeadEnd do
+    def alf_components do
+      [
+        %Clone{
+          name: :clone,
+          to: [%Stage{name: :stage1}, %DeadEnd{name: :dead_end}]
+        },
+        %Stage{name: :stage2}
+      ]
+    end
+  end
+
+  describe "simple pipeline" do
     test "build simple pipeline", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(spec_simple(), sup_pid, :manager, :pipeline)
+      {:ok, pipeline} = Builder.build(SimplePipeline, sup_pid, :manager, :pipeline)
 
       components = pipeline.components
       stage = hd(components)
@@ -47,21 +88,8 @@ defmodule ALF.BuilderTest do
   end
 
   describe "switch" do
-    def spec_with_switch do
-      [
-        %Switch{
-          name: :switch,
-          branches: %{
-            part1: [%Stage{name: :stage_in_part1}],
-            part2: [%Stage{name: :stage_in_part2}]
-          },
-          function: :cond_function
-        }
-      ]
-    end
-
     test "build pipeline with switch", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(spec_with_switch(), sup_pid, :manager, :pipeline)
+      {:ok, pipeline} = Builder.build(PipelineWithSwitch, sup_pid, :manager, :pipeline)
 
       switch = hd(pipeline.components)
 
@@ -96,28 +124,8 @@ defmodule ALF.BuilderTest do
   end
 
   describe "clone" do
-    def spec_with_clone do
-      [
-        %Clone{
-          name: :clone,
-          to: [%Stage{name: :stage1}]
-        },
-        %Stage{name: :stage2}
-      ]
-    end
-
-    def spec_with_clone_and_dead_end do
-      [
-        %Clone{
-          name: :clone,
-          to: [%Stage{name: :stage1}, %DeadEnd{name: :dead_end}]
-        },
-        %Stage{name: :stage2}
-      ]
-    end
-
     test "build pipeline with clone", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(spec_with_clone(), sup_pid, :manager, :pipeline)
+      {:ok, pipeline} = Builder.build(PipelineWithClone, sup_pid, :manager, :pipeline)
 
       [clone | [stage2]] = pipeline.components
 
@@ -139,8 +147,7 @@ defmodule ALF.BuilderTest do
     end
 
     test "build pipeline with clone and dead_end", %{sup_pid: sup_pid} do
-      {:ok, pipeline} =
-        Builder.build(spec_with_clone_and_dead_end(), sup_pid, :manager, :pipeline)
+      {:ok, pipeline} = Builder.build(PipelineWithCloneAndDeadEnd, sup_pid, :manager, :pipeline)
 
       [clone | [stage2]] = pipeline.components
 
@@ -166,7 +173,7 @@ defmodule ALF.BuilderTest do
 
   describe "build_sync" do
     test "build with spec_simple_sync" do
-      [producer, stage, consumer] = Builder.build_sync(spec_simple(), true)
+      [producer, stage, consumer] = Builder.build_sync(SimplePipeline, true)
       assert producer.name == :producer
       assert is_reference(producer.pid)
 
@@ -178,7 +185,7 @@ defmodule ALF.BuilderTest do
     end
 
     test "build with spec_with_switch" do
-      [_, switch, _] = Builder.build_sync(spec_with_switch(), true)
+      [_, switch, _] = Builder.build_sync(PipelineWithSwitch, true)
 
       assert switch.telemetry_enabled
 
@@ -191,7 +198,7 @@ defmodule ALF.BuilderTest do
     end
 
     test "build with spec_with_clone" do
-      [_, clone, stage, _] = Builder.build_sync(spec_with_clone(), true)
+      [_, clone, stage, _] = Builder.build_sync(PipelineWithClone, true)
 
       assert clone.telemetry_enabled
       [to_stage] = clone.to
@@ -202,7 +209,7 @@ defmodule ALF.BuilderTest do
     end
 
     test "spec_with_clone_and_dead_end" do
-      [_, clone, _stage, _] = Builder.build_sync(spec_with_clone_and_dead_end(), true)
+      [_, clone, _stage, _] = Builder.build_sync(PipelineWithCloneAndDeadEnd, true)
       assert [%Stage{}, %DeadEnd{}] = clone.to
     end
   end

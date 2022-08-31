@@ -32,7 +32,17 @@ defmodule ALF.Components.DeadEnd do
     {:noreply, [], state}
   end
 
-  def sync_process(_ip, _state) do
+  def sync_process(_ip, %__MODULE__{telemetry_enabled: false}) do
     nil
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        {nil, telemetry_data(ip, state)}
+      end
+    )
   end
 end

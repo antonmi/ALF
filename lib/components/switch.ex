@@ -93,7 +93,7 @@ defmodule ALF.Components.Switch do
     end
   end
 
-  def sync_process(ip, state) do
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:error, error, stacktrace} ->
         build_error_ip(ip, error, stacktrace, state)
@@ -101,6 +101,22 @@ defmodule ALF.Components.Switch do
       partition ->
         partition
     end
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        case call_function(state.module, state.function, ip.event, state.opts) do
+          {:error, error, stacktrace} ->
+            {build_error_ip(ip, error, stacktrace, state), telemetry_data(ip, state)}
+
+          partition ->
+            {partition, telemetry_data(ip, state)}
+        end
+      end
+    )
   end
 
   defp call_function(module, function, event, opts) when is_atom(module) and is_atom(function) do
