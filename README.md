@@ -39,7 +39,7 @@ Just add `:alf` as dependency to your `mix.exs` file.
 ```
   defp deps do
     [
-      {:alf, "~> 0.5"}
+      {:alf, "~> 0.7"}
     ]
   end
 ```
@@ -120,6 +120,15 @@ For example:
 
 Check [test/examples](https://github.com/antonmi/ALF/tree/main/test/examples) folder for more examples
 
+### Synchronous evaluation
+There are cases when you don't need the underlying gen_stage infrastructure (a separate process for each component).
+E.g. in tests, or if you debug a wierd error.
+There is a possibility to run a pipeline synchronously, when everything is run in one process.
+Just pass `sync: true` option to the `Manager.start` function.
+
+```elixir
+:ok = ALF.Manager.start(ThePipeline, sync: true)
+```
 
 ### The main idea behind ALF DSL
 
