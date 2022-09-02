@@ -6,8 +6,6 @@ defmodule ALF.AutoScaler do
 
   alias ALF.{Manager, PerformanceStats}
 
-  @interval 1000
-
   def start_link([]) do
     GenServer.start_link(__MODULE__, %__MODULE__{}, name: __MODULE__)
   end
@@ -24,7 +22,7 @@ defmodule ALF.AutoScaler do
   end
 
   defp spawn_scaling_attempts(pid) do
-    Process.send_after(pid, :monitor_workload, @interval)
+    Process.send_after(pid, :monitor_workload, auto_scaler_interval())
   end
 
   def handle_info(:monitor_workload, state) do
@@ -106,7 +104,9 @@ defmodule ALF.AutoScaler do
   def register_pipeline(module), do: GenServer.call(__MODULE__, {:register_pipeline, module})
 
   @spec unregister_pipeline(atom()) :: atom()
-  def unregister_pipeline(module), do: GenServer.call(__MODULE__, {:unregister_pipeline, module})
+  def unregister_pipeline(module) do
+    GenServer.call(__MODULE__, {:unregister_pipeline, module})
+  end
 
   @spec pipelines() :: list(atom())
   def pipelines(), do: GenServer.call(__MODULE__, :pipelines)
@@ -124,5 +124,9 @@ defmodule ALF.AutoScaler do
 
   def handle_call(:pipelines, _from, state) do
     {:reply, state.pipelines, state}
+  end
+
+  defp auto_scaler_interval do
+    Application.get_env(:alf, :auto_scaler_interval, 1_000)
   end
 end

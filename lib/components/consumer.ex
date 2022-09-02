@@ -18,6 +18,10 @@ defmodule ALF.Components.Consumer do
     {:consumer, state, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{state | pid: make_ref(), name: :consumer, telemetry_enabled: telemetry_enabled}
+  end
+
   def handle_events([ip], _from, %__MODULE__{telemetry_enabled: true} = state)
       when is_struct(ip, IP) or is_struct(ip, ErrorIP) do
     :telemetry.span(
@@ -34,6 +38,20 @@ defmodule ALF.Components.Consumer do
       when is_struct(ip, IP) or is_struct(ip, ErrorIP) do
     cast_result_ready(ip, state)
     {:noreply, [], state}
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false}) do
+    ip
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        {ip, telemetry_data(ip, state)}
+      end
+    )
   end
 
   defp cast_result_ready(ip, state) do

@@ -66,6 +66,41 @@ defmodule ALF.IntrospectionTest do
     end
   end
 
+  describe "sync case" do
+    setup do
+      Introspection.reset()
+      Manager.start(SimplePipeline, sync: true)
+      Manager.start(AnotherPipeline, sync: true)
+
+      on_exit(fn ->
+        Manager.stop(SimplePipeline)
+        Manager.stop(AnotherPipeline)
+      end)
+
+      :ok
+    end
+
+    test "it returns pipelines list" do
+      set = Introspection.pipelines()
+      assert MapSet.member?(set, SimplePipeline)
+      assert MapSet.member?(set, AnotherPipeline)
+    end
+
+    test "it returns pipeline components" do
+      list = Introspection.components(SimplePipeline)
+
+      names = Enum.map(list, & &1[:name])
+      assert names == [:producer, :add_one, :mult_two, :consumer]
+    end
+
+    test "when pipeline is stopped" do
+      Manager.stop(SimplePipeline)
+      Manager.stop(AnotherPipeline)
+      set = Introspection.pipelines()
+      assert MapSet.size(set) == 0
+    end
+  end
+
   describe "performance_stats/1" do
     setup do
       Manager.start(SimplePipeline, telemetry_enabled: true)

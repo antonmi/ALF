@@ -20,7 +20,7 @@ defmodule ALF.Examples.AddMultMinusTest do
 
   setup do: Manager.start(Pipeline)
 
-  test "several inputs" do
+  test "single stream" do
     results =
       [1, 2, 3]
       |> Manager.stream_to(Pipeline)

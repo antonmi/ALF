@@ -13,14 +13,15 @@ defmodule ALF.Manager do
             registry: %{},
             registry_dump: %{},
             autoscaling_enabled: nil,
-            telemetry_enabled: nil
+            telemetry_enabled: nil,
+            sync: false
 
   alias ALF.AutoScaler
-  alias ALF.Manager.{Components, Streamer, ProcessingOptions, StreamRegistry}
+  alias ALF.Manager.{Components, Streamer, ProcessingOptions, StreamRegistry, SyncRunner}
   alias ALF.Components.{Goto, Producer}
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
 
-  @available_options [:autoscaling_enabled, :telemetry_enabled]
+  @available_options [:autoscaling_enabled, :telemetry_enabled, :sync]
 
   @max_producer_load 100
   def max_producer_load, do: @max_producer_load
@@ -81,7 +82,8 @@ defmodule ALF.Manager do
                     autoscaling_enabled: Keyword.get(opts, :autoscaling_enabled, false),
                     telemetry_enabled:
                       Keyword.get(opts, :telemetry_enabled, nil) ||
-                        telemetry_enabled_in_configs?()
+                        telemetry_enabled_in_configs?(),
+                    sync: Keyword.get(opts, :sync, false)
                   }
                 ]},
              restart: :transient
@@ -145,7 +147,9 @@ defmodule ALF.Manager do
   end
 
   def terminate(:normal, state) do
-    Supervisor.stop(state.pipeline_sup_pid)
+    unless state.sync do
+      Supervisor.stop(state.pipeline_sup_pid)
+    end
   end
 
   def __state__(name_or_pid) when is_atom(name_or_pid) or is_pid(name_or_pid) do
@@ -156,7 +160,17 @@ defmodule ALF.Manager do
     GenServer.call(name_or_pid, {:__set_state__, new_state})
   end
 
-  def handle_continue(:init_pipeline, %__MODULE__{} = state) do
+  def handle_continue(:init_pipeline, %__MODULE__{sync: true} = state) do
+    pipeline =
+      Builder.build_sync(
+        state.pipeline_module,
+        state.telemetry_enabled
+      )
+
+    {:noreply, %{state | pipeline: pipeline, components: Pipeline.stages_to_list(pipeline)}}
+  end
+
+  def handle_continue(:init_pipeline, %__MODULE__{sync: false} = state) do
     {:noreply, start_pipeline(state), {:continue, :register_auto_scaling}}
   end
 
@@ -191,10 +205,9 @@ defmodule ALF.Manager do
   defp build_pipeline(%__MODULE__{} = state) do
     {:ok, pipeline} =
       Builder.build(
-        state.pipeline_module.alf_components,
+        state.pipeline_module,
         state.pipeline_sup_pid,
         state.name,
-        state.pipeline_module,
         state.telemetry_enabled
       )
 
@@ -241,8 +254,25 @@ defmodule ALF.Manager do
     {:stop, :normal, state, state}
   end
 
-  def handle_call({:stream_to, stream, opts, custom_ids?}, _from, %__MODULE__{} = state) do
+  def handle_call(
+        {:stream_to, stream, opts, custom_ids?},
+        _from,
+        %__MODULE__{sync: false} = state
+      ) do
     {stream, state} = Streamer.prepare_streams(state, stream, opts, custom_ids?)
+    {:reply, stream, state}
+  end
+
+  def handle_call({:stream_to, stream, opts, custom_ids?}, _from, %__MODULE__{sync: true} = state) do
+    stream_ref = make_ref()
+
+    stream =
+      SyncRunner.transform_sync_stream(
+        {stream, stream_ref},
+        {state.name, state.pipeline},
+        {opts.return_ips, custom_ids?}
+      )
+
     {:reply, stream, state}
   end
 
@@ -271,7 +301,7 @@ defmodule ALF.Manager do
     {:reply, state.components, state}
   end
 
-  def handle_call(:reload_components_states, _from, state) do
+  def handle_call(:reload_components_states, _from, %__MODULE__{sync: false} = state) do
     components =
       state.components
       |> Enum.map(fn stage ->
@@ -279,6 +309,10 @@ defmodule ALF.Manager do
       end)
 
     {:reply, components, %{state | components: components}}
+  end
+
+  def handle_call(:reload_components_states, _from, %__MODULE__{sync: true} = state) do
+    {:reply, state.components, state}
   end
 
   def handle_call(:producer_ips_count, _from, state) do
@@ -323,6 +357,11 @@ defmodule ALF.Manager do
   def handle_call({:remove_from_registry, ips, stream_ref}, _from, state) do
     new_registry = Streamer.remove_from_registry(state.registry, stream_ref, ips)
     {:reply, new_registry, %{state | registry: new_registry}}
+  end
+
+  def handle_cast({:move_to_in_progress_registry, ips, stream_ref}, state) do
+    new_registry = Streamer.move_to_in_progress_registry(state.registry, stream_ref, ips)
+    {:noreply, %{state | registry: new_registry}}
   end
 
   def handle_cast({:result_ready, ip}, state) do

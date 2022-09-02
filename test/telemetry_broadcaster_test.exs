@@ -10,7 +10,9 @@ defmodule ALF.TelemetryBroadcasterTest do
       stage(:add_one)
     ]
 
-    def add_one(event, _), do: %{event | number: event.number + 1}
+    def add_one(event, _) do
+      %{event | number: event.number + 1}
+    end
   end
 
   defmodule TelemetryHandler do
@@ -67,6 +69,8 @@ defmodule ALF.TelemetryBroadcasterTest do
       ]
       |> Manager.stream_to(SimplePipeline)
       |> Enum.to_list()
+
+      Process.sleep(50)
 
       events =
         agent

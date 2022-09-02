@@ -75,7 +75,7 @@ defmodule ALF.ManagerTest do
     test "with invalid opts" do
       assert_raise RuntimeError,
                    "Wrong options for the 'simple_pipeline' pipeline: [:a]. " <>
-                     "Available options are [:autoscaling_enabled, :telemetry_enabled]",
+                     "Available options are [:autoscaling_enabled, :telemetry_enabled, :sync]",
                    fn ->
                      Manager.start(ExtremelySimplePipeline, :simple_pipeline, a: :b)
                    end
@@ -180,6 +180,31 @@ defmodule ALF.ManagerTest do
       |> Enum.each(fn component ->
         refute Process.alive?(component.pid)
       end)
+    end
+  end
+
+  describe "stop/1 for sync pipeline" do
+    defmodule SimplePipelineToStop2 do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one)
+      ]
+
+      def add_one(event, _), do: event + 1
+    end
+
+    setup do
+      Manager.start(SimplePipelineToStop2, sync: true)
+      state = Manager.__state__(SimplePipelineToStop2)
+      on_exit(fn -> Manager.stop(SimplePipelineToStop2) end)
+      %{state: state}
+    end
+
+    test "stop sync pipeline" do
+      state = Manager.stop(SimplePipelineToStop2)
+
+      refute Process.alive?(state.pid)
     end
   end
 

@@ -14,6 +14,14 @@ defmodule ALF.Components.GotoPoint do
     {:producer_consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{
+      state
+      | pid: make_ref(),
+        telemetry_enabled: telemetry_enabled
+    }
+  end
+
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     ip = %{ip | history: [{state.name, ip.event} | ip.history]}
 
@@ -35,5 +43,20 @@ defmodule ALF.Components.GotoPoint do
   def handle_call({:goto, %ALF.IP{} = ip}, _from, %__MODULE__{} = state) do
     ip = %{ip | history: [{state.name, ip.event} | ip.history]}
     {:reply, :ok, [ip], state}
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+    %{ip | history: [{state.name, ip.event} | ip.history]}
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+        {ip, telemetry_data(ip, state)}
+      end
+    )
   end
 end

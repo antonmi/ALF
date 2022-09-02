@@ -21,6 +21,10 @@ defmodule ALF.Components.Clone do
      dispatcher: GenStage.BroadcastDispatcher, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{state | pid: make_ref(), telemetry_enabled: telemetry_enabled}
+  end
+
   def handle_events(
         [%ALF.IP{} = ip],
         _from,
@@ -39,6 +43,28 @@ defmodule ALF.Components.Clone do
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
     ip = process_ip(ip, state)
     {:noreply, [ip], state}
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+    do_sync_process(ip, state)
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        ips = do_sync_process(ip, state)
+        {ips, telemetry_data(ips, state)}
+      end
+    )
+  end
+
+  defp do_sync_process(ip, state) do
+    [
+      %{ip | history: [{state.name, ip.event} | ip.history]},
+      %{ip | history: [{state.name, ip.event} | ip.history]}
+    ]
   end
 
   defp process_ip(ip, state) do

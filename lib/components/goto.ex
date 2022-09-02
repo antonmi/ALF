@@ -34,6 +34,16 @@ defmodule ALF.Components.Goto do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{
+      state
+      | pid: make_ref(),
+        opts: init_opts(state.module, state.opts),
+        source_code: read_source_code(state.module, state.function),
+        telemetry_enabled: telemetry_enabled
+    }
+  end
+
   def find_where_to_go(pid, components) do
     GenStage.call(pid, {:find_where_to_go, components})
   end
@@ -100,6 +110,36 @@ defmodule ALF.Components.Goto do
 
       false ->
         ip
+    end
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+    do_sync_process(ip, state)
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        {success, ip} = do_sync_process(ip, state)
+        {{success, ip}, telemetry_data(ip, state)}
+      end
+    )
+  end
+
+  def do_sync_process(ip, state) do
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+
+    case call_function(state.module, state.function, ip.event, state.opts) do
+      {:error, error, stacktrace} ->
+        {false, build_error_ip(ip, error, stacktrace, state)}
+
+      true ->
+        {true, ip}
+
+      false ->
+        {false, ip}
     end
   end
 

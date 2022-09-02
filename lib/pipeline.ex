@@ -10,6 +10,37 @@ defmodule ALF.Pipeline do
     do_stages_to_list(components, [])
   end
 
+  def find_component_by_pid(components, pid) do
+    try do
+      :ok = do_find_component_by_pid(components, pid)
+      nil
+    catch
+      component ->
+        component
+    end
+  end
+
+  def do_find_component_by_pid(components, pid) do
+    Enum.each(components, fn component ->
+      if component.pid == pid do
+        throw(component)
+      else
+        case component do
+          %Switch{branches: branches} ->
+            Enum.each(branches, fn {_key, partition_comps} ->
+              do_find_component_by_pid(partition_comps, pid)
+            end)
+
+          %Clone{to: to_components} ->
+            do_find_component_by_pid(to_components, pid)
+
+          _component ->
+            nil
+        end
+      end
+    end)
+  end
+
   defp do_stages_to_list(components, list) do
     Enum.reduce(components, list, fn stage, found ->
       found ++

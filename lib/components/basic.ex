@@ -141,7 +141,7 @@ defmodule ALF.Components.Basic do
         end
       end
 
-      defp build_error_ip(ip, error, stacktrace, state) do
+      def build_error_ip(ip, error, stacktrace, state) do
         %ErrorIP{
           ip: ip,
           manager_name: ip.manager_name,

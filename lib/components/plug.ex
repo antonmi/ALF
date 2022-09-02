@@ -24,6 +24,16 @@ defmodule ALF.Components.Plug do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{
+      state
+      | pid: make_ref(),
+        opts: init_opts(state.module, state.opts),
+        source_code: read_source_code(state.module, :plug),
+        telemetry_enabled: telemetry_enabled
+    }
+  end
+
   def handle_events([%IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],
@@ -58,6 +68,35 @@ defmodule ALF.Components.Plug do
     case call_plug_function(state.module, ip.event, state.opts) do
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)
+
+      new_datum ->
+        %{ip | event: new_datum}
+    end
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+    do_sync_process(ip, state)
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        ip = do_sync_process(ip, state)
+        {ip, telemetry_data(ip, state)}
+      end
+    )
+  end
+
+  defp do_sync_process(ip, state) do
+    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    ip_plugs = Map.put(ip.plugs, state.name, ip.event)
+    ip = %{ip | plugs: ip_plugs}
+
+    case call_plug_function(state.module, ip.event, state.opts) do
+      {:error, error, stacktrace} ->
+        build_error_ip(ip, error, stacktrace, state)
 
       new_datum ->
         %{ip | event: new_datum}

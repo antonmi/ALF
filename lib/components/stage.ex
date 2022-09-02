@@ -33,6 +33,18 @@ defmodule ALF.Components.Stage do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    ref = make_ref()
+    %{
+      state
+      | pid: ref,
+        stage_set_ref: ref,
+        opts: init_opts(state.module, state.opts),
+        source_code: read_source_code(state.module, state.function),
+        telemetry_enabled: telemetry_enabled
+    }
+  end
+
   def inc_count(%__MODULE__{pid: pid}), do: GenStage.call(pid, :inc_count)
   def dec_count(%__MODULE__{pid: pid}), do: GenStage.call(pid, :dec_count)
 
@@ -106,6 +118,34 @@ defmodule ALF.Components.Stage do
 
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)
+    end
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+    do_sync_process(ip, state)
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        ip = do_sync_process(ip, state)
+        {ip, telemetry_data(ip, state)}
+      end
+    )
+  end
+
+  defp do_sync_process(ip, state) do
+    case try_apply(ip.event, {state.module, state.function, state.opts}) do
+      {:ok, new_event} ->
+        %{ip | event: new_event}
+
+      {:error, %DoneStatement{event: event}, _stacktrace} ->
+        %{ip | event: event, done!: true}
+
+      {:error, error, stacktrace} ->
+        build_error_ip(ip, error, stacktrace, state)
     end
   end
 

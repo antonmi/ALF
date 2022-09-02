@@ -30,6 +30,16 @@ defmodule ALF.Components.Recomposer do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{
+      state
+      | pid: make_ref(),
+        opts: init_opts(state.module, state.opts),
+        source_code: read_source_code(state.module, state.function),
+        telemetry_enabled: telemetry_enabled
+    }
+  end
+
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],
@@ -83,12 +93,11 @@ defmodule ALF.Components.Recomposer do
           ip.stream_ref
         )
 
-        ip =
-          build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
+        ip = build_ip(event, ip, [{state.name, ip.event} | ip.history])
 
         collected =
           Enum.map(events, fn event ->
-            build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
+            build_ip(event, ip, [{state.name, ip.event} | ip.history])
           end)
 
         Streamer.call_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
@@ -101,8 +110,7 @@ defmodule ALF.Components.Recomposer do
           ip.stream_ref
         )
 
-        ip =
-          build_ip(event, ip.stream_ref, ip.manager_name, [{state.name, ip.event} | ip.history])
+        ip = build_ip(event, ip, [{state.name, ip.event} | ip.history])
 
         Streamer.call_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
         {ip, %{state | collected_ips: []}}
@@ -113,15 +121,67 @@ defmodule ALF.Components.Recomposer do
     end
   end
 
-  defp build_ip(event, stream_ref, manager_name, history) do
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+    do_sync_process(ip, state)
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        ip = do_sync_process(ip, state)
+        {ip, telemetry_data(ip, state)}
+      end
+    )
+  end
+
+  defp do_sync_process(ip, state) do
+    collected_ips = get_from_process_dict({state.pid, ip.stream_ref})
+    collected_data = Enum.map(collected_ips, & &1.event)
+
+    case call_function(
+           state.module,
+           state.function,
+           ip.event,
+           collected_data,
+           state.opts
+         ) do
+      {:ok, :continue} ->
+        collected_ips = collected_ips ++ [ip]
+        put_to_process_dict({state.pid, ip.stream_ref}, collected_ips)
+        nil
+
+      {:ok, {event, events}} ->
+        ip = build_ip(event, ip, [{state.name, ip.event} | ip.history])
+
+        collected =
+          Enum.map(events, fn event ->
+            build_ip(event, ip, [{state.name, ip.event} | ip.history])
+          end)
+
+        put_to_process_dict({state.pid, ip.stream_ref}, collected)
+        ip
+
+      {:ok, event} ->
+        put_to_process_dict({state.pid, ip.stream_ref}, [])
+        build_ip(event, ip, [{state.name, ip.event} | ip.history])
+
+      {:error, error, stacktrace} ->
+        send_error_result(ip, error, stacktrace, state)
+    end
+  end
+
+  defp build_ip(event, ip, history) do
     %IP{
-      stream_ref: stream_ref,
+      stream_ref: ip.stream_ref,
       ref: make_ref(),
       init_datum: event,
       event: event,
-      manager_name: manager_name,
+      manager_name: ip.manager_name,
       recomposed: true,
-      history: history
+      history: history,
+      sync_path: ip.sync_path
     }
   end
 
@@ -149,4 +209,8 @@ defmodule ALF.Components.Recomposer do
     kind, value ->
       {:error, kind, value}
   end
+
+  defp get_from_process_dict(key), do: Process.get(key, [])
+
+  defp put_to_process_dict(key, ips), do: Process.put(key, ips)
 end

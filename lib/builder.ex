@@ -17,8 +17,8 @@ defmodule ALF.Builder do
     Tbd
   }
 
-  def build(pipe_spec, supervisor_pid, manager_name, pipeline_module, telemetry_enabled \\ nil)
-      when is_list(pipe_spec) do
+  def build(pipeline_module, supervisor_pid, manager_name, telemetry_enabled \\ nil) do
+    pipe_spec = pipeline_module.alf_components()
     producer = start_producer(supervisor_pid, manager_name, pipeline_module, telemetry_enabled)
 
     {last_stages, final_stages} =
@@ -36,6 +36,58 @@ defmodule ALF.Builder do
     {producer, consumer} = set_modules({producer, consumer}, last_stages)
     pipeline = %Pipeline{producer: producer, consumer: consumer, components: final_stages}
     {:ok, pipeline}
+  end
+
+  def build_sync(pipeline_module, telemetry_enabled \\ nil) do
+    pipe_spec = pipeline_module.alf_components()
+    producer = Producer.init_sync(%Producer{pipeline_module: pipeline_module}, telemetry_enabled)
+    {components, last_stage_refs} = do_build_sync(pipe_spec, [producer.pid], telemetry_enabled)
+    consumer = Consumer.init_sync(%Consumer{pipeline_module: pipeline_module}, telemetry_enabled)
+    subscribed_to = Enum.map(last_stage_refs, &{&1, :sync})
+    consumer = %{consumer | subscribed_to: subscribed_to}
+    [producer | components] ++ [consumer]
+  end
+
+  defp do_build_sync(pipe_spec, stage_refs, telemetry_enabled) when is_list(pipe_spec) do
+    Enum.reduce(pipe_spec, {[], stage_refs}, fn comp, {stages, last_stage_refs} ->
+      subscribed_to = Enum.map(last_stage_refs, &{&1, :sync})
+
+      case comp do
+        %Switch{branches: branches} = switch ->
+          switch = switch.__struct__.init_sync(switch, telemetry_enabled)
+
+          branches =
+            Enum.reduce(branches, %{}, fn {key, inner_pipe_spec}, branch_pipes ->
+              {branch_stages, _last_ref} =
+                do_build_sync(inner_pipe_spec, [switch.pid], telemetry_enabled)
+
+              Map.put(branch_pipes, key, branch_stages)
+            end)
+
+          switch = %{switch | branches: branches, subscribed_to: subscribed_to}
+
+          last_stage_refs =
+            Enum.map(branches, fn {_key, stages} ->
+              case List.last(stages) do
+                nil -> nil
+                stage -> stage.pid
+              end
+            end)
+
+          {stages ++ [switch], last_stage_refs}
+
+        %Clone{to: pipe_stages} = clone ->
+          clone = clone.__struct__.init_sync(clone, telemetry_enabled)
+          {to_stages, _last_ref} = do_build_sync(pipe_stages, [clone.pid], telemetry_enabled)
+          clone = %{clone | to: to_stages, subscribed_to: subscribed_to}
+          {stages ++ [clone], [clone.pid]}
+
+        component ->
+          component = component.__struct__.init_sync(component, telemetry_enabled)
+          component = %{component | subscribed_to: subscribed_to}
+          {stages ++ [component], [component.pid]}
+      end
+    end)
   end
 
   def add_stage_worker(supervisor_pid, [%Stage{} = existing_stage | _] = existing_stages) do

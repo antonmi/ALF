@@ -48,6 +48,15 @@ defmodule ALF.Components.Switch do
      subscribe_to: state.subscribe_to}
   end
 
+  def init_sync(state, telemetry_enabled) do
+    %{
+      state
+      | opts: init_opts(state.module, state.opts),
+        pid: make_ref(),
+        telemetry_enabled: telemetry_enabled
+    }
+  end
+
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],
@@ -81,6 +90,32 @@ defmodule ALF.Components.Switch do
             "Wrong options for the #{name} switch: #{inspect(wrong_options)}. " <>
               "Available options are #{inspect(@dsl_options)}"
     end
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+    case call_function(state.module, state.function, ip.event, state.opts) do
+      {:error, error, stacktrace} ->
+        build_error_ip(ip, error, stacktrace, state)
+
+      partition ->
+        partition
+    end
+  end
+
+  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+    :telemetry.span(
+      [:alf, :component],
+      telemetry_data(ip, state),
+      fn ->
+        case call_function(state.module, state.function, ip.event, state.opts) do
+          {:error, error, stacktrace} ->
+            {build_error_ip(ip, error, stacktrace, state), telemetry_data(ip, state)}
+
+          partition ->
+            {partition, telemetry_data(ip, state)}
+        end
+      end
+    )
   end
 
   defp call_function(module, function, event, opts) when is_atom(module) and is_atom(function) do
