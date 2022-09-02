@@ -147,11 +147,9 @@ defmodule ALF.Manager do
   end
 
   def terminate(:normal, state) do
-    Supervisor.stop(state.pipeline_sup_pid)
-  end
-
-  def run_sync(name, ips) do
-    GenServer.cast(name, {:run_sync, ips})
+    unless state.sync do
+      Supervisor.stop(state.pipeline_sup_pid)
+    end
   end
 
   def __state__(name_or_pid) when is_atom(name_or_pid) or is_pid(name_or_pid) do
@@ -169,7 +167,7 @@ defmodule ALF.Manager do
         state.telemetry_enabled
       )
 
-    {:noreply, %{state | pipeline: pipeline}}
+    {:noreply, %{state | pipeline: pipeline, components: Pipeline.stages_to_list(pipeline)}}
   end
 
   def handle_continue(:init_pipeline, %__MODULE__{sync: false} = state) do
@@ -303,7 +301,7 @@ defmodule ALF.Manager do
     {:reply, state.components, state}
   end
 
-  def handle_call(:reload_components_states, _from, state) do
+  def handle_call(:reload_components_states, _from, %__MODULE__{sync: false} = state) do
     components =
       state.components
       |> Enum.map(fn stage ->
@@ -311,6 +309,10 @@ defmodule ALF.Manager do
       end)
 
     {:reply, components, %{state | components: components}}
+  end
+
+  def handle_call(:reload_components_states, _from, %__MODULE__{sync: true} = state) do
+    {:reply, state.components, state}
   end
 
   def handle_call(:producer_ips_count, _from, state) do

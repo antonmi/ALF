@@ -104,7 +104,9 @@ defmodule ALF.AutoScaler do
   def register_pipeline(module), do: GenServer.call(__MODULE__, {:register_pipeline, module})
 
   @spec unregister_pipeline(atom()) :: atom()
-  def unregister_pipeline(module), do: GenServer.call(__MODULE__, {:unregister_pipeline, module})
+  def unregister_pipeline(module) do
+    GenServer.call(__MODULE__, {:unregister_pipeline, module})
+  end
 
   @spec pipelines() :: list(atom())
   def pipelines(), do: GenServer.call(__MODULE__, :pipelines)

@@ -48,11 +48,10 @@ defmodule ALF.Components.Switch do
      subscribe_to: state.subscribe_to}
   end
 
-  def init_sync(state, branches, telemetry_enabled) do
+  def init_sync(state, telemetry_enabled) do
     %{
       state
-      | branches: branches,
-        opts: init_opts(state.module, state.opts),
+      | opts: init_opts(state.module, state.opts),
         pid: make_ref(),
         telemetry_enabled: telemetry_enabled
     }

@@ -21,8 +21,8 @@ defmodule ALF.Components.Clone do
      dispatcher: GenStage.BroadcastDispatcher, subscribe_to: state.subscribe_to}
   end
 
-  def init_sync(state, to_stages, telemetry_enabled) do
-    %{state | to: to_stages, pid: make_ref(), telemetry_enabled: telemetry_enabled}
+  def init_sync(state, telemetry_enabled) do
+    %{state | pid: make_ref(), telemetry_enabled: telemetry_enabled}
   end
 
   def handle_events(

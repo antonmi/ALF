@@ -174,38 +174,54 @@ defmodule ALF.BuilderTest do
   describe "build_sync" do
     test "build with spec_simple_sync" do
       [producer, stage, consumer] = Builder.build_sync(SimplePipeline, true)
+
       assert producer.name == :producer
       assert is_reference(producer.pid)
 
-      assert consumer.name == :consumer
-      assert is_reference(consumer.pid)
-
       assert is_reference(stage.pid)
       assert stage.telemetry_enabled
+      assert stage.subscribed_to == [{producer.pid, :sync}]
+
+      assert consumer.name == :consumer
+      assert is_reference(consumer.pid)
+      assert consumer.subscribed_to == [{stage.pid, :sync}]
     end
 
     test "build with spec_with_switch" do
-      [_, switch, _] = Builder.build_sync(PipelineWithSwitch, true)
+      [producer, switch, consumer] = Builder.build_sync(PipelineWithSwitch, true)
 
       assert switch.telemetry_enabled
+      assert switch.subscribed_to == [{producer.pid, :sync}]
 
       %{branches: %{part1: [stage1], part2: [stage2]}} = switch
 
       assert stage1.name == :stage_in_part1
       assert stage1.pid
+      assert stage1.subscribed_to == [{switch.pid, :sync}]
+
       assert stage2.name == :stage_in_part2
       assert stage2.pid
+      assert stage2.subscribed_to == [{switch.pid, :sync}]
+
+      assert consumer.subscribed_to == [{stage1.pid, :sync}, {stage2.pid, :sync}]
     end
 
     test "build with spec_with_clone" do
-      [_, clone, stage, _] = Builder.build_sync(PipelineWithClone, true)
+      [producer, clone, stage, consumer] = Builder.build_sync(PipelineWithClone, true)
 
       assert clone.telemetry_enabled
       [to_stage] = clone.to
+      assert clone.subscribed_to == [{producer.pid, :sync}]
+
       assert to_stage.name == :stage1
       assert to_stage.pid
+      assert to_stage.subscribed_to == [{clone.pid, :sync}]
+
       assert stage.name == :stage2
       assert stage.pid
+      assert stage.subscribed_to == [{clone.pid, :sync}]
+
+      assert consumer.subscribed_to == [{stage.pid, :sync}]
     end
 
     test "spec_with_clone_and_dead_end" do

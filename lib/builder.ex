@@ -40,39 +40,52 @@ defmodule ALF.Builder do
 
   def build_sync(pipeline_module, telemetry_enabled \\ nil) do
     pipe_spec = pipeline_module.alf_components()
-    components = do_build_sync(pipe_spec, telemetry_enabled)
     producer = Producer.init_sync(%Producer{pipeline_module: pipeline_module}, telemetry_enabled)
+    {components, last_stage_refs} = do_build_sync(pipe_spec, [producer.pid], telemetry_enabled)
     consumer = Consumer.init_sync(%Consumer{pipeline_module: pipeline_module}, telemetry_enabled)
+    subscribed_to = Enum.map(last_stage_refs, &{&1, :sync})
+    consumer = %{consumer | subscribed_to: subscribed_to}
     [producer | components] ++ [consumer]
   end
 
-  defp do_build_sync(pipe_spec, telemetry_enabled) when is_list(pipe_spec) do
-    pipe_spec
-    |> Enum.reduce([], fn comp, stages ->
-      case comp do
-        %Stage{} = stage ->
-          new_stage = stage.__struct__.init_sync(stage, telemetry_enabled)
-          stages ++ [new_stage]
+  defp do_build_sync(pipe_spec, stage_refs, telemetry_enabled) when is_list(pipe_spec) do
+    Enum.reduce(pipe_spec, {[], stage_refs}, fn comp, {stages, last_stage_refs} ->
+      subscribed_to = Enum.map(last_stage_refs, &{&1, :sync})
 
+      case comp do
         %Switch{branches: branches} = switch ->
+          switch = switch.__struct__.init_sync(switch, telemetry_enabled)
+
           branches =
             Enum.reduce(branches, %{}, fn {key, inner_pipe_spec}, branch_pipes ->
-              branch_stages = do_build_sync(inner_pipe_spec, telemetry_enabled)
+              {branch_stages, _last_ref} =
+                do_build_sync(inner_pipe_spec, [switch.pid], telemetry_enabled)
 
               Map.put(branch_pipes, key, branch_stages)
             end)
 
-          switch = switch.__struct__.init_sync(switch, branches, telemetry_enabled)
-          stages ++ [switch]
+          switch = %{switch | branches: branches, subscribed_to: subscribed_to}
+
+          last_stage_refs =
+            Enum.map(branches, fn {_key, stages} ->
+              case List.last(stages) do
+                nil -> nil
+                stage -> stage.pid
+              end
+            end)
+
+          {stages ++ [switch], last_stage_refs}
 
         %Clone{to: pipe_stages} = clone ->
-          to_stages = do_build_sync(pipe_stages, telemetry_enabled)
-          clone = clone.__struct__.init_sync(clone, to_stages, telemetry_enabled)
-          stages ++ [clone]
+          clone = clone.__struct__.init_sync(clone, telemetry_enabled)
+          {to_stages, _last_ref} = do_build_sync(pipe_stages, [clone.pid], telemetry_enabled)
+          clone = %{clone | to: to_stages, subscribed_to: subscribed_to}
+          {stages ++ [clone], [clone.pid]}
 
         component ->
           component = component.__struct__.init_sync(component, telemetry_enabled)
-          stages ++ [component]
+          component = %{component | subscribed_to: subscribed_to}
+          {stages ++ [component], [component.pid]}
       end
     end)
   end

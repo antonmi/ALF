@@ -183,6 +183,31 @@ defmodule ALF.ManagerTest do
     end
   end
 
+  describe "stop/1 for sync pipeline" do
+    defmodule SimplePipelineToStop2 do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one)
+      ]
+
+      def add_one(event, _), do: event + 1
+    end
+
+    setup do
+      Manager.start(SimplePipelineToStop2, sync: true)
+      state = Manager.__state__(SimplePipelineToStop2)
+      on_exit(fn -> Manager.stop(SimplePipelineToStop2) end)
+      %{state: state}
+    end
+
+    test "stop sync pipeline" do
+      state = Manager.stop(SimplePipelineToStop2)
+
+      refute Process.alive?(state.pid)
+    end
+  end
+
   describe "prepare gotos after initialization" do
     defmodule GoToPipeline do
       use ALF.DSL
