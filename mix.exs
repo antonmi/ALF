@@ -4,7 +4,7 @@ defmodule Alf.MixProject do
   def project do
     [
       app: :alf,
-      version: "0.6.0",
+      version: "0.7.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       description: description(),
