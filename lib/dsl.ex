@@ -248,16 +248,11 @@ defmodule ALF.DSL do
     Keyword.merge(opts, new_opts)
   end
 
-  defmacro __using__(opts) do
+  defmacro __using__(_opts) do
     quote do
       import ALF.DSL
 
-      Module.register_attribute(__MODULE__, :stages, accumulate: false)
-
       @before_compile ALF.DSL
-
-      def __pipeline__, do: true
-      def __options__, do: unquote(opts)
 
       def done!(event) do
         raise ALF.DoneStatement, event
