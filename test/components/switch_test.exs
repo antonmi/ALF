@@ -115,7 +115,7 @@ defmodule ALF.Components.SwitchTest do
 
     test "set source_code", %{pid: pid} do
       %{source_code: source_code} = Switch.__state__(pid)
-      assert String.starts_with?(source_code, "def(cond_function(event, opts))")
+      assert String.starts_with?(source_code, "def cond_function(event, opts)")
     end
   end
 end

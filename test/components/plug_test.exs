@@ -105,7 +105,7 @@ defmodule ALF.Components.PlugTest do
 
     test "set source_code", %{plug_pid: plug_pid} do
       %{source_code: source_code} = Plug.__state__(plug_pid)
-      assert String.starts_with?(source_code, "def(plug(event, opts))")
+      assert String.starts_with?(source_code, "def plug(event, opts)")
     end
   end
 end

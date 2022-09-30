@@ -85,7 +85,7 @@ defmodule ALF.Components.GotoTest do
 
     test "set source_code", %{goto_pid: goto_pid} do
       %{source_code: source_code} = Goto.__state__(goto_pid)
-      assert source_code == "def(if_function(event, opts)) do\n  event < opts[:max]\nend"
+      assert source_code == "def if_function(event, opts) do\n  event < opts[:max]\nend"
     end
   end
 end

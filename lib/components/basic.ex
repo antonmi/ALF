@@ -124,13 +124,26 @@ defmodule ALF.Components.Basic do
 
       def read_source_code(module) do
         SourceCode.module_source(module)
+      rescue
+        error ->
+          inspect(error)
       end
 
       def read_source_code(module, :call) do
         SourceCode.module_source(module)
+      rescue
+        error ->
+          inspect(error)
       end
 
       def read_source_code(module, function) do
+        do_read_source_code(module, function)
+      rescue
+        error ->
+          inspect(error)
+      end
+
+      defp do_read_source_code(module, function) do
         doc = SourceCode.function_doc(module, function)
         source = SourceCode.function_source(module, function)
 

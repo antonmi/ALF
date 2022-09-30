@@ -35,6 +35,7 @@ defmodule ALF.Components.Stage do
 
   def init_sync(state, telemetry_enabled) do
     ref = make_ref()
+
     %{
       state
       | pid: ref,

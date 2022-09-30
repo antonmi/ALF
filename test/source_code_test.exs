@@ -38,9 +38,9 @@ defmodule ALF.SourceCodeTest do
 
   describe "module_source/1" do
     test "success cases" do
-      assert String.starts_with?(SourceCode.module_source(Foo), "defmodule(Foo) do")
-      assert String.starts_with?(SourceCode.module_source(Baz), "defmodule(Bar.Baz) do")
-      assert String.starts_with?(SourceCode.module_source(Test2), "defmodule(ALF.Test2) do")
+      assert String.starts_with?(SourceCode.module_source(Foo), "defmodule Foo do")
+      assert String.starts_with?(SourceCode.module_source(Baz), "defmodule Bar.Baz do")
+      assert String.starts_with?(SourceCode.module_source(Test2), "defmodule ALF.Test2 do")
     end
 
     test "not found" do
@@ -55,10 +55,10 @@ defmodule ALF.SourceCodeTest do
   describe "function_source/2" do
     test "success cases for Test.Mod1" do
       assert SourceCode.function_source(Foo, :foo_fun) ==
-               "def(foo_fun(:a, :opts)) do\n  :a\nend\n\ndef(foo_fun(:b, :opts)) do\n  :b\nend"
+               "def foo_fun(:a, :opts) do\n  :a\nend\n\ndef foo_fun(:b, :opts) do\n  :b\nend"
 
-      assert SourceCode.function_source(Foo, :bar) == "def(bar(:bar, :opts)) do\n  :bar\nend"
-      assert SourceCode.function_source(Baz, :baz) == "def(baz(a, b)) do\n  div(a, b)\nend"
+      assert SourceCode.function_source(Foo, :bar) == "def bar(:bar, :opts) do\n  :bar\nend"
+      assert SourceCode.function_source(Baz, :baz) == "def baz(a, b) do\n  div(a, b)\nend"
     end
 
     test "not found" do

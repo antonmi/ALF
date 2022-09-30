@@ -30,6 +30,9 @@ defmodule ALF.SourceCode do
           {_, _, _, %{} = doc, _} ->
             doc["en"]
 
+          {_, _, _, _, _} ->
+            nil
+
           nil ->
             nil
         end
