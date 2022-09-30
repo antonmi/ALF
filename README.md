@@ -39,7 +39,7 @@ Just add `:alf` as dependency to your `mix.exs` file.
 ```
   defp deps do
     [
-      {:alf, "~> 0.7"}
+      {:alf, "~> 0.7.1"}
     ]
   end
 ```
