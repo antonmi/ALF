@@ -15,8 +15,11 @@
 ### Something to read and watch
 
 [Flow-Based Programming with Elixir and ALF](https://github.com/antonmi/ALF) - Code BEAM 2022
+
 [ALF — Flow-based Application Layer Framework](https://anton-mishchuk.medium.com/alf-flow-based-application-layer-framework-8072ae9b0b6b) - post
+
 [Where is Application Layer](https://medium.com/p/6c65a459543a) - post
+
 [ALF - Flow-based Application Layer Framework](https://www.youtube.com/watch?v=nh4TzOavknM) - Sydney Elixir Meetup
 
 ### Broadway, Flow?
