@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Set up Elixir
         uses: erlef/setup-beam@988e02bfe678367a02564f65ca2e37726dc0268f
+        env:
+          ImageOS: ubuntu20
         with:
           elixir-version: '1.14.0' # Define the elixir version [required]
           otp-version: '25.1' # Define the OTP version [required]
