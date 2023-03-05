@@ -12,11 +12,9 @@ defmodule ALF.Manager do
             producer_pid: nil,
             registry: %{},
             registry_dump: %{},
-            autoscaling_enabled: nil,
             telemetry_enabled: nil,
             sync: false
 
-  alias ALF.AutoScaler
   alias ALF.Manager.{Components, Streamer, ProcessingOptions, StreamRegistry, SyncRunner}
   alias ALF.Components.{Goto, Producer}
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
@@ -24,7 +22,7 @@ defmodule ALF.Manager do
 
   @type t :: %__MODULE__{}
 
-  @available_options [:autoscaling_enabled, :telemetry_enabled, :sync]
+  @available_options [:telemetry_enabled, :sync]
   @default_timeout 60_000
 
   @max_producer_load 100
@@ -46,7 +44,7 @@ defmodule ALF.Manager do
 
       {:ok, %{state | pipeline: pipeline, components: Pipeline.stages_to_list(pipeline)}}
     else
-      {:ok, start_pipeline(state), {:continue, :register_auto_scaling}}
+      {:ok, start_pipeline(state)}
     end
   end
 
@@ -93,7 +91,6 @@ defmodule ALF.Manager do
                     sup_pid: sup_pid,
                     name: name,
                     pipeline_module: module,
-                    autoscaling_enabled: Keyword.get(opts, :autoscaling_enabled, false),
                     telemetry_enabled:
                       Keyword.get(opts, :telemetry_enabled, nil) ||
                         telemetry_enabled_in_configs?(),
@@ -113,7 +110,6 @@ defmodule ALF.Manager do
   end
 
   def stop(module) when is_atom(module) do
-    AutoScaler.unregister_pipeline(module)
     result = GenServer.call(module, :stop, :infinity)
     Introspection.remove(module)
     result
@@ -166,14 +162,6 @@ defmodule ALF.Manager do
 
   def __set_state__(name_or_pid, new_state) when is_atom(name_or_pid) or is_pid(name_or_pid) do
     GenServer.call(name_or_pid, {:__set_state__, new_state})
-  end
-
-  def handle_continue(:register_auto_scaling, %__MODULE__{} = state) do
-    if state.autoscaling_enabled do
-      AutoScaler.register_pipeline(state.pipeline_module)
-    end
-
-    {:noreply, state}
   end
 
   defp start_pipeline(%__MODULE__{} = state) do

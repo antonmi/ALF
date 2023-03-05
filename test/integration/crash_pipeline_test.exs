@@ -58,7 +58,7 @@ defmodule ALF.CrashPipelineTest do
 
       assert capture_log(fn ->
                results =
-                 0..9
+                 0..100
                  |> SimplePipelineToCrash.stream(timeout: 50)
                  |> Enum.to_list()
 
