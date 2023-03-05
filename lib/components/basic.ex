@@ -42,7 +42,6 @@ defmodule ALF.Components.Basic do
     %ErrorIP{
       ip: ip,
       manager_name: ip.manager_name,
-      new_stream_ref: ip.new_stream_ref,
       destination: ip.destination,
       ref: ip.ref,
       stream_ref: ip.stream_ref,
@@ -109,21 +108,14 @@ defmodule ALF.Components.Basic do
       end
 
       def send_result(ip, result) do
-        ref = if ip.new_stream_ref, do: ip.new_stream_ref, else: ip.ref
+        ref = if ip.stream_ref, do: ip.stream_ref, else: ip.ref
         send(ip.destination, {ref, result})
         ip
       end
 
       def send_error_result(ip, error, stacktrace, state) do
         error_ip = build_error_ip(ip, error, stacktrace, state)
-
-        if error_ip.new_stream_ref do
-          send(error_ip.destination, {error_ip.new_stream_ref, error_ip})
-        else
-          send(error_ip.destination, {error_ip.ref, error_ip})
-        end
-
-        error_ip
+        send_result(error_ip, error_ip)
       end
 
       def handle_call(:subscribers, _form, state) do

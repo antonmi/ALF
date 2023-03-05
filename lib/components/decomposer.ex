@@ -125,7 +125,6 @@ defmodule ALF.Components.Decomposer do
     |> Enum.map(fn event ->
       %IP{
         stream_ref: ip.stream_ref,
-        new_stream_ref: ip.new_stream_ref,
         destination: ip.destination,
         ref: ip.ref,
         init_datum: event,

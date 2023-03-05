@@ -305,7 +305,7 @@ defmodule ALF.Manager do
   end
 
   defp do_stream(name, producer_name, stream, opts) do
-    new_stream_ref = make_ref()
+    stream_ref = make_ref()
     timeout = opts[:timeout] || @default_timeout
 
     stream
@@ -313,10 +313,10 @@ defmodule ALF.Manager do
       nil,
       fn event, nil ->
         ip = build_ip(event, name)
-        ip = %{ip | new_stream_ref: new_stream_ref}
+        ip = %{ip | stream_ref: stream_ref}
         Producer.load_ip(producer_name, ip)
 
-        case wait_result(new_stream_ref, [], {timeout, ip}) do
+        case wait_result(stream_ref, [], {timeout, ip}) do
           [] ->
             {[], nil}
 
