@@ -12,7 +12,7 @@ defmodule ALF.Components.Recomposer do
                 new_collected_ips: %{}
               ]
 
-  alias ALF.{DSLError, IP, ErrorIP, Manager.Streamer}
+  alias ALF.{DSLError, IP, ErrorIP}
 
   @dsl_options [:name, :opts]
 
@@ -85,11 +85,7 @@ defmodule ALF.Components.Recomposer do
            state.opts
          ) do
       {:ok, :continue} ->
-        if current_ip.new_stream_ref do
-          send(current_ip.destination, {current_ip.new_stream_ref, :destroyed})
-        else
-          send(current_ip.destination, {current_ip.ref, :destroyed})
-        end
+        send_result(current_ip, :destroyed)
 
         collected =
           Map.get(state.new_collected_ips, current_ip.new_stream_ref, []) ++ [current_ip]
@@ -104,11 +100,7 @@ defmodule ALF.Components.Recomposer do
       {:ok, {event, events}} ->
         ip = build_ip(event, current_ip, [{state.name, current_ip.event} | current_ip.history])
 
-        if ip.new_stream_ref do
-          send(ip.destination, {ip.new_stream_ref, :created_recomposer})
-        else
-          send(ip.destination, {ip.ref, :created_recomposer})
-        end
+        send_result(ip, :created_recomposer)
 
         collected =
           Enum.map(events, fn event ->
@@ -125,11 +117,7 @@ defmodule ALF.Components.Recomposer do
       {:ok, event} ->
         ip = build_ip(event, current_ip, [{state.name, current_ip.event} | current_ip.history])
 
-        if ip.new_stream_ref do
-          send(ip.destination, {ip.new_stream_ref, :created_recomposer})
-        else
-          send(ip.destination, {ip.ref, :created_recomposer})
-        end
+        send_result(ip, :created_recomposer)
 
         {ip,
          %{

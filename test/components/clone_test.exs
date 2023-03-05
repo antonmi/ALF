@@ -39,7 +39,7 @@ defmodule ALF.Components.CloneTest do
     consumer1_pid: consumer1_pid,
     consumer2_pid: consumer2_pid
   } do
-    ip = %IP{event: 1}
+    ip = %IP{event: 1, destination: self(), ref: make_ref()}
     GenServer.cast(producer_pid, [ip])
     Process.sleep(10)
     assert [%IP{event: 1}] = TestConsumer.ips(consumer1_pid)

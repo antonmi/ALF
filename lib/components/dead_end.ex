@@ -23,9 +23,7 @@ defmodule ALF.Components.DeadEnd do
       [:alf, :component],
       telemetry_data(ip, state),
       fn ->
-        if ip.new_stream_ref do
-          send(ip.destination, {ip.new_stream_ref, :destroyed})
-        end
+        send_result(ip, :destroyed)
 
         {{:noreply, [], state}, telemetry_data(ip, state)}
       end
@@ -33,9 +31,7 @@ defmodule ALF.Components.DeadEnd do
   end
 
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
-    if ip.new_stream_ref do
-      send(ip.destination, {ip.new_stream_ref, :destroyed})
-    end
+    send_result(ip, :destroyed)
 
     {:noreply, [], state}
   end

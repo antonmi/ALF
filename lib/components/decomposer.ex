@@ -70,32 +70,15 @@ defmodule ALF.Components.Decomposer do
       {:ok, events} when is_list(events) ->
         ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
 
-        Enum.each(ips, fn new_ip ->
-          if ip.new_stream_ref do
-            send(new_ip.destination, {new_ip.new_stream_ref, :created_decomposer})
-          else
-            send(new_ip.destination, {new_ip.ref, :created_decomposer})
-          end
-        end)
-
-        if ip.new_stream_ref do
-          send(ip.destination, {ip.new_stream_ref, :destroyed})
-        else
-          send(ip.destination, {ip.ref, :destroyed})
-        end
+        Enum.each(ips, &send_result(&1, :created_decomposer))
+        send_result(ip, :destroyed)
 
         {ips, state}
 
       {:ok, {events, event}} when is_list(events) ->
         ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
 
-        Enum.each(ips, fn new_ip ->
-          if ip.new_stream_ref do
-            send(new_ip.destination, {new_ip.new_stream_ref, :created_decomposer})
-          else
-            send(new_ip.destination, {new_ip.ref, ip})
-          end
-        end)
+        Enum.each(ips, &send_result(&1, :created_decomposer))
 
         ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
         {ips ++ [ip], state}

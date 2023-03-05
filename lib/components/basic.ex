@@ -108,6 +108,12 @@ defmodule ALF.Components.Basic do
         end
       end
 
+      def send_result(ip, result) do
+        ref = if ip.new_stream_ref, do: ip.new_stream_ref, else: ip.ref
+        send(ip.destination, {ref, result})
+        ip
+      end
+
       def send_error_result(ip, error, stacktrace, state) do
         error_ip = build_error_ip(ip, error, stacktrace, state)
 

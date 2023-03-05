@@ -114,14 +114,7 @@ defmodule ALF.Components.Stage do
 
       {:error, %DoneStatement{event: event}, _stacktrace} ->
         ip = %{ip | event: event, done!: true}
-
-        if ip.new_stream_ref do
-          send(ip.destination, {ip.new_stream_ref, ip})
-        else
-          send(ip.destination, {ip.ref, ip})
-        end
-
-        ip
+        send_result(ip, ip)
 
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)

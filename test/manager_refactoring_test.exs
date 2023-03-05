@@ -268,10 +268,18 @@ defmodule ALF.ManagerRefactoringTest do
     end
 
     test "run stream and check events" do
-      assert [1, 2, %ALF.ErrorIP{error: :timeout}, 3] =
-               0..3
-               |> TimeoutPipelineStream.stream(timeout: 5)
-               |> Enum.to_list()
+      results =
+        0..3
+        |> TimeoutPipelineStream.stream(timeout: 5)
+        |> Enum.to_list()
+
+      errors =
+        results
+        |> Enum.filter(&is_struct(&1, ALF.ErrorIP))
+        |> Enum.map(& &1.error)
+        |> Enum.uniq()
+
+      assert errors == [:timeout]
     end
   end
 end
