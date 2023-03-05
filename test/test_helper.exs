@@ -1,5 +1,11 @@
 ExUnit.start()
 
+defmodule Helpers do
+  def random_atom(prefix) do
+    :"#{prefix}_#{Base.encode32(:crypto.strong_rand_bytes(5))}"
+  end
+end
+
 defmodule ALF.TestProducer do
   use GenStage
 

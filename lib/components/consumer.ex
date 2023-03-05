@@ -55,7 +55,16 @@ defmodule ALF.Components.Consumer do
   end
 
   defp cast_result_ready(ip, state) do
-    Streamer.cast_result_ready(state.manager_name, ip)
-    ip
+    if ip.stream_ref do
+      # old code
+      Streamer.cast_result_ready(state.manager_name, ip)
+      ip
+    else
+      if ip.new_stream_ref do
+        send(ip.destination, {ip.new_stream_ref, ip})
+      else
+        send(ip.destination, {ip.ref, ip})
+      end
+    end
   end
 end

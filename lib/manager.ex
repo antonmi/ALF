@@ -20,6 +20,7 @@ defmodule ALF.Manager do
   alias ALF.Manager.{Components, Streamer, ProcessingOptions, StreamRegistry, SyncRunner}
   alias ALF.Components.{Goto, Producer}
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
+  alias ALF.{ErrorIP, IP}
 
   @available_options [:autoscaling_enabled, :telemetry_enabled, :sync]
 
@@ -33,7 +34,17 @@ defmodule ALF.Manager do
   def init(%__MODULE__{} = state) do
     state = %{state | pid: self()}
 
-    {:ok, state, {:continue, :init_pipeline}}
+    if state.sync do
+      pipeline =
+        Builder.build_sync(
+          state.pipeline_module,
+          state.telemetry_enabled
+        )
+
+      {:ok, %{state | pipeline: pipeline, components: Pipeline.stages_to_list(pipeline)}}
+    else
+      {:ok, start_pipeline(state), {:continue, :register_auto_scaling}}
+    end
   end
 
   @spec start(atom) :: :ok
@@ -158,20 +169,6 @@ defmodule ALF.Manager do
 
   def __set_state__(name_or_pid, new_state) when is_atom(name_or_pid) or is_pid(name_or_pid) do
     GenServer.call(name_or_pid, {:__set_state__, new_state})
-  end
-
-  def handle_continue(:init_pipeline, %__MODULE__{sync: true} = state) do
-    pipeline =
-      Builder.build_sync(
-        state.pipeline_module,
-        state.telemetry_enabled
-      )
-
-    {:noreply, %{state | pipeline: pipeline, components: Pipeline.stages_to_list(pipeline)}}
-  end
-
-  def handle_continue(:init_pipeline, %__MODULE__{sync: false} = state) do
-    {:noreply, start_pipeline(state), {:continue, :register_auto_scaling}}
   end
 
   def handle_continue(:register_auto_scaling, %__MODULE__{} = state) do
@@ -391,5 +388,82 @@ defmodule ALF.Manager do
 
   defp telemetry_enabled_in_configs? do
     Application.get_env(:alf, :telemetry_enabled, false)
+  end
+
+  def call(event, name, opts \\ [return_ip: false]) do
+    producer_name = :"#{name}.Producer"
+    if is_nil(Process.whereis(producer_name)), do: raise("Pipeline #{name} is not started")
+
+    ip = build_ip(event, name)
+    GenServer.cast(producer_name, {:load_ip, ip})
+
+    ref = ip.ref
+
+    receive do
+      {^ref, ip} ->
+        format_ip(ip, opts[:return_ip])
+    end
+  end
+
+  def handle_cast({:load_ip, ip}, state) do
+    Producer.load_ip(state.producer_pid, ip)
+
+    {:noreply, state}
+  end
+
+  defp format_ip(%IP{} = ip, true), do: ip
+  defp format_ip(%IP{} = ip, false), do: ip.event
+  defp format_ip(%ErrorIP{} = ip, _return_ips), do: ip
+
+  defp build_ip(event, name) do
+    %IP{
+      ref: make_ref(),
+      destination: self(),
+      init_datum: event,
+      event: event,
+      manager_name: name
+    }
+  end
+
+  def stream(stream, name, opts \\ [return_ips: false]) do
+    producer_name = :"#{name}.Producer"
+    if is_nil(Process.whereis(producer_name)), do: raise("Pipeline #{name} is not started")
+
+    new_stream_ref = make_ref()
+
+    stream
+    |> Stream.transform(
+      nil,
+      fn event, nil ->
+        ip = build_ip(event, name)
+        ip = %{ip | new_stream_ref: new_stream_ref}
+        GenServer.cast(producer_name, {:load_ip, ip})
+
+        case wait_result(new_stream_ref, []) do
+          [] ->
+            {[], nil}
+
+          ips ->
+            ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ips]) end)
+            {ips, nil}
+        end
+      end
+    )
+  end
+
+  defp wait_result(new_stream_ref, acc) do
+    receive do
+      {^new_stream_ref, :created_decomposer} ->
+        wait_result(new_stream_ref, acc ++ wait_result(new_stream_ref, []))
+
+      {^new_stream_ref, :created_recomposer} ->
+        wait_result(new_stream_ref, acc)
+
+      {^new_stream_ref, :destroyed} ->
+        acc
+
+      {^new_stream_ref, ip} ->
+        Enum.reverse([ip | acc])
+    end
   end
 end

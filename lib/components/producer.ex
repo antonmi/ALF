@@ -12,7 +12,9 @@ defmodule ALF.Components.Producer do
               ]
 
   def start_link(%__MODULE__{} = state) do
-    GenStage.start_link(__MODULE__, state)
+    name = :"#{state.manager_name}.Producer"
+
+    GenStage.start_link(__MODULE__, state, name: name)
   end
 
   def init(state) do
@@ -33,6 +35,10 @@ defmodule ALF.Components.Producer do
         source_code: read_source_code(state.pipeline_module),
         telemetry_enabled: telemetry_enabled
     }
+  end
+
+  def load_ip(pid, ip) do
+    GenServer.cast(pid, {:load_ip, ip})
   end
 
   def load_ips(pid, ips) do
@@ -58,6 +64,10 @@ defmodule ALF.Components.Producer do
   def handle_cast({:load_ips, new_ips}, %__MODULE__{ips: ips, demand: demand} = state) do
     {ips, new_state} = prepare_state_and_ips(%{state | ips: ips ++ new_ips, demand: demand + 0})
     {:noreply, ips, new_state}
+  end
+
+  def handle_cast({:load_ip, ip}, state) do
+    {:noreply, [ip], state}
   end
 
   def sync_process(ip, %__MODULE__{telemetry_enabled: false}), do: ip

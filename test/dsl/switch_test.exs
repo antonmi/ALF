@@ -29,7 +29,7 @@ defmodule ALF.DSL.SwitchTest do
     end
 
     test "build PipelineSwitch1", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineSwitch1, sup_pid, :manager)
+      {:ok, pipeline} = Builder.build(PipelineSwitch1, sup_pid, Helpers.random_atom("manager"))
 
       [switch] = pipeline.components
 
@@ -81,7 +81,7 @@ defmodule ALF.DSL.SwitchTest do
     end
 
     test "build PipelineSwitch2", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineSwitch2, sup_pid, :manager)
+      {:ok, pipeline} = Builder.build(PipelineSwitch2, sup_pid, Helpers.random_atom("manager"))
 
       [switch] = pipeline.components
       switch = Switch.__state__(switch.pid)
@@ -114,7 +114,7 @@ defmodule ALF.DSL.SwitchTest do
     end
 
     test "build PipelineSwitch2", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineSwitch3, sup_pid, :manager)
+      {:ok, pipeline} = Builder.build(PipelineSwitch3, sup_pid, Helpers.random_atom("manager"))
 
       [switch] = pipeline.components
 
