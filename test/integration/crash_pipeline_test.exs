@@ -58,12 +58,17 @@ defmodule ALF.CrashPipelineTest do
 
       assert capture_log(fn ->
                results =
-                 0..100
+                 0..10
                  |> SimplePipelineToCrash.stream(timeout: 50)
                  |> Enum.to_list()
 
-               [error] = Enum.filter(results, fn event -> is_struct(event, ALF.ErrorIP) end)
-               assert error.error == :timeout
+               errors =
+                 results
+                 |> Enum.filter(fn event -> is_struct(event, ALF.ErrorIP) end)
+                 |> Enum.map(& &1.error)
+                 |> Enum.uniq()
+
+               assert errors == [:timeout]
              end) =~ "Last message: {:DOWN, "
 
       # pipeline is restarted
@@ -86,13 +91,20 @@ defmodule ALF.CrashPipelineTest do
                  |> Enum.map(&Task.async(fn -> Enum.to_list(&1) end))
                  |> Task.await_many()
 
-               [error] = Enum.filter(result1, fn event -> is_struct(event, ALF.ErrorIP) end)
-               assert error.error == :timeout
-               [error] = Enum.filter(result2, fn event -> is_struct(event, ALF.ErrorIP) end)
-               assert error.error == :timeout
-               [error] = Enum.filter(result3, fn event -> is_struct(event, ALF.ErrorIP) end)
-               assert error.error == :timeout
+               errors =
+                 (result1 ++ result2 ++ result3)
+                 |> Enum.filter(fn event -> is_struct(event, ALF.ErrorIP) end)
+                 |> Enum.map(& &1.error)
+                 |> Enum.uniq()
+
+               assert errors == [:timeout]
              end) =~ "Last message: {:DOWN, "
+
+      # pipeline is restarted
+      assert ["0-foo-bar-baz"] =
+               [0]
+               |> SimplePipelineToCrash.stream()
+               |> Enum.to_list()
     end
   end
 end

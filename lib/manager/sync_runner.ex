@@ -6,49 +6,8 @@ defmodule ALF.Manager.SyncRunner do
     Clone
   }
 
-  alias ALF.{Builder, Pipeline}
+  alias ALF.Pipeline
   alias ALF.{ErrorIP, IP}
-  alias ALF.Manager.Streamer
-
-  def stream_to(
-        stream,
-        pipeline_module,
-        telemetry_enabled \\ false,
-        return_ips? \\ false,
-        custom_ids? \\ false
-      ) do
-    pipeline = Builder.build_sync(pipeline_module, telemetry_enabled)
-
-    stream_ref = make_ref()
-
-    transform_sync_stream(
-      {stream, stream_ref},
-      {pipeline_module, pipeline},
-      {return_ips?, custom_ids?}
-    )
-  end
-
-  # TODO use Stream.transform
-  def transform_sync_stream(
-        {stream, stream_ref},
-        {manager_name, pipeline},
-        {return_ips?, custom_ids?}
-      ) do
-    stream
-    |> Stream.chunk_while(
-      [],
-      fn event, acc ->
-        [ip] = Streamer.build_ips([event], stream_ref, manager_name)
-        ips = run(pipeline, ip)
-        acc = acc ++ Streamer.format_output(ips, return_ips?, custom_ids?)
-        {:cont, acc, []}
-      end,
-      fn [] ->
-        {:cont, [], []}
-      end
-    )
-    |> Stream.flat_map(& &1)
-  end
 
   def run([first | _] = pipeline, %IP{sync_path: nil} = ip) do
     {path, true} = path(pipeline, first.pid)

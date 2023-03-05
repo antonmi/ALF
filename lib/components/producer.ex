@@ -44,12 +44,6 @@ defmodule ALF.Components.Producer do
     GenServer.cast(pid, {:load_ips, ips})
   end
 
-  def ips_count(pid), do: GenServer.call(pid, :ips_count)
-
-  def handle_call(:ips_count, _from, state) do
-    {:reply, length(state.ips), [], state}
-  end
-
   def handle_demand(1, %__MODULE__{ips: [_ip | _], demand: demand} = state) do
     {ips, new_state} = prepare_state_and_ips(%{state | demand: demand + 1})
     {:noreply, ips, new_state}

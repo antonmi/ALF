@@ -16,23 +16,25 @@ defmodule ALF.SyncRun.SimplePipelineTest do
   use ExUnit.Case
 
   alias ALF.SyncRun.SimplePipeline.Pipeline
-  alias ALF.{IP, Manager}
+  alias ALF.IP
 
-  setup do: Manager.start(Pipeline, sync: true)
+  setup do
+    Pipeline.start(sync: true)
+  end
 
   test "sync run" do
     results =
       [1, 2, 3]
-      |> Manager.stream_to(Pipeline)
+      |> Pipeline.stream()
       |> Enum.to_list()
 
     assert results == [1, 3, 5]
   end
 
   test "several streams of inputs" do
-    stream1 = Manager.stream_to(0..9, Pipeline)
-    stream2 = Manager.stream_to(10..19, Pipeline)
-    stream3 = Manager.stream_to(20..29, Pipeline)
+    stream1 = Pipeline.stream(0..9)
+    stream2 = Pipeline.stream(10..19)
+    stream3 = Pipeline.stream(20..29)
 
     [result1, result2, result3] =
       [stream1, stream2, stream3]
@@ -47,48 +49,9 @@ defmodule ALF.SyncRun.SimplePipelineTest do
   test "return_ips" do
     results =
       [1, 2, 3]
-      |> Manager.stream_to(Pipeline, return_ips: true)
+      |> Pipeline.stream(return_ips: true)
       |> Enum.to_list()
 
     assert [%IP{event: 1}, %IP{event: 3}, %IP{event: 5}] = results
-  end
-
-  describe "SyncRunner.stream_to" do
-    test "sync run with SyncRunner.stream_to" do
-      results =
-        [1, 2, 3]
-        |> Manager.SyncRunner.stream_to(Pipeline)
-        |> Enum.to_list()
-
-      assert results == [1, 3, 5]
-    end
-
-    test "steam with ids" do
-      ref = make_ref()
-      pid = self()
-
-      results =
-        [{ref, 1}, {:my_id, 2}, {pid, 3}]
-        |> Manager.SyncRunner.stream_to(Pipeline, false, false, true)
-        |> Enum.to_list()
-
-      assert [{^ref, 1}, {:my_id, 3}, {^pid, 5}] = results
-    end
-
-    test "steam with ids and return_ips" do
-      ref = make_ref()
-      pid = self()
-
-      results =
-        [{ref, 1}, {:my_id, 2}, {pid, 3}]
-        |> Manager.SyncRunner.stream_to(Pipeline, false, true, true)
-        |> Enum.to_list()
-
-      assert [
-               {^ref, %IP{event: 1, ref: ^ref}},
-               {:my_id, %IP{event: 3, ref: :my_id}},
-               {^pid, %IP{event: 5, ref: ^pid}}
-             ] = results
-    end
   end
 end

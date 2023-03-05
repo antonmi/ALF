@@ -164,13 +164,20 @@ defmodule ALF.ManagerTest do
     setup do
       Manager.start(SimplePipelineToStop, :pipeline_to_stop)
       state = Manager.__state__(:pipeline_to_stop)
+
+      [stage] = state.pipeline.components
+      producer = state.pipeline.producer
+      consumer = state.pipeline.consumer
       on_exit(fn -> Manager.stop(SimplePipelineToStop) end)
-      %{state: state}
+      %{state: state, stage: stage, producer: producer, consumer: consumer}
     end
 
-    test "stop pipeline" do
+    test "stop pipeline", %{stage: stage, producer: producer, consumer: consumer} do
       state = Manager.stop(:pipeline_to_stop)
 
+      refute Process.alive?(stage.pid)
+      refute Process.alive?(producer.pid)
+      refute Process.alive?(consumer.pid)
       refute Process.alive?(state.pid)
       refute Process.alive?(state.pipeline_sup_pid)
 

@@ -47,18 +47,20 @@ defmodule ALF.SyncRun.BubbleSortTest do
   use ExUnit.Case
 
   alias ALF.SyncRun.BubbleSort.Pipeline
-  alias ALF.Manager
 
   @range 1..5
 
-  setup do: Manager.start(Pipeline, sync: true)
+  setup do
+    Pipeline.start(sync: true)
+    on_exit(fn -> Pipeline.stop() end)
+  end
 
   test "sort one list" do
     list = Enum.shuffle(@range)
 
     results =
       [list]
-      |> Manager.stream_to(Pipeline)
+      |> Pipeline.stream()
       |> Enum.to_list()
 
     assert results == [Enum.to_list(@range)]
@@ -69,7 +71,7 @@ defmodule ALF.SyncRun.BubbleSortTest do
 
     results =
       list_of_lists
-      |> Enum.map(&Manager.stream_to([&1], Pipeline))
+      |> Enum.map(&Pipeline.stream([&1]))
       |> Enum.map(&Task.async(fn -> hd(Enum.to_list(&1)) end))
       |> Task.await_many(:infinity)
 

@@ -61,6 +61,7 @@ defmodule ALF.ComponentTelemetryTest do
         |> Pipeline.stream()
         |> Enum.to_list()
 
+      Process.sleep(5)
       assert result == 2
 
       [consumer_stop, consumer_start, stage_stop, stage_start, producer_stop, producer_start] =

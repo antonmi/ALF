@@ -70,7 +70,7 @@ defmodule ALF.TelemetryBroadcasterTest do
       |> Manager.stream_to(SimplePipeline)
       |> Enum.to_list()
 
-      Process.sleep(50)
+      Process.sleep(5)
 
       events =
         agent

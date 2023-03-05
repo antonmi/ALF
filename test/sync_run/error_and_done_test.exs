@@ -16,14 +16,16 @@ defmodule ALF.SyncRun.ErrorAndDoneTest do
   use ExUnit.Case
 
   alias ALF.SyncRun.ErrorAndDone.Pipeline
-  alias ALF.Manager
 
-  setup do: Manager.start(Pipeline, sync: true)
+  setup do
+    Pipeline.start(sync: true)
+    on_exit(fn -> Pipeline.stop() end)
+  end
 
   test "sync run" do
     results =
       [1, 2, 3]
-      |> Manager.stream_to(Pipeline)
+      |> Pipeline.stream()
       |> Enum.to_list()
 
     assert [1, error_ip, 3] = results

@@ -1,8 +1,6 @@
 defmodule ALF.SyncRun.DecomposeRecomposeTest do
   use ExUnit.Case, async: false
 
-  alias ALF.Manager
-
   describe "decompose an recompose" do
     defmodule Pipeline do
       use ALF.DSL
@@ -28,13 +26,14 @@ defmodule ALF.SyncRun.DecomposeRecomposeTest do
     end
 
     setup do
-      Manager.start(Pipeline, sync: true)
+      Pipeline.start(sync: true)
+      on_exit(fn -> Pipeline.stop() end)
     end
 
     test "returns strings" do
       [event1, event2] =
         ["foo foo", "bar bar", "baz baz"]
-        |> Manager.stream_to(Pipeline)
+        |> Pipeline.stream()
         |> Enum.to_list()
 
       assert event1 == "foo foo bar"
@@ -42,9 +41,9 @@ defmodule ALF.SyncRun.DecomposeRecomposeTest do
     end
 
     test "several streams returns strings" do
-      stream1 = Manager.stream_to(["foo foo", "bar bar", "baz baz"], Pipeline)
-      stream2 = Manager.stream_to(["foo foo", "bar bar", "baz baz"], Pipeline)
-      stream3 = Manager.stream_to(["foo foo", "bar bar", "baz baz"], Pipeline)
+      stream1 = Pipeline.stream(["foo foo", "bar bar", "baz baz"])
+      stream2 = Pipeline.stream(["foo foo", "bar bar", "baz baz"])
+      stream3 = Pipeline.stream(["foo foo", "bar bar", "baz baz"])
 
       [result1, result2, result3] =
         [stream1, stream2, stream3]

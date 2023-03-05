@@ -1,8 +1,6 @@
 defmodule ALF.SyncRun.OptsInStageTest do
   use ExUnit.Case, async: false
 
-  alias ALF.Manager
-
   defmodule ComponentA do
     def init(opts) do
       Map.put(opts, :b, opts[:a])
@@ -35,13 +33,14 @@ defmodule ALF.SyncRun.OptsInStageTest do
 
   describe "opts" do
     setup do
-      Manager.start(SimplePipeline, sync: true)
+      SimplePipeline.start(sync: true)
+      on_exit(fn -> SimplePipeline.stop() end)
     end
 
     test "run stream" do
       [result] =
         [1]
-        |> Manager.stream_to(SimplePipeline)
+        |> SimplePipeline.stream()
         |> Enum.to_list()
 
       assert result == 15
@@ -73,14 +72,19 @@ defmodule ALF.SyncRun.OptsInStageTest do
     end
 
     setup do
-      Manager.start(PipelineA, sync: true)
-      Manager.start(PipelineB, sync: true)
+      PipelineA.start(sync: true)
+      PipelineB.start(sync: true)
+
+      on_exit(fn ->
+        PipelineA.stop()
+        PipelineB.stop()
+      end)
     end
 
     test "check PipelineA module" do
       [result] =
         ["hey"]
-        |> Manager.stream_to(PipelineA)
+        |> PipelineA.stream()
         |> Enum.to_list()
 
       assert result == "hey-bar-Elixir.ALF.SyncRun.OptsInStageTest.PipelineA-"
@@ -89,7 +93,7 @@ defmodule ALF.SyncRun.OptsInStageTest do
     test "check PipelineB module" do
       [result] =
         ["hey"]
-        |> Manager.stream_to(PipelineB)
+        |> PipelineB.stream()
         |> Enum.to_list()
 
       assert result == "hey-bar-Elixir.ALF.SyncRun.OptsInStageTest.PipelineB-bbb"
