@@ -22,7 +22,7 @@ defmodule ALF.PerformanceStatsTest do
 
     test "stats for the pipeline" do
       [1, 2, 3]
-      |> Manager.stream_to(SimplePipeline)
+      |> Manager.stream(SimplePipeline)
       |> Enum.to_list()
 
       Process.sleep(5)

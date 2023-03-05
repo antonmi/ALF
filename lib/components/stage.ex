@@ -14,13 +14,14 @@ defmodule ALF.Components.Stage do
               ]
 
   alias ALF.{DoneStatement, DSLError}
-
   @dsl_options [:opts, :count, :name]
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
+  @impl true
   def init(state) do
     state = %{
       state
@@ -49,6 +50,7 @@ defmodule ALF.Components.Stage do
   def inc_count(%__MODULE__{pid: pid}), do: GenStage.call(pid, :inc_count)
   def dec_count(%__MODULE__{pid: pid}), do: GenStage.call(pid, :dec_count)
 
+  @impl true
   def handle_call(:inc_count, _from, state) do
     state = %{state | count: state.count + 1}
     {:reply, state, [], state}
@@ -59,6 +61,7 @@ defmodule ALF.Components.Stage do
     {:reply, state, [], state}
   end
 
+  @impl true
   def handle_events([%IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],

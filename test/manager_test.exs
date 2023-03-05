@@ -227,7 +227,7 @@ defmodule ALF.ManagerTest do
     end
   end
 
-  describe "stream_to/2" do
+  describe "stream/3" do
     defmodule SimplePipelineToStream do
       use ALF.DSL
 
@@ -250,16 +250,16 @@ defmodule ALF.ManagerTest do
     test "run stream and check events" do
       results =
         sample_stream()
-        |> Manager.stream_to(SimplePipelineToStream)
+        |> Manager.stream(SimplePipelineToStream)
         |> Enum.to_list()
 
       assert results == [4, 6, 8]
     end
 
     test "run several streams at once" do
-      stream1 = Manager.stream_to(1..100, SimplePipelineToStream)
-      stream2 = Manager.stream_to(101..200, SimplePipelineToStream)
-      stream3 = Manager.stream_to(201..300, SimplePipelineToStream)
+      stream1 = Manager.stream(1..100, SimplePipelineToStream)
+      stream2 = Manager.stream(101..200, SimplePipelineToStream)
+      stream3 = Manager.stream(201..300, SimplePipelineToStream)
 
       [result1, result2, result3] =
         [stream1, stream2, stream3]
@@ -274,7 +274,7 @@ defmodule ALF.ManagerTest do
     test "run with return_ips: true option" do
       results =
         sample_stream()
-        |> Manager.stream_to(SimplePipelineToStream, return_ips: true)
+        |> Manager.stream(SimplePipelineToStream, return_ips: true)
         |> Enum.to_list()
 
       assert [

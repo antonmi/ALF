@@ -88,6 +88,8 @@ defmodule ALF.Components.Basic do
 
       alias ALF.{Components.Basic, IP, ErrorIP, Manager.Streamer, SourceCode}
 
+      @type t :: %__MODULE__{}
+
       def __state__(pid) when is_pid(pid) do
         GenStage.call(pid, :__state__)
       end
@@ -104,17 +106,22 @@ defmodule ALF.Components.Basic do
         end
       end
 
+      @type result :: :cloned | :destroyed | :created_decomposer | :created_recomposer
+
+      @spec send_result(IP.t(), result() | IP.t()) :: IP.t()
       def send_result(ip, result) do
         ref = if ip.stream_ref, do: ip.stream_ref, else: ip.ref
         send(ip.destination, {ref, result})
         ip
       end
 
+      @spec send_error_result(ErrorIP.t(), any(), list(), t()) :: IP.t()
       def send_error_result(ip, error, stacktrace, state) do
         error_ip = build_error_ip(ip, error, stacktrace, state)
         send_result(error_ip, error_ip)
       end
 
+      @impl true
       def handle_call(:subscribers, _form, state) do
         {:reply, state.subscribers, [], state}
       end
@@ -123,6 +130,7 @@ defmodule ALF.Components.Basic do
         {:reply, state, [], state}
       end
 
+      @impl true
       def handle_subscribe(:consumer, _subscription_options, from, state) do
         subscribers = [from | state.subscribers]
         {:automatic, %{state | subscribers: subscribers}}
@@ -133,6 +141,7 @@ defmodule ALF.Components.Basic do
         {:automatic, %{state | subscribed_to: subscribed_to}}
       end
 
+      @impl true
       def handle_cancel({:cancel, reason}, from, state) do
         subscribed_to = Enum.filter(state.subscribed_to, &(&1 != from))
         subscribers = Enum.filter(state.subscribers, &(&1 != from))

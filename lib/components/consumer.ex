@@ -9,10 +9,12 @@ defmodule ALF.Components.Consumer do
                 manager_name: nil
               ]
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
+  @impl true
   def init(state) do
     state = %{state | pid: self(), name: :consumer}
     {:consumer, state, subscribe_to: state.subscribe_to}
@@ -22,6 +24,7 @@ defmodule ALF.Components.Consumer do
     %{state | pid: make_ref(), name: :consumer, telemetry_enabled: telemetry_enabled}
   end
 
+  @impl true
   def handle_events([ip], _from, %__MODULE__{telemetry_enabled: true} = state)
       when is_struct(ip, IP) or is_struct(ip, ErrorIP) do
     :telemetry.span(

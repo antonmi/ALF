@@ -13,16 +13,17 @@ defmodule ALF.Components.Goto do
               ]
 
   alias ALF.Components.GotoPoint
-
   alias ALF.{DSLError}
 
   @dsl_options [:to, :opts, :name]
   @dsl_requited_options [:to]
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
+  @impl true
   def init(state) do
     state = %{
       state
@@ -48,6 +49,7 @@ defmodule ALF.Components.Goto do
     GenStage.call(pid, {:find_where_to_go, components})
   end
 
+  @impl true
   def handle_call({:find_where_to_go, components}, _from, state) do
     pid =
       case Enum.filter(components, &(&1.name == state.to and &1.__struct__ == GotoPoint)) do
@@ -65,6 +67,7 @@ defmodule ALF.Components.Goto do
     {:reply, state, [], state}
   end
 
+  @impl true
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],

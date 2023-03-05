@@ -1,6 +1,7 @@
 defmodule ALF.ErrorIP do
   @moduledoc "Defines internal pipeline struct"
 
+  @type t :: %__MODULE__{}
   # TODO revise the list
   defstruct type: :error_ip,
             ip: nil,

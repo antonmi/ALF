@@ -16,10 +16,12 @@ defmodule ALF.Components.Recomposer do
 
   @dsl_options [:name, :opts]
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
+  @impl true
   def init(state) do
     state = %{
       state
@@ -41,6 +43,7 @@ defmodule ALF.Components.Recomposer do
     }
   end
 
+  @impl true
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],

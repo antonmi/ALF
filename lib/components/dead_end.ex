@@ -6,10 +6,12 @@ defmodule ALF.Components.DeadEnd do
                 type: :dead_end
               ]
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
+  @impl true
   def init(state) do
     {:consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
   end
@@ -18,6 +20,7 @@ defmodule ALF.Components.DeadEnd do
     %{state | pid: make_ref(), telemetry_enabled: telemetry_enabled}
   end
 
+  @impl true
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],

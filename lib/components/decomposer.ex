@@ -11,13 +11,14 @@ defmodule ALF.Components.Decomposer do
               ]
 
   alias ALF.DSLError
-
   @dsl_options [:opts, :name]
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
+  @impl true
   def init(state) do
     state = %{
       state
@@ -29,6 +30,7 @@ defmodule ALF.Components.Decomposer do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
+  @spec init_sync(t(), boolean) :: t()
   def init_sync(state, telemetry_enabled) do
     %{
       state
@@ -39,6 +41,7 @@ defmodule ALF.Components.Decomposer do
     }
   end
 
+  @impl true
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],

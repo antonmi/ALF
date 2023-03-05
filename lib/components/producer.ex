@@ -10,11 +10,13 @@ defmodule ALF.Components.Producer do
                 ips: []
               ]
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     name = :"#{state.manager_name}.Producer"
     GenStage.start_link(__MODULE__, state, name: name)
   end
 
+  @impl true
   def init(state) do
     {:producer,
      %{
@@ -39,11 +41,13 @@ defmodule ALF.Components.Producer do
     GenServer.cast(name, {:load_ip, ip})
   end
 
+  @impl true
   def handle_demand(1, %__MODULE__{ips: [], demand: demand} = state) do
     state = %{state | demand: demand + 1}
     {:noreply, [], state}
   end
 
+  @impl true
   def handle_cast({:load_ip, ip}, state) do
     if state.telemetry_enabled do
       send_telemetry_event(ip, state)

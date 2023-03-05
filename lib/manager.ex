@@ -25,10 +25,12 @@ defmodule ALF.Manager do
   @available_options [:telemetry_enabled, :sync]
   @default_timeout 60_000
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenServer.start_link(__MODULE__, state, name: state.name)
   end
 
+  @impl true
   def init(%__MODULE__{} = state) do
     state = %{state | pid: self()}
 
@@ -105,12 +107,6 @@ defmodule ALF.Manager do
       {:exit, {reason, details}}
   end
 
-  # TODO remove later
-  @spec stream_to(Enumerable.t(), atom(), map() | keyword()) :: Enumerable.t()
-  def stream_to(stream, name, opts \\ []) when is_atom(name) do
-    stream(stream, name, opts)
-  end
-
   @spec components(atom) :: list(map())
   def components(name) when is_atom(name) do
     GenServer.call(name, :components)
@@ -121,6 +117,7 @@ defmodule ALF.Manager do
     GenServer.call(name, :reload_components_states)
   end
 
+  @impl true
   def terminate(:normal, state) do
     unless state.sync do
       Supervisor.stop(state.pipeline_sup_pid)
@@ -197,6 +194,7 @@ defmodule ALF.Manager do
     %{state | components: components}
   end
 
+  @impl true
   def handle_call(:__state__, _from, state), do: {:reply, state, state}
 
   def handle_call({:__set_state__, new_state}, _from, _state) do
@@ -233,6 +231,7 @@ defmodule ALF.Manager do
     end
   end
 
+  @impl true
   def handle_info({:DOWN, _ref, :process, _pid, :shutdown}, %__MODULE__{} = state) do
     state = start_pipeline(state)
 
@@ -280,12 +279,6 @@ defmodule ALF.Manager do
     ip = build_ip(event, name)
     [ip] = SyncRunner.run(pipeline, ip)
     format_ip(ip, opts[:return_ip])
-  end
-
-  def handle_cast({:load_ip, ip}, state) do
-    Producer.load_ip(state.producer_pid, ip)
-
-    {:noreply, state}
   end
 
   def stream(stream, name, opts \\ [return_ips: false]) do

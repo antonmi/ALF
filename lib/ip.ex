@@ -1,6 +1,7 @@
 defmodule ALF.IP do
   @moduledoc "Defines internal pipeline struct"
 
+  @type t :: %__MODULE__{}
   # TODO revise the list
   defstruct type: :ip,
             init_datum: nil,
