@@ -68,6 +68,10 @@ defmodule ALF.Components.Clone do
   end
 
   defp process_ip(ip, state) do
+    if ip.new_stream_ref do
+      send(ip.destination, {ip.new_stream_ref, :cloned})
+    end
+
     %{ip | history: [{state.name, ip.event} | ip.history]}
   end
 

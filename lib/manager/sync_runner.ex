@@ -28,6 +28,7 @@ defmodule ALF.Manager.SyncRunner do
     )
   end
 
+  # TODO use Stream.transform
   def transform_sync_stream(
         {stream, stream_ref},
         {manager_name, pipeline},

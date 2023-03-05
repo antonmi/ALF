@@ -43,10 +43,10 @@ defmodule ALF.CrashPipelineTest do
 
   describe "kill stage" do
     setup do
-      Manager.start(SimplePipelineToCrash)
+      SimplePipelineToCrash.start()
 
       on_exit(fn ->
-        Manager.stop(SimplePipelineToCrash)
+        SimplePipelineToCrash.stop()
       end)
 
       state = Manager.__state__(SimplePipelineToCrash)
@@ -59,38 +59,39 @@ defmodule ALF.CrashPipelineTest do
       assert capture_log(fn ->
                results =
                  0..9
-                 |> Manager.stream_to(SimplePipelineToCrash)
+                 |> SimplePipelineToCrash.stream(timeout: 50)
                  |> Enum.to_list()
 
-               state = Manager.__state__(SimplePipelineToCrash)
-               in_progress = hd(Map.values(state.registry_dump)).in_progress
-               assert Enum.count(in_progress) + Enum.count(results) == 10
+               [error] = Enum.filter(results, fn event -> is_struct(event, ALF.ErrorIP) end)
+               assert error.error == :timeout
              end) =~ "Last message: {:DOWN, "
+
+      # pipeline is restarted
+      assert ["0-foo-bar-baz"] =
+               [0]
+               |> SimplePipelineToCrash.stream()
+               |> Enum.to_list()
     end
 
     test "with several streams", %{state: state} do
-      run_kill_task(state, 20)
+      run_kill_task(state, 30)
 
       assert capture_log(fn ->
-               stream1 = Manager.stream_to(0..9, SimplePipelineToCrash)
-               stream2 = Manager.stream_to(10..19, SimplePipelineToCrash)
-               stream3 = Manager.stream_to(20..29, SimplePipelineToCrash)
+               stream1 = SimplePipelineToCrash.stream(0..9, timeout: 50)
+               stream2 = SimplePipelineToCrash.stream(10..19, timeout: 50)
+               stream3 = SimplePipelineToCrash.stream(20..29, timeout: 50)
 
                [result1, result2, result3] =
                  [stream1, stream2, stream3]
                  |> Enum.map(&Task.async(fn -> Enum.to_list(&1) end))
                  |> Task.await_many()
 
-               state = Manager.__state__(SimplePipelineToCrash)
-
-               [in_progress1, in_progress2, in_progress3] =
-                 state.registry_dump
-                 |> Map.values()
-                 |> Enum.map(& &1.in_progress)
-
-               assert Enum.count(in_progress1) + Enum.count(result1) == 10
-               assert Enum.count(in_progress2) + Enum.count(result2) == 10
-               assert Enum.count(in_progress3) + Enum.count(result3) == 10
+               [error] = Enum.filter(result1, fn event -> is_struct(event, ALF.ErrorIP) end)
+               assert error.error == :timeout
+               [error] = Enum.filter(result2, fn event -> is_struct(event, ALF.ErrorIP) end)
+               assert error.error == :timeout
+               [error] = Enum.filter(result3, fn event -> is_struct(event, ALF.ErrorIP) end)
+               assert error.error == :timeout
              end) =~ "Last message: {:DOWN, "
     end
   end

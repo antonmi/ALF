@@ -45,6 +45,33 @@ defmodule ALF.ManagerRefactoringTest do
     end
   end
 
+  describe "sync call" do
+    defmodule SimplePipelineToSyncCall do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one),
+        stage(:mult_two)
+      ]
+
+      def add_one(event, _) do
+        event + 1
+      end
+
+      def mult_two(event, _), do: event * 2
+    end
+
+    setup do
+      SimplePipelineToSyncCall.start(sync: true)
+      on_exit(fn -> SimplePipelineToSyncCall.stop() end)
+    end
+
+    test "run stream and check events" do
+      assert SimplePipelineToSyncCall.call(1) == 4
+      assert %ALF.IP{event: 4} = SimplePipelineToSyncCall.call(1, return_ip: true)
+    end
+  end
+
   describe "stream/2" do
     defmodule SimplePipelineToStream do
       use ALF.DSL
@@ -79,9 +106,48 @@ defmodule ALF.ManagerRefactoringTest do
 
     test "stream with return_ips option" do
       assert [%ALF.IP{event: 4}, %ALF.IP{event: 6}, %ALF.IP{event: 8}] =
+               @sample_stream
+               |> SimplePipelineToStream.stream(return_ips: true)
+               |> Enum.to_list()
+    end
+  end
+
+  describe "sync stream/2" do
+    defmodule SimplePipelineToSyncStream do
+      use ALF.DSL
+
+      @components [
+        stage(:add_one),
+        stage(:mult_two)
+      ]
+
+      def add_one(event, _) do
+        event + 1
+      end
+
+      def mult_two(event, _), do: event * 2
+    end
+
+    @sample_stream [1, 2, 3]
+
+    setup do
+      SimplePipelineToSyncStream.start(sync: true)
+    end
+
+    test "stream" do
+      results =
         @sample_stream
-        |> SimplePipelineToStream.stream(return_ips: true)
+        |> SimplePipelineToSyncStream.stream()
         |> Enum.to_list()
+
+      assert results == [4, 6, 8]
+    end
+
+    test "stream with return_ips option" do
+      assert [%ALF.IP{event: 4}, %ALF.IP{event: 6}, %ALF.IP{event: 8}] =
+               @sample_stream
+               |> SimplePipelineToSyncStream.stream(return_ips: true)
+               |> Enum.to_list()
     end
   end
 
@@ -141,6 +207,60 @@ defmodule ALF.ManagerRefactoringTest do
       ["aa", "bb", "xxxxx"]
       |> RecomposerPipeline.stream()
       |> Enum.to_list()
+    end
+  end
+
+  describe "timeout with call" do
+    defmodule TimeoutPipeline do
+      use ALF.DSL
+
+      @components [
+        stage(:sleep)
+      ]
+
+      def sleep(event, _) do
+        Process.sleep(10)
+        event + 1
+      end
+    end
+
+    setup do
+      TimeoutPipeline.start()
+      on_exit(fn -> TimeoutPipeline.stop() end)
+    end
+
+    test "run stream and check events" do
+      assert %ALF.ErrorIP{error: :timeout} = TimeoutPipeline.call(1, timeout: 5)
+    end
+  end
+
+  describe "timeout with stream" do
+    defmodule TimeoutPipelineStream do
+      use ALF.DSL
+
+      @components [
+        stage(:sleep)
+      ]
+
+      def sleep(event, _) do
+        if event == 2 do
+          Process.sleep(10)
+        end
+
+        event + 1
+      end
+    end
+
+    setup do
+      TimeoutPipelineStream.start()
+      on_exit(fn -> TimeoutPipelineStream.stop() end)
+    end
+
+    test "run stream and check events" do
+      assert [1, 2, %ALF.ErrorIP{error: :timeout}, 3] =
+               0..3
+               |> TimeoutPipelineStream.stream(timeout: 5)
+               |> Enum.to_list()
     end
   end
 end

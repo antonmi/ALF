@@ -25,6 +25,7 @@ defmodule ALF.Manager do
   @type t :: %__MODULE__{}
 
   @available_options [:autoscaling_enabled, :telemetry_enabled, :sync]
+  @default_timeout 60_000
 
   @max_producer_load 100
   def max_producer_load, do: @max_producer_load
@@ -123,13 +124,7 @@ defmodule ALF.Manager do
 
   @spec stream_to(Enumerable.t(), atom(), map() | keyword()) :: Enumerable.t()
   def stream_to(stream, name, opts \\ []) when is_atom(name) do
-    GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts), false})
-  end
-
-  @spec steam_with_ids_to(Enumerable.t({term, term}), atom(), map() | keyword()) ::
-          Enumerable.t()
-  def steam_with_ids_to(stream, name, opts \\ []) when is_atom(name) do
-    GenServer.call(name, {:stream_to, stream, ProcessingOptions.new(opts), true})
+    stream(stream, name, opts)
   end
 
   @spec components(atom) :: list(map())
@@ -358,6 +353,14 @@ defmodule ALF.Manager do
     {:reply, new_registry, %{state | registry: new_registry}}
   end
 
+  def handle_call(:sync_pipeline, _from, state) do
+    if state.sync do
+      {:reply, state.pipeline, state}
+    else
+      raise "#{state.name} is not a sync pipeline"
+    end
+  end
+
   def handle_cast({:move_to_in_progress_registry, ips, stream_ref}, state) do
     new_registry = Streamer.move_to_in_progress_registry(state.registry, stream_ref, ips)
     {:noreply, %{state | registry: new_registry}}
@@ -369,11 +372,7 @@ defmodule ALF.Manager do
   end
 
   def handle_info({:DOWN, _ref, :process, _pid, :shutdown}, %__MODULE__{} = state) do
-    state =
-      state
-      |> start_pipeline()
-      |> copy_registry_to_dump()
-      |> Streamer.resend_packets()
+    state = start_pipeline(state)
 
     {:noreply, state}
   end
@@ -393,18 +392,35 @@ defmodule ALF.Manager do
   end
 
   def call(event, name, opts \\ [return_ip: false]) do
-    producer_name = :"#{name}.Producer"
-    if is_nil(Process.whereis(producer_name)), do: raise("Pipeline #{name} is not started")
+    case status(name) do
+      {:ok, producer_name} ->
+        do_call(name, producer_name, event, opts)
 
+      {:sync, pipeline} ->
+        do_sync_call(name, pipeline, event, opts)
+    end
+  end
+
+  defp do_call(name, producer_name, event, opts) do
     ip = build_ip(event, name)
     GenServer.cast(producer_name, {:load_ip, ip})
 
     ref = ip.ref
+    timeout = opts[:timeout] || @default_timeout
 
     receive do
       {^ref, ip} ->
         format_ip(ip, opts[:return_ip])
+    after
+      timeout ->
+        ALF.Components.Basic.build_error_ip(ip, :timeout, [], :no_info)
     end
+  end
+
+  defp do_sync_call(name, pipeline, event, opts) do
+    ip = build_ip(event, name)
+    [ip] = SyncRunner.run(pipeline, ip)
+    format_ip(ip, opts[:return_ip])
   end
 
   def handle_cast({:load_ip, ip}, state) do
@@ -413,25 +429,19 @@ defmodule ALF.Manager do
     {:noreply, state}
   end
 
-  defp format_ip(%IP{} = ip, true), do: ip
-  defp format_ip(%IP{} = ip, false), do: ip.event
-  defp format_ip(%ErrorIP{} = ip, _return_ips), do: ip
+  def stream(stream, name, opts \\ [return_ips: false]) do
+    case status(name) do
+      {:ok, producer_name} ->
+        do_stream(name, producer_name, stream, opts)
 
-  defp build_ip(event, name) do
-    %IP{
-      ref: make_ref(),
-      destination: self(),
-      init_datum: event,
-      event: event,
-      manager_name: name
-    }
+      {:sync, pipeline} ->
+        do_sync_stream(name, pipeline, stream, opts)
+    end
   end
 
-  def stream(stream, name, opts \\ [return_ips: false]) do
-    producer_name = :"#{name}.Producer"
-    if is_nil(Process.whereis(producer_name)), do: raise("Pipeline #{name} is not started")
-
+  defp do_stream(name, producer_name, stream, opts) do
     new_stream_ref = make_ref()
+    timeout = opts[:timeout] || @default_timeout
 
     stream
     |> Stream.transform(
@@ -441,7 +451,7 @@ defmodule ALF.Manager do
         ip = %{ip | new_stream_ref: new_stream_ref}
         GenServer.cast(producer_name, {:load_ip, ip})
 
-        case wait_result(new_stream_ref, []) do
+        case wait_result(new_stream_ref, [], {timeout, ip}) do
           [] ->
             {[], nil}
 
@@ -453,19 +463,70 @@ defmodule ALF.Manager do
     )
   end
 
-  defp wait_result(new_stream_ref, acc) do
-    receive do
-      {^new_stream_ref, :created_decomposer} ->
-        wait_result(new_stream_ref, acc ++ wait_result(new_stream_ref, []))
+  defp do_sync_stream(name, pipeline, stream, opts) do
+    stream
+    |> Stream.transform(
+      nil,
+      fn event, nil ->
+        ip = build_ip(event, name)
+        ips = SyncRunner.run(pipeline, ip)
+        ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ips]) end)
+        {ips, nil}
+      end
+    )
+  end
 
+  defp wait_result(new_stream_ref, acc, {timeout, initial_ip}) do
+    receive do
       {^new_stream_ref, :created_recomposer} ->
-        wait_result(new_stream_ref, acc)
+        wait_result(new_stream_ref, acc, {timeout, initial_ip})
+
+      {^new_stream_ref, reason} when reason in [:created_decomposer, :cloned] ->
+        wait_result(
+          new_stream_ref,
+          acc ++ wait_result(new_stream_ref, [], {timeout, initial_ip}),
+          {timeout, initial_ip}
+        )
 
       {^new_stream_ref, :destroyed} ->
         acc
 
       {^new_stream_ref, ip} ->
         Enum.reverse([ip | acc])
+    after
+      timeout ->
+        error_ip = ALF.Components.Basic.build_error_ip(initial_ip, :timeout, [], :no_info)
+        Enum.reverse([error_ip | acc])
     end
+  end
+
+  defp status(name) do
+    producer_name = :"#{name}.Producer"
+
+    cond do
+      Process.whereis(producer_name) && Process.whereis(name) ->
+        {:ok, producer_name}
+
+      is_nil(Process.whereis(producer_name)) && Process.whereis(name) ->
+        {:sync, GenServer.call(name, :sync_pipeline)}
+
+      true ->
+        raise("Pipeline #{name} is not started")
+    end
+  end
+
+  defp format_ip(%IP{} = ip, true), do: ip
+  defp format_ip(%IP{} = ip, false), do: ip.event
+  defp format_ip(%IP{} = ip, nil), do: ip.event
+  defp format_ip(%ErrorIP{} = ip, _return_ips), do: ip
+
+  defp build_ip(event, name) do
+    %IP{
+      ref: make_ref(),
+      destination: self(),
+      init_datum: event,
+      event: event,
+      manager_name: name
+    }
   end
 end

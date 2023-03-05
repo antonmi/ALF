@@ -35,7 +35,7 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
   end
 
   def report_step(struct, _) do
-    #    IO.inspect("Step: #{inspect struct}", charlists: :as_lists)
+    # IO.inspect("Step: #{inspect struct}", charlists: :as_lists)
     struct
   end
 
@@ -48,20 +48,41 @@ defmodule ALF.Examples.BubbleSortTest do
   use ExUnit.Case
 
   alias ALF.Examples.BubbleSort.Pipeline
-  alias ALF.Manager
 
   @range 1..5
 
-  setup do: Manager.start(Pipeline)
+  setup do
+    Pipeline.start()
+
+    on_exit(fn ->
+      Pipeline.stop()
+    end)
+  end
+
+  test "sort a list" do
+    result =
+      1..5
+      |> Enum.shuffle()
+      |> Pipeline.call()
+
+    assert result == [1, 2, 3, 4, 5]
+
+    results =
+      [Enum.shuffle(1..5), Enum.shuffle(1..5)]
+      |> Pipeline.stream()
+      |> Enum.to_list()
+
+    assert results == [[1, 2, 3, 4, 5], [1, 2, 3, 4, 5]]
+  end
 
   test "sort many lists" do
     list_of_lists = Enum.map(1..5, fn _i -> Enum.shuffle(@range) end)
 
     results =
       list_of_lists
-      |> Enum.map(&Manager.stream_to([&1], Pipeline))
+      |> Enum.map(&Pipeline.stream([&1]))
       |> Enum.map(&Task.async(fn -> hd(Enum.to_list(&1)) end))
-      |> Task.await_many(:infinity)
+      |> Task.await_many()
 
     Enum.each(results, fn result ->
       assert result == Enum.to_list(@range)

@@ -13,7 +13,6 @@ defmodule ALF.Components.Producer do
 
   def start_link(%__MODULE__{} = state) do
     name = :"#{state.manager_name}.Producer"
-
     GenStage.start_link(__MODULE__, state, name: name)
   end
 
@@ -67,6 +66,10 @@ defmodule ALF.Components.Producer do
   end
 
   def handle_cast({:load_ip, ip}, state) do
+    if state.telemetry_enabled do
+      send_simple_telemetry_events([ip], state)
+    end
+
     {:noreply, [ip], state}
   end
 

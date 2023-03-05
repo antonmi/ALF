@@ -53,34 +53,6 @@ defmodule ALF.SyncRun.SimplePipelineTest do
     assert [%IP{event: 1}, %IP{event: 3}, %IP{event: 5}] = results
   end
 
-  test "steam_with_ids_to" do
-    ref = make_ref()
-    pid = self()
-
-    results =
-      [{ref, 1}, {:my_id, 2}, {pid, 3}]
-      |> Manager.steam_with_ids_to(Pipeline)
-      |> Enum.to_list()
-
-    assert [{^ref, 1}, {:my_id, 3}, {^pid, 5}] = results
-  end
-
-  test "steam_with_ids_to with return_ips: true" do
-    ref = make_ref()
-    pid = self()
-
-    results =
-      [{ref, 1}, {:my_id, 2}, {pid, 3}]
-      |> Manager.steam_with_ids_to(Pipeline, return_ips: true)
-      |> Enum.to_list()
-
-    assert [
-             {^ref, %IP{event: 1, ref: ^ref}},
-             {:my_id, %IP{event: 3, ref: :my_id}},
-             {^pid, %IP{event: 5, ref: ^pid}}
-           ] = results
-  end
-
   describe "SyncRunner.stream_to" do
     test "sync run with SyncRunner.stream_to" do
       results =
