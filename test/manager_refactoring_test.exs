@@ -1,8 +1,6 @@
 defmodule ALF.ManagerRefactoringTest do
   use ExUnit.Case, async: false
 
-  alias ALF.{IP, Manager, Pipeline}
-
   describe "call/2" do
     defmodule SimplePipelineToCall do
       use ALF.DSL
@@ -20,24 +18,27 @@ defmodule ALF.ManagerRefactoringTest do
     end
 
     setup do
-      Manager.start(SimplePipelineToCall)
-      on_exit(fn -> Manager.stop(SimplePipelineToCall) end)
+      SimplePipelineToCall.start()
+      on_exit(fn -> SimplePipelineToCall.stop() end)
     end
 
     test "run stream and check events" do
-      assert Manager.call(1, SimplePipelineToCall) == 4
-      assert Pipeline.call(1, SimplePipelineToCall) == 4
+      assert SimplePipelineToCall.call(1) == 4
+    end
+
+    test "SimplePipelineToCall.call" do
+      assert SimplePipelineToCall.call(1) == 4
     end
 
     test "with return ip option" do
-      assert %IP{event: 4} = Pipeline.call(1, SimplePipelineToCall, return_ip: true)
+      assert %ALF.IP{event: 4} = SimplePipelineToCall.call(1, return_ip: true)
     end
 
     test "call from many Tasks" do
       1..10
       |> Enum.map(fn _event ->
         Task.async(fn ->
-          assert Pipeline.call(1, SimplePipelineToCall) == 4
+          assert SimplePipelineToCall.call(1) == 4
         end)
       end)
       |> Task.await_many()
@@ -63,23 +64,23 @@ defmodule ALF.ManagerRefactoringTest do
     @sample_stream [1, 2, 3]
 
     setup do
-      Manager.start(SimplePipelineToStream)
-      on_exit(fn -> Manager.stop(SimplePipelineToStream) end)
+      SimplePipelineToStream.start()
+      on_exit(fn -> SimplePipelineToStream.stop() end)
     end
 
     test "stream" do
       results =
         @sample_stream
-        |> Manager.stream(SimplePipelineToStream)
+        |> SimplePipelineToStream.stream()
         |> Enum.to_list()
 
       assert results == [4, 6, 8]
     end
 
     test "stream with return_ips option" do
-      assert [%IP{event: 4}, %IP{event: 6}, %IP{event: 8}] =
+      assert [%ALF.IP{event: 4}, %ALF.IP{event: 6}, %ALF.IP{event: 8}] =
         @sample_stream
-        |> Manager.stream(SimplePipelineToStream, return_ips: true)
+        |> SimplePipelineToStream.stream(return_ips: true)
         |> Enum.to_list()
     end
   end
@@ -98,14 +99,14 @@ defmodule ALF.ManagerRefactoringTest do
     end
 
     setup do
-      Manager.start(DecomposerPipeline)
-      on_exit(fn -> Manager.stop(DecomposerPipeline) end)
+      DecomposerPipeline.start()
+      on_exit(fn -> DecomposerPipeline.stop() end)
     end
 
     test "stream" do
       results =
         ["aaa bbb ccc", "ddd eee", "xxx"]
-        |> Manager.stream(DecomposerPipeline)
+        |> DecomposerPipeline.stream()
         |> Enum.to_list()
 
       assert length(results) == 6
@@ -132,13 +133,13 @@ defmodule ALF.ManagerRefactoringTest do
     end
 
     setup do
-      Manager.start(RecomposerPipeline)
-      on_exit(fn -> Manager.stop(RecomposerPipeline) end)
+      RecomposerPipeline.start()
+      on_exit(fn -> RecomposerPipeline.stop() end)
     end
 
     test "stream" do
       ["aa", "bb", "xxxxx"]
-      |> Manager.stream(RecomposerPipeline)
+      |> RecomposerPipeline.stream()
       |> Enum.to_list()
     end
   end

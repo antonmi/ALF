@@ -22,6 +22,8 @@ defmodule ALF.Manager do
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
   alias ALF.{ErrorIP, IP}
 
+  @type t :: %__MODULE__{}
+
   @available_options [:autoscaling_enabled, :telemetry_enabled, :sync]
 
   @max_producer_load 100

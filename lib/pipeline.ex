@@ -6,10 +6,6 @@ defmodule ALF.Pipeline do
 
   alias ALF.Components.{Switch, Clone}
 
-  def call(event, name, opts \\ [return_ip: false]) do
-    ALF.Manager.call(event, name, opts)
-  end
-
   def stages_to_list(components) do
     do_stages_to_list(components, [])
   end

@@ -24,6 +24,7 @@ defmodule Alf.MixProject do
     [
       {:gen_stage, "~> 1.1"},
       {:telemetry, "~> 1.1"},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end

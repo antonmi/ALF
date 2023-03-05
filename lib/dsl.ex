@@ -257,6 +257,32 @@ defmodule ALF.DSL do
       def done!(event) do
         raise ALF.DoneStatement, event
       end
+
+      @spec start() :: :ok
+      def start() do
+        ALF.Manager.start(__MODULE__, __MODULE__, [])
+      end
+
+      @spec start(list) :: :ok
+      def start(opts) when is_list(opts) do
+        ALF.Manager.start(__MODULE__, __MODULE__, opts)
+      end
+
+      def stop do
+        ALF.Manager.stop(__MODULE__)
+      end
+
+      def call(event, opts \\ [return_ip: false]) do
+        ALF.Manager.call(event, __MODULE__, opts)
+      end
+
+      def cast do
+        # TODO
+      end
+
+      def stream(stream, opts \\ [return_ips: false]) do
+        ALF.Manager.stream(stream, __MODULE__, opts)
+      end
     end
   end
 
