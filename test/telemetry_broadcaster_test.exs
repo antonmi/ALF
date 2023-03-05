@@ -22,6 +22,7 @@ defmodule ALF.TelemetryBroadcasterTest do
       Agent.update(agent, fn list ->
         [{:start, metadata.component, metadata.ip} | list]
       end)
+      Process.sleep(5)
     end
 
     def handle_event([:alf, :component, :stop], %{duration: _duration}, metadata) do
@@ -30,6 +31,7 @@ defmodule ALF.TelemetryBroadcasterTest do
       Agent.update(agent, fn list ->
         [{:stop, metadata.component, metadata.ip} | list]
       end)
+      Process.sleep(5)
     end
   end
 
@@ -70,7 +72,7 @@ defmodule ALF.TelemetryBroadcasterTest do
       |> Manager.stream_to(SimplePipeline)
       |> Enum.to_list()
 
-      Process.sleep(5)
+      Process.sleep(50)
 
       events =
         agent

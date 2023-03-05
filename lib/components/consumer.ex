@@ -55,17 +55,10 @@ defmodule ALF.Components.Consumer do
   end
 
   defp send_result(ip, state) do
-    if ip.stream_ref do
-      # old code
-      raise "shouldn't be there"
-      Streamer.cast_result_ready(state.manager_name, ip)
-      ip
+    if ip.new_stream_ref do
+      send(ip.destination, {ip.new_stream_ref, ip})
     else
-      if ip.new_stream_ref do
-        send(ip.destination, {ip.new_stream_ref, ip})
-      else
-        send(ip.destination, {ip.ref, ip})
-      end
+      send(ip.destination, {ip.ref, ip})
     end
 
     ip

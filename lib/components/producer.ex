@@ -1,6 +1,5 @@
 defmodule ALF.Components.Producer do
   use ALF.Components.Basic
-  alias ALF.Manager.Streamer
 
   defstruct Basic.common_attributes() ++
               [
@@ -36,17 +35,8 @@ defmodule ALF.Components.Producer do
     }
   end
 
-  def load_ip(pid, ip) do
-    GenServer.cast(pid, {:load_ip, ip})
-  end
-
-  def load_ips(pid, ips) do
-    GenServer.cast(pid, {:load_ips, ips})
-  end
-
-  def handle_demand(1, %__MODULE__{ips: [_ip | _], demand: demand} = state) do
-    {ips, new_state} = prepare_state_and_ips(%{state | demand: demand + 1})
-    {:noreply, ips, new_state}
+  def load_ip(name, ip) do
+    GenServer.cast(name, {:load_ip, ip})
   end
 
   def handle_demand(1, %__MODULE__{ips: [], demand: demand} = state) do
@@ -54,14 +44,9 @@ defmodule ALF.Components.Producer do
     {:noreply, [], state}
   end
 
-  def handle_cast({:load_ips, new_ips}, %__MODULE__{ips: ips, demand: demand} = state) do
-    {ips, new_state} = prepare_state_and_ips(%{state | ips: ips ++ new_ips, demand: demand + 0})
-    {:noreply, ips, new_state}
-  end
-
   def handle_cast({:load_ip, ip}, state) do
     if state.telemetry_enabled do
-      send_simple_telemetry_events([ip], state)
+      send_telemetry_event(ip, state)
     end
 
     {:noreply, [ip], state}
@@ -81,35 +66,8 @@ defmodule ALF.Components.Producer do
     )
   end
 
-  defp prepare_state_and_ips(
-         %__MODULE__{ips: ips, manager_name: manager_name, demand: demand} = state
-       ) do
-    case Enum.split(ips, demand) do
-      {[], ips_to_store} ->
-        {[], %{state | demand: demand, ips: ips_to_store}}
-
-      {ips_to_send, ips_to_store} ->
-        ips_to_send = add_ips_to_in_progress_registry(ips_to_send, manager_name)
-
-        if state.telemetry_enabled do
-          send_simple_telemetry_events(ips_to_send, state)
-        end
-
-        {ips_to_send, %{state | demand: demand - length(ips_to_send), ips: ips_to_store}}
-    end
-  end
-
-  defp add_ips_to_in_progress_registry([ip | _] = ips, manager_name) do
-    ips = Enum.map(ips, fn ip -> %{ip | in_progress: true} end)
-    Streamer.cast_move_to_in_progress_registry(manager_name, ips, ip.stream_ref)
-    ips
-  end
-
-  defp send_simple_telemetry_events(ips_to_send, state) do
-    ips_to_send
-    |> Enum.map(fn ip ->
-      telemetry_data = telemetry_data(ip, state)
-      :telemetry.span([:alf, :component], telemetry_data, fn -> {:ok, telemetry_data} end)
-    end)
+  defp send_telemetry_event(ip, state) do
+    telemetry_data = telemetry_data(ip, state)
+    :telemetry.span([:alf, :component], telemetry_data, fn -> {:ok, telemetry_data} end)
   end
 end

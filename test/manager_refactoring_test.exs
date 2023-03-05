@@ -169,6 +169,11 @@ defmodule ALF.ManagerRefactoringTest do
       on_exit(fn -> DecomposerPipeline.stop() end)
     end
 
+    test "call" do
+      assert DecomposerPipeline.call("aaa") == "aaa"
+      assert DecomposerPipeline.call("aaa bbb ccc") == ["bbb", "aaa", "ccc"]
+    end
+
     test "stream" do
       results =
         ["aaa bbb ccc", "ddd eee", "xxx"]
@@ -201,6 +206,12 @@ defmodule ALF.ManagerRefactoringTest do
     setup do
       RecomposerPipeline.start()
       on_exit(fn -> RecomposerPipeline.stop() end)
+    end
+
+    test "call" do
+      assert RecomposerPipeline.call("aaaaa") == "aaaaa"
+      assert is_nil(RecomposerPipeline.call("aaa"))
+      assert RecomposerPipeline.call("bbb") == "aaa bbb"
     end
 
     test "stream" do

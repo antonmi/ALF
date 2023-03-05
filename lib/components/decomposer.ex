@@ -10,7 +10,7 @@ defmodule ALF.Components.Decomposer do
                 source_code: nil
               ]
 
-  alias ALF.{DSLError, Manager.Streamer}
+  alias ALF.DSLError
 
   @dsl_options [:opts, :name]
 
@@ -65,46 +65,36 @@ defmodule ALF.Components.Decomposer do
     end
   end
 
-  defp process_ip(%{new_stream_ref: nil} = ip, state) do
-    case call_function(state.module, state.function, ip.event, state.opts) do
-      {:ok, events} when is_list(events) ->
-        Streamer.call_remove_from_registry(ip.manager_name, [ip], ip.stream_ref)
-
-        ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
-
-        Streamer.call_add_to_registry(ip.manager_name, ips, ip.stream_ref)
-        {ips, state}
-
-      {:ok, {events, event}} when is_list(events) ->
-        ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
-
-        ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
-        Streamer.call_add_to_registry(ip.manager_name, ips, ip.stream_ref)
-        {ips ++ [ip], state}
-
-      {:error, error, stacktrace} ->
-        send_error_result(ip, error, stacktrace, state)
-        {[], state}
-    end
-  end
-
-  defp process_ip(%{new_stream_ref: new_stream_ref} = ip, state) do
+  defp process_ip(ip, state) do
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:ok, events} when is_list(events) ->
         ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
 
         Enum.each(ips, fn new_ip ->
-          send(new_ip.destination, {new_ip.new_stream_ref, :created_decomposer})
+          if ip.new_stream_ref do
+            send(new_ip.destination, {new_ip.new_stream_ref, :created_decomposer})
+          else
+            send(new_ip.destination, {new_ip.ref, :created_decomposer})
+          end
         end)
 
-        send(ip.destination, {ip.new_stream_ref, :destroyed})
+        if ip.new_stream_ref do
+          send(ip.destination, {ip.new_stream_ref, :destroyed})
+        else
+          send(ip.destination, {ip.ref, :destroyed})
+        end
+
         {ips, state}
 
       {:ok, {events, event}} when is_list(events) ->
         ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
 
         Enum.each(ips, fn new_ip ->
-          send(new_ip.destination, {new_ip.new_stream_ref, :created_decomposer})
+          if ip.new_stream_ref do
+            send(new_ip.destination, {new_ip.new_stream_ref, :created_decomposer})
+          else
+            send(new_ip.destination, {new_ip.ref, ip})
+          end
         end)
 
         ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
@@ -154,7 +144,7 @@ defmodule ALF.Components.Decomposer do
         stream_ref: ip.stream_ref,
         new_stream_ref: ip.new_stream_ref,
         destination: ip.destination,
-        ref: make_ref(),
+        ref: ip.ref,
         init_datum: event,
         event: event,
         manager_name: ip.manager_name,

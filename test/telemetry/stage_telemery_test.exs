@@ -25,6 +25,7 @@ defmodule ALF.ComponentTelemetryTest do
   defmodule Handler do
     def handle_event([:alf, :component, type], measurements, metadata, %{agent: agent}) do
       Agent.update(agent, fn list -> [{type, measurements, metadata} | list] end)
+      Process.sleep(5)
     end
   end
 

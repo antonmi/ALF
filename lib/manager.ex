@@ -1,6 +1,7 @@
 defmodule ALF.Manager do
   use GenServer
 
+  # TODO revise the list
   defstruct name: nil,
             pipeline_module: nil,
             pid: nil,
@@ -15,7 +16,7 @@ defmodule ALF.Manager do
             telemetry_enabled: nil,
             sync: false
 
-  alias ALF.Manager.{Components, ProcessingOptions, SyncRunner}
+  alias ALF.Manager.{ProcessingOptions, SyncRunner}
   alias ALF.Components.{Goto, Producer}
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
   alias ALF.{ErrorIP, IP}
@@ -127,18 +128,6 @@ defmodule ALF.Manager do
     GenServer.call(name, :reload_components_states)
   end
 
-  def add_component(name, stage_set_ref) do
-    GenServer.call(name, {:add_component, stage_set_ref})
-  end
-
-  def remove_component(name, stage_set_ref) do
-    GenServer.call(name, {:remove_component, stage_set_ref})
-  end
-
-  def delete_marked_to_be_deleted(name) when is_atom(name) do
-    GenServer.call(name, :delete_marked_to_be_deleted)
-  end
-
   def terminate(:normal, state) do
     unless state.sync do
       Supervisor.stop(state.pipeline_sup_pid)
@@ -243,35 +232,6 @@ defmodule ALF.Manager do
     {:reply, state.components, state}
   end
 
-  def handle_call({:add_component, stage_set_ref}, _from, state) do
-    {new_stage, new_components} =
-      Components.add_component(state.components, stage_set_ref, state.pipeline_sup_pid)
-
-    {:reply, new_stage, %{state | components: new_components}}
-  end
-
-  def handle_call({:remove_component, stage_set_ref}, _from, state) do
-    case Components.remove_component(state.components, stage_set_ref) do
-      {:ok, {stage_to_delete, new_components}} ->
-        stages_to_be_deleted = [stage_to_delete | state.stages_to_be_deleted]
-
-        {:reply, stage_to_delete,
-         %{state | components: new_components, stages_to_be_deleted: stages_to_be_deleted}}
-
-      {:error, :only_one_left} ->
-        {:reply, {:error, :only_one_left}, state}
-    end
-  end
-
-  def handle_call(:delete_marked_to_be_deleted, _from, state) do
-    state.stages_to_be_deleted
-    |> Enum.each(fn stage ->
-      DynamicSupervisor.terminate_child(state.pipeline_sup_pid, stage.pid)
-    end)
-
-    {:reply, state.stages_to_be_deleted, state}
-  end
-
   def handle_call(:sync_pipeline, _from, state) do
     if state.sync do
       {:reply, state.pipeline, state}
@@ -284,10 +244,6 @@ defmodule ALF.Manager do
     state = start_pipeline(state)
 
     {:noreply, state}
-  end
-
-  defp copy_registry_to_dump(state) do
-    %{state | registry_dump: state.registry}
   end
 
   defp is_pipeline_module?(module) when is_atom(module) do
@@ -312,17 +268,18 @@ defmodule ALF.Manager do
 
   defp do_call(name, producer_name, event, opts) do
     ip = build_ip(event, name)
-    GenServer.cast(producer_name, {:load_ip, ip})
-
-    ref = ip.ref
+    Producer.load_ip(producer_name, ip)
     timeout = opts[:timeout] || @default_timeout
 
-    receive do
-      {^ref, ip} ->
+    case wait_result(ip.ref, [], {timeout, ip}) do
+      [] ->
+        nil
+
+      [ip] ->
         format_ip(ip, opts[:return_ip])
-    after
-      timeout ->
-        ALF.Components.Basic.build_error_ip(ip, :timeout, [], :no_info)
+
+      ips ->
+        Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ip]) end)
     end
   end
 
@@ -358,7 +315,7 @@ defmodule ALF.Manager do
       fn event, nil ->
         ip = build_ip(event, name)
         ip = %{ip | new_stream_ref: new_stream_ref}
-        GenServer.cast(producer_name, {:load_ip, ip})
+        Producer.load_ip(producer_name, ip)
 
         case wait_result(new_stream_ref, [], {timeout, ip}) do
           [] ->
@@ -385,22 +342,22 @@ defmodule ALF.Manager do
     )
   end
 
-  defp wait_result(new_stream_ref, acc, {timeout, initial_ip}) do
+  defp wait_result(ref, acc, {timeout, initial_ip}) do
     receive do
-      {^new_stream_ref, :created_recomposer} ->
-        wait_result(new_stream_ref, acc, {timeout, initial_ip})
+      {^ref, :created_recomposer} ->
+        wait_result(ref, acc, {timeout, initial_ip})
 
-      {^new_stream_ref, reason} when reason in [:created_decomposer, :cloned] ->
+      {^ref, reason} when reason in [:created_decomposer, :cloned] ->
         wait_result(
-          new_stream_ref,
-          acc ++ wait_result(new_stream_ref, [], {timeout, initial_ip}),
+          ref,
+          acc ++ wait_result(ref, [], {timeout, initial_ip}),
           {timeout, initial_ip}
         )
 
-      {^new_stream_ref, :destroyed} ->
+      {^ref, :destroyed} ->
         acc
 
-      {^new_stream_ref, ip} ->
+      {^ref, ip} ->
         Enum.reverse([ip | acc])
     after
       timeout ->

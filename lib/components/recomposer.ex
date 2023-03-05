@@ -73,57 +73,9 @@ defmodule ALF.Components.Recomposer do
     end
   end
 
-  defp process_ip(%{new_stream_ref: nil} = ip, state) do
-    collected_data = Enum.map(state.collected_ips, & &1.event)
-
-    case call_function(
-           state.module,
-           state.function,
-           ip.event,
-           collected_data,
-           state.opts
-         ) do
-      {:ok, :continue} ->
-        collected_ips = state.collected_ips ++ [ip]
-        {nil, %{state | collected_ips: collected_ips}}
-
-      {:ok, {event, events}} ->
-        Streamer.call_remove_from_registry(
-          ip.manager_name,
-          [ip | state.collected_ips],
-          ip.stream_ref
-        )
-
-        ip = build_ip(event, ip, [{state.name, ip.event} | ip.history])
-
-        collected =
-          Enum.map(events, fn event ->
-            build_ip(event, ip, [{state.name, ip.event} | ip.history])
-          end)
-
-        Streamer.call_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
-        {ip, %{state | collected_ips: collected}}
-
-      {:ok, event} ->
-        Streamer.call_remove_from_registry(
-          ip.manager_name,
-          [ip | state.collected_ips],
-          ip.stream_ref
-        )
-
-        ip = build_ip(event, ip, [{state.name, ip.event} | ip.history])
-
-        Streamer.call_add_to_registry(ip.manager_name, [ip], ip.stream_ref)
-        {ip, %{state | collected_ips: []}}
-
-      {:error, error, stacktrace} ->
-        error_ip = send_error_result(ip, error, stacktrace, state)
-        {error_ip, state}
-    end
-  end
-
-  defp process_ip(%{new_stream_ref: new_stream_ref} = current_ip, state) do
-    collected_data = Enum.map(Map.get(state.new_collected_ips, new_stream_ref, []), & &1.event)
+  defp process_ip(current_ip, state) do
+    collected_data =
+      Enum.map(Map.get(state.new_collected_ips, current_ip.new_stream_ref, []), & &1.event)
 
     case call_function(
            state.module,
@@ -133,15 +85,30 @@ defmodule ALF.Components.Recomposer do
            state.opts
          ) do
       {:ok, :continue} ->
-        send(current_ip.destination, {current_ip.new_stream_ref, :destroyed})
-        collected = Map.get(state.new_collected_ips, new_stream_ref, []) ++ [current_ip]
+        if current_ip.new_stream_ref do
+          send(current_ip.destination, {current_ip.new_stream_ref, :destroyed})
+        else
+          send(current_ip.destination, {current_ip.ref, :destroyed})
+        end
+
+        collected =
+          Map.get(state.new_collected_ips, current_ip.new_stream_ref, []) ++ [current_ip]
 
         {nil,
-         %{state | new_collected_ips: Map.put(state.new_collected_ips, new_stream_ref, collected)}}
+         %{
+           state
+           | new_collected_ips:
+               Map.put(state.new_collected_ips, current_ip.new_stream_ref, collected)
+         }}
 
       {:ok, {event, events}} ->
         ip = build_ip(event, current_ip, [{state.name, current_ip.event} | current_ip.history])
-        send(ip.destination, {ip.new_stream_ref, :created_recomposer})
+
+        if ip.new_stream_ref do
+          send(ip.destination, {ip.new_stream_ref, :created_recomposer})
+        else
+          send(ip.destination, {ip.ref, :created_recomposer})
+        end
 
         collected =
           Enum.map(events, fn event ->
@@ -149,12 +116,26 @@ defmodule ALF.Components.Recomposer do
           end)
 
         {ip,
-         %{state | new_collected_ips: Map.put(state.new_collected_ips, new_stream_ref, collected)}}
+         %{
+           state
+           | new_collected_ips:
+               Map.put(state.new_collected_ips, current_ip.new_stream_ref, collected)
+         }}
 
       {:ok, event} ->
         ip = build_ip(event, current_ip, [{state.name, current_ip.event} | current_ip.history])
-        send(ip.destination, {ip.new_stream_ref, :created_recomposer})
-        {ip, %{state | new_collected_ips: Map.put(state.new_collected_ips, new_stream_ref, [])}}
+
+        if ip.new_stream_ref do
+          send(ip.destination, {ip.new_stream_ref, :created_recomposer})
+        else
+          send(ip.destination, {ip.ref, :created_recomposer})
+        end
+
+        {ip,
+         %{
+           state
+           | new_collected_ips: Map.put(state.new_collected_ips, current_ip.new_stream_ref, [])
+         }}
 
       {:error, error, stacktrace} ->
         error_ip = send_error_result(current_ip, error, stacktrace, state)
@@ -216,7 +197,7 @@ defmodule ALF.Components.Recomposer do
   defp build_ip(event, ip, history) do
     %IP{
       stream_ref: ip.stream_ref,
-      ref: make_ref(),
+      ref: ip.ref,
       new_stream_ref: ip.new_stream_ref,
       destination: ip.destination,
       init_datum: event,
