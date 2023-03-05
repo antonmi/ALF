@@ -39,7 +39,7 @@ defmodule ALF.Examples.TelegramTest do
   setup do
     file_stream = File.stream!("test/examples/telegram_input.txt")
     Pipeline.start()
-    on_exit(fn -> Pipeline.stop() end)
+    on_exit(&Pipeline.stop/0)
     %{file_stream: file_stream}
   end
 

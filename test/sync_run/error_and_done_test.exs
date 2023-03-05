@@ -19,7 +19,7 @@ defmodule ALF.SyncRun.ErrorAndDoneTest do
 
   setup do
     Pipeline.start(sync: true)
-    on_exit(fn -> Pipeline.stop() end)
+    on_exit(&Pipeline.stop/0)
   end
 
   test "sync run" do

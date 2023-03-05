@@ -16,23 +16,22 @@ defmodule ALF.Examples.AddMultMinusTest do
   use ExUnit.Case
 
   alias ALF.Examples.AddMultMinus.Pipeline
-  alias ALF.Manager
 
-  setup do: Manager.start(Pipeline)
+  setup do: Pipeline.start()
 
   test "single stream" do
     results =
       [1, 2, 3]
-      |> Manager.stream_to(Pipeline)
+      |> Pipeline.stream()
       |> Enum.to_list()
 
     assert results == [1, 3, 5]
   end
 
   test "several streams of inputs" do
-    stream1 = Manager.stream_to(0..9, Pipeline)
-    stream2 = Manager.stream_to(10..19, Pipeline)
-    stream3 = Manager.stream_to(20..29, Pipeline)
+    stream1 = Pipeline.stream(0..9)
+    stream2 = Pipeline.stream(10..19)
+    stream3 = Pipeline.stream(20..29)
 
     [result1, result2, result3] =
       [stream1, stream2, stream3]

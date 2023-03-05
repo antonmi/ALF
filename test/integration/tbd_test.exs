@@ -1,8 +1,6 @@
 defmodule ALF.TbdTest do
   use ExUnit.Case, async: false
 
-  alias ALF.Manager
-
   defmodule TbdPipeline do
     use ALF.DSL
 
@@ -13,13 +11,14 @@ defmodule ALF.TbdTest do
   end
 
   setup do
-    Manager.start(TbdPipeline)
+    TbdPipeline.start()
+    on_exit(&TbdPipeline.stop/0)
   end
 
   test "returns the event" do
     [result] =
       [1]
-      |> Manager.stream_to(TbdPipeline, return_ips: true)
+      |> TbdPipeline.stream(return_ips: true)
       |> Enum.to_list()
 
     assert result.event == 1

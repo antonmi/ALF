@@ -31,16 +31,18 @@ defmodule ALF.Examples.PlugWithExamplesTest do
   use ExUnit.Case
 
   alias ALF.Examples.PlugWith.Pipeline
-  alias ALF.Manager
 
-  setup do: Manager.start(Pipeline)
+  setup do
+    Pipeline.start()
+    on_exit(&Pipeline.stop/0)
+  end
 
   test "process input" do
     inputs = ["Anton", "Baton"]
 
     results =
       inputs
-      |> Manager.stream_to(Pipeline)
+      |> Pipeline.stream()
       |> Enum.to_list()
 
     assert results == ["Hello Anton!", "Hello Baton!"]

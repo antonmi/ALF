@@ -56,16 +56,15 @@ defmodule ALF.ExamplesBubbleSortWithSwitchTest do
   use ExUnit.Case
 
   alias ALF.Examples.BubbleSortWithSwitch.Pipeline
-  alias ALF.Manager
 
   @range 1..5
 
-  setup do: Manager.start(Pipeline)
+  setup do: Pipeline.start()
 
   test "sort" do
     [result] =
       [Enum.shuffle(@range)]
-      |> Manager.stream_to(Pipeline)
+      |> Pipeline.stream()
       |> Enum.to_list()
 
     assert result == Enum.to_list(@range)

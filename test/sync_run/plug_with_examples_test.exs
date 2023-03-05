@@ -35,7 +35,7 @@ defmodule ALF.SyncRun.PlugWithExamplesTest do
 
   setup do
     Pipeline.start(sync: true)
-    on_exit(fn -> Pipeline.stop() end)
+    on_exit(&Pipeline.stop/0)
   end
 
   test "process input" do

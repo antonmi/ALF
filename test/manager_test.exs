@@ -45,18 +45,6 @@ defmodule ALF.ManagerTest do
       %Manager{telemetry_enabled: true} = state
     end
 
-    test "with custom name" do
-      Manager.start(ExtremelySimplePipeline, :simple_pipeline)
-      state = Manager.__state__(:simple_pipeline)
-
-      %Manager{
-        name: :simple_pipeline,
-        pipeline_module: ExtremelySimplePipeline,
-        pipeline: %ALF.Pipeline{},
-        registry: %{}
-      } = state
-    end
-
     test "with opts" do
       Manager.start(ExtremelySimplePipeline, telemetry_enabled: true)
       state = Manager.__state__(ExtremelySimplePipeline)
@@ -162,8 +150,8 @@ defmodule ALF.ManagerTest do
     end
 
     setup do
-      Manager.start(SimplePipelineToStop, :pipeline_to_stop)
-      state = Manager.__state__(:pipeline_to_stop)
+      Manager.start(SimplePipelineToStop)
+      state = Manager.__state__(SimplePipelineToStop)
 
       [stage] = state.pipeline.components
       producer = state.pipeline.producer
@@ -173,7 +161,7 @@ defmodule ALF.ManagerTest do
     end
 
     test "stop pipeline", %{stage: stage, producer: producer, consumer: consumer} do
-      state = Manager.stop(:pipeline_to_stop)
+      state = Manager.stop(SimplePipelineToStop)
 
       refute Process.alive?(stage.pid)
       refute Process.alive?(producer.pid)

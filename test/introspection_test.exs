@@ -1,7 +1,7 @@
 defmodule ALF.IntrospectionTest do
   use ExUnit.Case, async: false
 
-  alias ALF.{Introspection, Manager}
+  alias ALF.Introspection
 
   defmodule SimplePipeline do
     use ALF.DSL
@@ -30,12 +30,12 @@ defmodule ALF.IntrospectionTest do
   describe "pipelines and components" do
     setup do
       Introspection.reset()
-      Manager.start(SimplePipeline)
-      Manager.start(AnotherPipeline)
+      SimplePipeline.start()
+      AnotherPipeline.start()
 
       on_exit(fn ->
-        Manager.stop(SimplePipeline)
-        Manager.stop(AnotherPipeline)
+        SimplePipeline.stop()
+        AnotherPipeline.stop()
       end)
 
       :ok
@@ -59,8 +59,8 @@ defmodule ALF.IntrospectionTest do
     end
 
     test "when pipeline is stopped" do
-      Manager.stop(SimplePipeline)
-      Manager.stop(AnotherPipeline)
+      SimplePipeline.stop()
+      AnotherPipeline.stop()
       set = Introspection.pipelines()
       assert MapSet.size(set) == 0
     end
@@ -69,12 +69,12 @@ defmodule ALF.IntrospectionTest do
   describe "sync case" do
     setup do
       Introspection.reset()
-      Manager.start(SimplePipeline, sync: true)
-      Manager.start(AnotherPipeline, sync: true)
+      SimplePipeline.start(sync: true)
+      AnotherPipeline.start(sync: true)
 
       on_exit(fn ->
-        Manager.stop(SimplePipeline)
-        Manager.stop(AnotherPipeline)
+        SimplePipeline.stop()
+        AnotherPipeline.stop()
       end)
 
       :ok
@@ -94,8 +94,8 @@ defmodule ALF.IntrospectionTest do
     end
 
     test "when pipeline is stopped" do
-      Manager.stop(SimplePipeline)
-      Manager.stop(AnotherPipeline)
+      SimplePipeline.stop()
+      AnotherPipeline.stop()
       set = Introspection.pipelines()
       assert MapSet.size(set) == 0
     end
@@ -103,13 +103,13 @@ defmodule ALF.IntrospectionTest do
 
   describe "performance_stats/1" do
     setup do
-      Manager.start(SimplePipeline, telemetry_enabled: true)
+      SimplePipeline.start(telemetry_enabled: true)
 
       [1, 2, 3]
-      |> Manager.stream_to(SimplePipeline)
+      |> SimplePipeline.stream()
       |> Enum.to_list()
 
-      on_exit(fn -> Manager.stop(SimplePipeline) end)
+      on_exit(&SimplePipeline.stop/0)
     end
 
     test "stats" do

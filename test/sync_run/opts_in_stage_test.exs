@@ -34,7 +34,7 @@ defmodule ALF.SyncRun.OptsInStageTest do
   describe "opts" do
     setup do
       SimplePipeline.start(sync: true)
-      on_exit(fn -> SimplePipeline.stop() end)
+      on_exit(&SimplePipeline.stop/0)
     end
 
     test "run stream" do

@@ -19,7 +19,7 @@ defmodule ALF.ManagerRefactoringTest do
 
     setup do
       SimplePipelineToCall.start()
-      on_exit(fn -> SimplePipelineToCall.stop() end)
+      on_exit(&SimplePipelineToCall.stop/0)
     end
 
     test "run stream and check events" do
@@ -63,7 +63,7 @@ defmodule ALF.ManagerRefactoringTest do
 
     setup do
       SimplePipelineToSyncCall.start(sync: true)
-      on_exit(fn -> SimplePipelineToSyncCall.stop() end)
+      on_exit(&SimplePipelineToSyncCall.stop/0)
     end
 
     test "run stream and check events" do
@@ -92,7 +92,7 @@ defmodule ALF.ManagerRefactoringTest do
 
     setup do
       SimplePipelineToStream.start()
-      on_exit(fn -> SimplePipelineToStream.stop() end)
+      on_exit(&SimplePipelineToStream.stop/0)
     end
 
     test "stream" do
@@ -166,7 +166,7 @@ defmodule ALF.ManagerRefactoringTest do
 
     setup do
       DecomposerPipeline.start()
-      on_exit(fn -> DecomposerPipeline.stop() end)
+      on_exit(&DecomposerPipeline.stop/0)
     end
 
     test "call" do
@@ -205,7 +205,7 @@ defmodule ALF.ManagerRefactoringTest do
 
     setup do
       RecomposerPipeline.start()
-      on_exit(fn -> RecomposerPipeline.stop() end)
+      on_exit(&RecomposerPipeline.stop/0)
     end
 
     test "call" do
@@ -237,7 +237,7 @@ defmodule ALF.ManagerRefactoringTest do
 
     setup do
       TimeoutPipeline.start()
-      on_exit(fn -> TimeoutPipeline.stop() end)
+      on_exit(&TimeoutPipeline.stop/0)
     end
 
     test "run stream and check events" do
@@ -264,7 +264,7 @@ defmodule ALF.ManagerRefactoringTest do
 
     setup do
       TimeoutPipelineStream.start()
-      on_exit(fn -> TimeoutPipelineStream.stop() end)
+      on_exit(&TimeoutPipelineStream.stop/0)
     end
 
     test "run stream and check events" do

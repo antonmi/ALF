@@ -27,7 +27,7 @@ defmodule ALF.SyncRun.DecomposeRecomposeTest do
 
     setup do
       Pipeline.start(sync: true)
-      on_exit(fn -> Pipeline.stop() end)
+      on_exit(&Pipeline.stop/0)
     end
 
     test "returns strings" do

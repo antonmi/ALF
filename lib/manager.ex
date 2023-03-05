@@ -45,12 +45,6 @@ defmodule ALF.Manager do
     start(module, module, [])
   end
 
-  # TODO no names anymore
-  @spec start(atom, atom) :: :ok
-  def start(module, name) when is_atom(module) and is_atom(name) do
-    start(module, name, [])
-  end
-
   @spec start(atom, list) :: :ok
   def start(module, opts) when is_atom(module) and is_list(opts) do
     start(module, module, opts)

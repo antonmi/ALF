@@ -27,7 +27,7 @@ defmodule ALF.DecomposeRecomposeTest do
 
     setup do
       Pipeline.start()
-      on_exit(fn -> Pipeline.stop() end)
+      on_exit(&Pipeline.stop/0)
     end
 
     test "returns strings" do
@@ -94,7 +94,7 @@ defmodule ALF.DecomposeRecomposeTest do
 
     setup do
       TelegramPipeline.start()
-      on_exit(fn -> TelegramPipeline.stop() end)
+      on_exit(&TelegramPipeline.stop/0)
     end
 
     test "with call" do

@@ -61,7 +61,7 @@ defmodule ALF.SyncRun.BubbleSortWithSwitchTest do
 
   setup do
     Pipeline.start(sync: true)
-    on_exit(fn -> Pipeline.stop() end)
+    on_exit(&Pipeline.stop/0)
   end
 
   test "sort" do

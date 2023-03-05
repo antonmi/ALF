@@ -45,9 +45,7 @@ defmodule ALF.CrashPipelineTest do
     setup do
       SimplePipelineToCrash.start()
 
-      on_exit(fn ->
-        SimplePipelineToCrash.stop()
-      end)
+      on_exit(&SimplePipelineToCrash.stop/0)
 
       state = Manager.__state__(SimplePipelineToCrash)
       %{state: state}

@@ -52,7 +52,7 @@ defmodule ALF.SyncRun.BubbleSortTest do
 
   setup do
     Pipeline.start(sync: true)
-    on_exit(fn -> Pipeline.stop() end)
+    on_exit(&Pipeline.stop/0)
   end
 
   test "sort one list" do

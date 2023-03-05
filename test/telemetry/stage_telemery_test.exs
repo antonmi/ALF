@@ -1,6 +1,5 @@
 defmodule ALF.ComponentTelemetryTest do
   use ExUnit.Case
-  alias ALF.Manager
 
   defmodule Pipeline do
     use ALF.DSL
@@ -236,7 +235,7 @@ defmodule ALF.ComponentTelemetryTest do
     test "done! event", %{agent: agent} do
       [result] =
         [3]
-        |> Manager.stream_to(Pipeline)
+        |> Pipeline.stream()
         |> Enum.to_list()
 
       assert result == 3
