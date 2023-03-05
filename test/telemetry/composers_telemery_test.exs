@@ -61,6 +61,7 @@ defmodule ALF.ComposersTelemetryTest do
         |> Enum.to_list()
 
       assert result == 5
+      Process.sleep(5)
 
       [
         _consumer_stop,

@@ -25,6 +25,7 @@ defmodule ALF.PerformanceStatsTest do
       |> Manager.stream_to(SimplePipeline)
       |> Enum.to_list()
 
+      Process.sleep(5)
       stats = PerformanceStats.stats_for(SimplePipeline)
 
       stats
