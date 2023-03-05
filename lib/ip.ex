@@ -11,7 +11,6 @@ defmodule ALF.IP do
             history: [],
             manager_name: nil,
             done!: false,
-            in_progress: false,
             decomposed: false,
             recomposed: false,
             plugs: %{},

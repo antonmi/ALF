@@ -48,9 +48,6 @@ defmodule ALF.Components.Basic do
       error: error,
       stacktrace: stacktrace,
       component: state,
-      decomposed: ip.decomposed,
-      recomposed: ip.recomposed,
-      in_progress: ip.in_progress,
       plugs: ip.plugs
     }
   end

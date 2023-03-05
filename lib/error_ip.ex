@@ -11,7 +11,6 @@ defmodule ALF.ErrorIP do
             manager_name: nil,
             ref: nil,
             stream_ref: nil,
-            in_progress: false,
             decomposed: false,
             recomposed: false,
             plugs: %{}
