@@ -1,4 +1,4 @@
-defmodule ALF.Manager.SyncRunner do
+defmodule ALF.SyncRunner do
   alias ALF.Components.{
     Goto,
     GotoPoint,

@@ -16,9 +16,8 @@ defmodule ALF.Manager do
             telemetry_enabled: nil,
             sync: false
 
-  alias ALF.Manager.{ProcessingOptions, SyncRunner}
   alias ALF.Components.{Goto, Producer}
-  alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline}
+  alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline, SyncRunner}
   alias ALF.{ErrorIP, IP}
 
   @type t :: %__MODULE__{}

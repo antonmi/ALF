@@ -1,7 +1,7 @@
 defmodule ALF.Components.Consumer do
   use ALF.Components.Basic
 
-  alias ALF.{ErrorIP, IP, Manager.Streamer}
+  alias ALF.{ErrorIP, IP}
 
   defstruct Basic.common_attributes() ++
               [
@@ -28,7 +28,7 @@ defmodule ALF.Components.Consumer do
       [:alf, :component],
       telemetry_data(ip, state),
       fn ->
-        ip = send_result(ip, state)
+        ip = send_result(ip)
         {{:noreply, [], state}, telemetry_data(ip, state)}
       end
     )
@@ -36,7 +36,7 @@ defmodule ALF.Components.Consumer do
 
   def handle_events([ip], _from, %__MODULE__{telemetry_enabled: false} = state)
       when is_struct(ip, IP) or is_struct(ip, ErrorIP) do
-    send_result(ip, state)
+    send_result(ip)
     {:noreply, [], state}
   end
 
@@ -54,7 +54,7 @@ defmodule ALF.Components.Consumer do
     )
   end
 
-  defp send_result(ip, state) do
+  defp send_result(ip) do
     if ip.new_stream_ref do
       send(ip.destination, {ip.new_stream_ref, ip})
     else

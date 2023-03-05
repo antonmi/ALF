@@ -22,6 +22,7 @@ defmodule ALF.TelemetryBroadcasterTest do
       Agent.update(agent, fn list ->
         [{:start, metadata.component, metadata.ip} | list]
       end)
+
       Process.sleep(5)
     end
 
@@ -31,6 +32,7 @@ defmodule ALF.TelemetryBroadcasterTest do
       Agent.update(agent, fn list ->
         [{:stop, metadata.component, metadata.ip} | list]
       end)
+
       Process.sleep(5)
     end
   end

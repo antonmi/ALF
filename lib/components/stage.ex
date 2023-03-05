@@ -13,7 +13,7 @@ defmodule ALF.Components.Stage do
                 source_code: nil
               ]
 
-  alias ALF.{Manager.Streamer, DoneStatement, DSLError}
+  alias ALF.{DoneStatement, DSLError}
 
   @dsl_options [:opts, :count, :name]
 
