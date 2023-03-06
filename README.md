@@ -43,12 +43,29 @@ Just add `:alf` as dependency to your `mix.exs` file.
 ```
   defp deps do
     [
-      {:alf, "~> 0.7.1"}
+      {:alf, "~> 0.8"}
     ]
   end
 ```
 
 ALF starts its own supervisor (`ALF.DynamicSupervisor`). All the pipelines and managers are started under the supervisor
+
+## Important notice!
+
+In the version "0.8" the interface was changed significantly.
+
+And now all the interactions go through the pipeline module itself.
+
+```elixir
+# start and stop
+MyPipeline.start() # instead of ALF.Manager.start(MyPipeline)
+MyPipeline.stop()  # instead of ALF.Manager.stop(MyPipeline) 
+
+# send events
+MyPipeline.call(event, opts \\ []) # new
+MyPipeline.stream(enumerable, opts \\ []) # instead of ALF.Manager.stream_to(enumerable, MyPipeline)
+MyPipeline.cast(event, opts \\ []) # new
+```
 
 ## Quick start
 
@@ -77,7 +94,7 @@ end
 ### Start the pipeline
 
 ```elixir
-:ok = ALF.Manager.start(ThePipeline)
+:ok = ThePipeline.start()
 ```
 
 This starts a manager (GenServer) with the `ThePipeline` name. The manager starts all the components and puts them under another supervision tree.
@@ -87,23 +104,38 @@ This starts a manager (GenServer) with the `ThePipeline` name. The manager start
 ### Use the pipeline
 
 There are several ways you can run your pipeline.
-There is the `stream_to` function (`stream_to/2` and `stream_to/3`).
+There are the `call/2`, `cast/2` and `stream/2` functions.
+
+`call/2` calls the pipeline and block the caller process until the result is returned.
+
+```elixir
+ThePipeline.call(1) # returns 1
+ThePipeline.call(2, return_ip: true) # it returns %ALP.IP{} struct
+```
+
+`cast/2` send event to the pipeline and returns the IP reference immediately.
+
+```elixir
+ThePipeline.cast(1) # returns reference like #Reference<0.3669068923.1709703170.126245>
+```
+
+One can actually receive the result of the `cast/2` back with `send_result: true` option.
+
+```elixir
+ref = ThePipeline.cast(1, send_result: true)
+receive do
+  {^ref, %ALF.IP{event: event}} -> 
+    event
+end
+```
+
+`stream/2` is a bit different.
 It receives a stream or `Enumerable.t` and returns another stream where results will be streamed.
 
 ```elixir
 inputs = [1,2,3]
-output_stream =  Manager.stream_to(inputs, ThePipeline)
+output_stream =  ThePipeline.stream(inputs)
 Enum.to_list(output_stream) # it returns [1, 3, 5]
-```
-
-There is also the `steam_with_ids_to/2` (`steam_with_ids_to/3`) function that allows you to put custom ids for events: `reference()`, `pid()`, any `term()` actually.
-You should pass `list({id, event})` as the first argument.
-Internally ALF assigns these ids to every IP, and will return the results in the same `{id, event}` format.
-Use this function if you need a granular control of what your pipeline returns.
-```elixir
-inputs = [{make_ref(), 1}, {:my_id, 2}, {self(), 3}]
-output_stream =  Manager.steam_with_ids_to(inputs, ThePipeline)
-Enum.to_list(output_stream) # it returns [{ref, 1}, {:my_id, 3}, {pid, 5}]
 ```
 
 ### Parallel processing of several streams
@@ -112,9 +144,9 @@ The ALF pipeline can handle arbitrary amount of events streams in parallel.
 For example:
 
 ```elixir
- stream1 = Manager.stream_to(0..9, ThePipeline)
- stream2 = Manager.stream_to(10..19, ThePipeline)
- stream3 = Manager.stream_to(20..29, ThePipeline)
+ stream1 = ThePipeline.stream(0..9)
+ stream2 = ThePipeline.stream(10..19)
+ stream3 = ThePipeline.stream(20..29)
 
  [result1, result2, result3] =
    [stream1, stream2, stream3]
@@ -128,11 +160,13 @@ Check [test/examples](https://github.com/antonmi/ALF/tree/main/test/examples) fo
 There are cases when you don't need the underlying gen_stage infrastructure (a separate process for each component).
 E.g. in tests, or if you debug a wierd error.
 There is a possibility to run a pipeline synchronously, when everything is run in one process.
-Just pass `sync: true` option to the `Manager.start` function.
+Just pass `sync: true` option to the `start` function.
 
 ```elixir
-:ok = ALF.Manager.start(ThePipeline, sync: true)
+:ok = ThePipeline.start(sync: true)
 ```
+
+There are only `call/2` and `stream/2` functions available in this mode, no `cast/2`.
 
 ### The main idea behind ALF DSL
 
