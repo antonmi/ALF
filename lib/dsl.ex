@@ -278,8 +278,9 @@ defmodule ALF.DSL do
         ALF.Manager.call(event, __MODULE__, opts)
       end
 
-      def cast do
-        # TODO
+      @spec call(any, Keyword.t()) :: reference
+      def cast(event, opts \\ [send_result: false]) do
+        ALF.Manager.cast(event, __MODULE__, opts)
       end
 
       @spec stream(Enumerable.t(), Keyword.t()) :: Enumerable.t()

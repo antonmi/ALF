@@ -112,7 +112,7 @@ defmodule ALF.Components.Basic do
               IP.t() | ErrorIP.t()
       def send_result(ip, result) do
         ref = if ip.stream_ref, do: ip.stream_ref, else: ip.ref
-        send(ip.destination, {ref, result})
+        if ip.destination, do: send(ip.destination, {ref, result})
         ip
       end
 

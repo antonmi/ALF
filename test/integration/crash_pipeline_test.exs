@@ -77,7 +77,7 @@ defmodule ALF.CrashPipelineTest do
     end
 
     test "with several streams", %{state: state} do
-      run_kill_task(state, 30)
+      run_kill_task(state, 20)
 
       assert capture_log(fn ->
                stream1 = SimplePipelineToCrash.stream(0..9, timeout: 50)

@@ -151,6 +151,31 @@ defmodule ALF.Manager do
     end
   end
 
+  @spec cast(any, atom, Keyword.t()) :: reference
+  def cast(event, name, opts \\ [send_result: false]) do
+    case status(name) do
+      {:ok, producer_name} ->
+        do_cast(name, producer_name, event, opts)
+
+      {:sync, _pipeline} ->
+        raise "Not implemented"
+    end
+  end
+
+  defp do_cast(name, producer_name, event, opts) do
+    ip =
+      case opts[:send_result] do
+        true ->
+          build_ip(event, name)
+
+        false ->
+          %{build_ip(event, name) | destination: false}
+      end
+
+    Producer.load_ip(producer_name, ip)
+    ip.ref
+  end
+
   @spec stream(Enumerable.t(), atom, Keyword.t()) :: Enumerable.t()
   def stream(stream, name, opts \\ [return_ips: false]) do
     case status(name) do
