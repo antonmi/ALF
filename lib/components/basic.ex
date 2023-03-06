@@ -108,14 +108,15 @@ defmodule ALF.Components.Basic do
 
       @type result :: :cloned | :destroyed | :created_decomposer | :created_recomposer
 
-      @spec send_result(IP.t(), result() | IP.t()) :: IP.t()
+      @spec send_result(IP.t() | ErrorIP.t(), result | IP.t() | ErrorIP.t()) ::
+              IP.t() | ErrorIP.t()
       def send_result(ip, result) do
         ref = if ip.stream_ref, do: ip.stream_ref, else: ip.ref
         send(ip.destination, {ref, result})
         ip
       end
 
-      @spec send_error_result(ErrorIP.t(), any(), list(), t()) :: IP.t()
+      @spec send_error_result(IP.t(), any, list, __MODULE__.t()) :: ErrorIP.t()
       def send_error_result(ip, error, stacktrace, state) do
         error_ip = build_error_ip(ip, error, stacktrace, state)
         send_result(error_ip, error_ip)

@@ -98,6 +98,7 @@ defmodule ALF.Manager do
     end
   end
 
+  @spec stop(atom) :: :ok | {:exit, {atom, any}}
   def stop(module) when is_atom(module) do
     result = GenServer.call(module, :stop, :infinity)
     Introspection.remove(module)
@@ -105,6 +106,121 @@ defmodule ALF.Manager do
   catch
     :exit, {reason, details} ->
       {:exit, {reason, details}}
+  end
+
+  @spec call(any, atom, Keyword.t()) :: any | [any] | nil
+  def call(event, name, opts \\ [return_ip: false]) do
+    case status(name) do
+      {:ok, producer_name} ->
+        do_call(name, producer_name, event, opts)
+
+      {:sync, pipeline} ->
+        do_sync_call(name, pipeline, event, opts)
+    end
+  end
+
+  defp do_call(name, producer_name, event, opts) do
+    ip = build_ip(event, name)
+    Producer.load_ip(producer_name, ip)
+    timeout = opts[:timeout] || @default_timeout
+
+    case wait_result(ip.ref, [], {timeout, ip}) do
+      [] ->
+        nil
+
+      [ip] ->
+        format_ip(ip, opts[:return_ip])
+
+      ips ->
+        Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ip]) end)
+    end
+  end
+
+  defp do_sync_call(name, pipeline, event, opts) do
+    ip = build_ip(event, name)
+
+    case SyncRunner.run(pipeline, ip) do
+      [] ->
+        nil
+
+      [ip] ->
+        format_ip(ip, opts[:return_ip])
+
+      ips ->
+        Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ip]) end)
+    end
+  end
+
+  @spec stream(Enumerable.t(), atom, Keyword.t()) :: Enumerable.t()
+  def stream(stream, name, opts \\ [return_ips: false]) do
+    case status(name) do
+      {:ok, producer_name} ->
+        do_stream(name, producer_name, stream, opts)
+
+      {:sync, pipeline} ->
+        do_sync_stream(name, pipeline, stream, opts)
+    end
+  end
+
+  defp do_stream(name, producer_name, stream, opts) do
+    stream_ref = make_ref()
+    timeout = opts[:timeout] || @default_timeout
+
+    stream
+    |> Stream.transform(
+      nil,
+      fn event, nil ->
+        ip = build_ip(event, name)
+        ip = %{ip | stream_ref: stream_ref}
+        Producer.load_ip(producer_name, ip)
+
+        case wait_result(stream_ref, [], {timeout, ip}) do
+          [] ->
+            {[], nil}
+
+          ips ->
+            ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ips]) end)
+            {ips, nil}
+        end
+      end
+    )
+  end
+
+  defp do_sync_stream(name, pipeline, stream, opts) do
+    stream
+    |> Stream.transform(
+      nil,
+      fn event, nil ->
+        ip = build_ip(event, name)
+        ips = SyncRunner.run(pipeline, ip)
+        ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ips]) end)
+        {ips, nil}
+      end
+    )
+  end
+
+  defp wait_result(ref, acc, {timeout, initial_ip}) do
+    receive do
+      {^ref, :created_recomposer} ->
+        wait_result(ref, acc, {timeout, initial_ip})
+
+      {^ref, reason} when reason in [:created_decomposer, :cloned] ->
+        wait_result(
+          ref,
+          acc ++ wait_result(ref, [], {timeout, initial_ip}),
+          {timeout, initial_ip}
+        )
+
+      {^ref, :destroyed} ->
+        acc
+
+      {^ref, ip} ->
+        Enum.reverse([ip | acc])
+    after
+      timeout ->
+        error_ip = ALF.Components.Basic.build_error_ip(initial_ip, :timeout, [], :no_info)
+        Enum.reverse([error_ip | acc])
+    end
   end
 
   @spec components(atom) :: list(map())
@@ -248,110 +364,6 @@ defmodule ALF.Manager do
     Application.get_env(:alf, :telemetry_enabled, false)
   end
 
-  def call(event, name, opts \\ [return_ip: false]) do
-    case status(name) do
-      {:ok, producer_name} ->
-        do_call(name, producer_name, event, opts)
-
-      {:sync, pipeline} ->
-        do_sync_call(name, pipeline, event, opts)
-    end
-  end
-
-  defp do_call(name, producer_name, event, opts) do
-    ip = build_ip(event, name)
-    Producer.load_ip(producer_name, ip)
-    timeout = opts[:timeout] || @default_timeout
-
-    case wait_result(ip.ref, [], {timeout, ip}) do
-      [] ->
-        nil
-
-      [ip] ->
-        format_ip(ip, opts[:return_ip])
-
-      ips ->
-        Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ip]) end)
-    end
-  end
-
-  defp do_sync_call(name, pipeline, event, opts) do
-    ip = build_ip(event, name)
-    [ip] = SyncRunner.run(pipeline, ip)
-    format_ip(ip, opts[:return_ip])
-  end
-
-  def stream(stream, name, opts \\ [return_ips: false]) do
-    case status(name) do
-      {:ok, producer_name} ->
-        do_stream(name, producer_name, stream, opts)
-
-      {:sync, pipeline} ->
-        do_sync_stream(name, pipeline, stream, opts)
-    end
-  end
-
-  defp do_stream(name, producer_name, stream, opts) do
-    stream_ref = make_ref()
-    timeout = opts[:timeout] || @default_timeout
-
-    stream
-    |> Stream.transform(
-      nil,
-      fn event, nil ->
-        ip = build_ip(event, name)
-        ip = %{ip | stream_ref: stream_ref}
-        Producer.load_ip(producer_name, ip)
-
-        case wait_result(stream_ref, [], {timeout, ip}) do
-          [] ->
-            {[], nil}
-
-          ips ->
-            ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ips]) end)
-            {ips, nil}
-        end
-      end
-    )
-  end
-
-  defp do_sync_stream(name, pipeline, stream, opts) do
-    stream
-    |> Stream.transform(
-      nil,
-      fn event, nil ->
-        ip = build_ip(event, name)
-        ips = SyncRunner.run(pipeline, ip)
-        ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ips]) end)
-        {ips, nil}
-      end
-    )
-  end
-
-  defp wait_result(ref, acc, {timeout, initial_ip}) do
-    receive do
-      {^ref, :created_recomposer} ->
-        wait_result(ref, acc, {timeout, initial_ip})
-
-      {^ref, reason} when reason in [:created_decomposer, :cloned] ->
-        wait_result(
-          ref,
-          acc ++ wait_result(ref, [], {timeout, initial_ip}),
-          {timeout, initial_ip}
-        )
-
-      {^ref, :destroyed} ->
-        acc
-
-      {^ref, ip} ->
-        Enum.reverse([ip | acc])
-    after
-      timeout ->
-        error_ip = ALF.Components.Basic.build_error_ip(initial_ip, :timeout, [], :no_info)
-        Enum.reverse([error_ip | acc])
-    end
-  end
-
   defp status(name) do
     producer_name = :"#{name}.Producer"
 
@@ -376,7 +388,7 @@ defmodule ALF.Manager do
     %IP{
       ref: make_ref(),
       destination: self(),
-      init_datum: event,
+      init_event: event,
       event: event,
       manager_name: name
     }

@@ -6,10 +6,12 @@ defmodule ALF.Introspection do
 
   alias ALF.PerformanceStats
 
+  @spec start_link([]) :: GenServer.on_start()
   def start_link([]) do
     GenServer.start_link(__MODULE__, %__MODULE__{}, name: __MODULE__)
   end
 
+  @impl true
   def init(%__MODULE__{} = state) do
     state = %{state | pid: self()}
 
@@ -42,6 +44,7 @@ defmodule ALF.Introspection do
     GenServer.call(__MODULE__, {:performance_stats, pipeline})
   end
 
+  @impl true
   def handle_call({:add, pipeline}, _from, state) do
     state = %{state | pipelines: MapSet.put(state.pipelines, pipeline)}
     {:reply, pipeline, state}

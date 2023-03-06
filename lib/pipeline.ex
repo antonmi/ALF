@@ -1,4 +1,11 @@
 defmodule ALF.Pipeline do
+  @type t :: %__MODULE__{
+          module: atom,
+          components: [map],
+          producer: map,
+          consumer: map
+        }
+
   defstruct module: nil,
             components: [],
             producer: nil,

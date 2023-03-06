@@ -9,6 +9,7 @@ defmodule ALF.SyncRunner do
   alias ALF.Pipeline
   alias ALF.{ErrorIP, IP}
 
+  @spec run([map], IP.t()) :: IP.t() | ErrorIP.t() | [IP.t() | ErrorIP.t()] | nil
   def run([first | _] = pipeline, %IP{sync_path: nil} = ip) do
     {path, true} = path(pipeline, first.pid)
     ip = %{ip | sync_path: path}

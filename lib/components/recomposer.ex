@@ -187,7 +187,7 @@ defmodule ALF.Components.Recomposer do
       stream_ref: ip.stream_ref,
       ref: ip.ref,
       destination: ip.destination,
-      init_datum: event,
+      init_event: event,
       event: event,
       manager_name: ip.manager_name,
       recomposed: true,

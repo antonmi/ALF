@@ -268,10 +268,12 @@ defmodule ALF.DSL do
         ALF.Manager.start(__MODULE__, __MODULE__, opts)
       end
 
+      @spec stop() :: :ok | {:exit, {atom, any}}
       def stop do
         ALF.Manager.stop(__MODULE__)
       end
 
+      @spec call(any, Keyword.t()) :: any | [any] | nil
       def call(event, opts \\ [return_ip: false]) do
         ALF.Manager.call(event, __MODULE__, opts)
       end
@@ -280,6 +282,7 @@ defmodule ALF.DSL do
         # TODO
       end
 
+      @spec stream(Enumerable.t(), Keyword.t()) :: Enumerable.t()
       def stream(stream, opts \\ [return_ips: false]) do
         ALF.Manager.stream(stream, __MODULE__, opts)
       end

@@ -53,4 +53,53 @@ defmodule ALF.SyncRun.DecomposeRecomposeTest do
       assert ^result1 = ^result2 = ^result3 = ["foo foo bar", "bar baz baz"]
     end
   end
+
+  describe "telegram" do
+    defmodule TelegramPipeline do
+      use ALF.DSL
+
+      @components [
+        decomposer(:split_to_words),
+        recomposer(:create_lines)
+      ]
+
+      @length_limit 10
+
+      def split_to_words(line, _) do
+        line
+        |> String.trim()
+        |> String.split()
+      end
+
+      def create_lines(word, words, _) do
+        string_before = Enum.join(words, " ")
+        string_after = Enum.join(words ++ [word], " ")
+
+        cond do
+          String.length(string_after) == @length_limit ->
+            string_after
+
+          String.length(string_after) > @length_limit ->
+            {string_before, [word]}
+
+          true ->
+            :continue
+        end
+      end
+    end
+
+    setup do
+      TelegramPipeline.start(sync: true)
+      on_exit(&TelegramPipeline.stop/0)
+    end
+
+    test "with call" do
+      assert is_nil(TelegramPipeline.call("aaa"))
+      assert is_nil(TelegramPipeline.call("bbb"))
+      assert TelegramPipeline.call("ccc") == "aaa bbb"
+      assert is_nil(TelegramPipeline.call("ddd"))
+      assert TelegramPipeline.call("12345678") == "ccc ddd"
+      assert TelegramPipeline.call("z") == "12345678 z"
+    end
+  end
 end

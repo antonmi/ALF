@@ -130,7 +130,7 @@ defmodule ALF.Components.Decomposer do
         stream_ref: ip.stream_ref,
         destination: ip.destination,
         ref: ip.ref,
-        init_datum: event,
+        init_event: event,
         event: event,
         manager_name: ip.manager_name,
         decomposed: true,

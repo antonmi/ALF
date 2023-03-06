@@ -17,16 +17,19 @@ defmodule ALF.PerformanceStats do
     end
   end
 
+  @spec start_link([]) :: GenServer.on_start()
   def start_link([]) do
     GenServer.start_link(__MODULE__, %__MODULE__{}, name: __MODULE__)
   end
 
+  @impl true
   def init(%__MODULE__{} = state) do
     state = %{state | pid: self()}
 
     {:ok, state, {:continue, :attach_telemetry}}
   end
 
+  @impl true
   def handle_continue(:attach_telemetry, %__MODULE__{} = state) do
     do_attach_telemetry(state.pid)
     {:noreply, state}
@@ -38,6 +41,7 @@ defmodule ALF.PerformanceStats do
   @spec reset_stats_for(atom()) :: :ok
   def reset_stats_for(pipeline), do: GenServer.call(__MODULE__, {:reset_stats_for, pipeline})
 
+  @impl true
   def handle_call({:stats_for, pipeline}, _from, state) do
     {:reply, Map.get(state.stats, pipeline, nil), state}
   end
@@ -47,6 +51,7 @@ defmodule ALF.PerformanceStats do
     {:reply, :ok, %{state | stats: stats}}
   end
 
+  @impl true
   def handle_cast({:update_component_stats, component, duration_micro}, state) do
     stats = state.stats
     pipeline_stats = Map.get(stats, component.pipeline_module, false)
