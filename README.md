@@ -40,7 +40,7 @@ ALF is NOT about data-processing (although you can easily do it with ALF). It's 
 
 Just add `:alf` as dependency to your `mix.exs` file.
 
-```
+```elixir
   defp deps do
     [
       {:alf, "~> 0.8"}
