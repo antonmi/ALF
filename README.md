@@ -104,16 +104,16 @@ This starts a manager (GenServer) with the `ThePipeline` name. The manager start
 ### Use the pipeline
 
 There are several ways you can run your pipeline.
-There are the `call/2`, `cast/2` and `stream/2` functions.
+There are `call/2`, `cast/2` and `stream/2` functions.
 
-`call/2` calls the pipeline and block the caller process until the result is returned.
+`call/2` calls the pipeline and blocks the caller process until the result is returned.
 
 ```elixir
 ThePipeline.call(1) # returns 1
 ThePipeline.call(2, return_ip: true) # it returns %ALP.IP{} struct
 ```
 
-`cast/2` send event to the pipeline and returns the IP reference immediately.
+`cast/2` sends event to the pipeline and returns the IP reference immediately.
 
 ```elixir
 ThePipeline.cast(1) # returns reference like #Reference<0.3669068923.1709703170.126245>
@@ -134,7 +134,7 @@ It receives a stream or `Enumerable.t` and returns another stream where results 
 
 ```elixir
 inputs = [1,2,3]
-output_stream =  ThePipeline.stream(inputs)
+output_stream = ThePipeline.stream(inputs)
 Enum.to_list(output_stream) # it returns [1, 3, 5]
 ```
 

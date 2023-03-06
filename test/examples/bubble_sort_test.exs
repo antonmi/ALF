@@ -53,8 +53,6 @@ defmodule ALF.Examples.BubbleSortTest do
 
   setup do
     Pipeline.start()
-
-    on_exit(&Pipeline.stop/0)
   end
 
   test "sort a list" do
