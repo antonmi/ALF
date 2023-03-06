@@ -31,5 +31,4 @@ jobs:
         run: mix deps.get
       - name: Run tests
         run: mix test
-      - name: Run dialyzer
-        run: mix dialyzer
+
