@@ -22,7 +22,6 @@ defmodule ALF.ManagerTest do
         name: ExtremelySimplePipeline,
         pipeline_module: ExtremelySimplePipeline,
         pipeline: %ALF.Pipeline{},
-        registry: %{},
         telemetry_enabled: false
       } = state
     end
@@ -53,8 +52,7 @@ defmodule ALF.ManagerTest do
         name: ExtremelySimplePipeline,
         pipeline_module: ExtremelySimplePipeline,
         pipeline: %ALF.Pipeline{},
-        telemetry_enabled: true,
-        registry: %{}
+        telemetry_enabled: true
       } = state
     end
 
@@ -96,8 +94,7 @@ defmodule ALF.ManagerTest do
         pipeline: %ALF.Pipeline{},
         components: _components,
         pipeline_sup_pid: pipeline_sup_pid,
-        sup_pid: sup_pid,
-        registry: %{}
+        sup_pid: sup_pid
       } = state
 
       assert is_pid(pid)

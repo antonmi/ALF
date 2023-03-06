@@ -1,18 +1,14 @@
 defmodule ALF.Manager do
   use GenServer
 
-  # TODO revise the list
   defstruct name: nil,
             pipeline_module: nil,
             pid: nil,
             pipeline: nil,
             components: [],
-            stages_to_be_deleted: [],
             pipeline_sup_pid: nil,
             sup_pid: nil,
             producer_pid: nil,
-            registry: %{},
-            registry_dump: %{},
             telemetry_enabled: nil,
             sync: false
 
