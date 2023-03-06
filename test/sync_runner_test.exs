@@ -1,7 +1,7 @@
-defmodule ALF.Manager.SyncRunnerTest do
+defmodule ALF.SyncRunnerTest do
   use ExUnit.Case
 
-  alias ALF.{Builder, Manager.SyncRunner}
+  alias ALF.{Builder, SyncRunner}
   alias ALF.Components.{Producer, Stage, Switch, Clone, DeadEnd, Consumer}
 
   defmodule Pipeline1 do

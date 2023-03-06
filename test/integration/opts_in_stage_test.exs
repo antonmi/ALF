@@ -1,8 +1,6 @@
 defmodule ALF.OptsInStageTest do
   use ExUnit.Case, async: false
 
-  alias ALF.Manager
-
   defmodule ComponentA do
     def init(opts) do
       Map.put(opts, :b, opts[:a])
@@ -35,13 +33,14 @@ defmodule ALF.OptsInStageTest do
 
   describe "opts" do
     setup do
-      Manager.start(SimplePipeline)
+      SimplePipeline.start()
+      on_exit(&SimplePipeline.stop/0)
     end
 
     test "run stream" do
       [result] =
         [1]
-        |> Manager.stream_to(SimplePipeline)
+        |> SimplePipeline.stream()
         |> Enum.to_list()
 
       assert result == 15
@@ -73,14 +72,19 @@ defmodule ALF.OptsInStageTest do
     end
 
     setup do
-      Manager.start(PipelineA)
-      Manager.start(PipelineB)
+      PipelineA.start()
+      PipelineB.start()
+
+      on_exit(fn ->
+        PipelineA.stop()
+        PipelineB.stop()
+      end)
     end
 
     test "check PipelineA module" do
       [result] =
         ["hey"]
-        |> Manager.stream_to(PipelineA)
+        |> PipelineA.stream()
         |> Enum.to_list()
 
       assert result == "hey-bar-Elixir.ALF.OptsInStageTest.PipelineA-"
@@ -89,7 +93,7 @@ defmodule ALF.OptsInStageTest do
     test "check PipelineB module" do
       [result] =
         ["hey"]
-        |> Manager.stream_to(PipelineB)
+        |> PipelineB.stream()
         |> Enum.to_list()
 
       assert result == "hey-bar-Elixir.ALF.OptsInStageTest.PipelineB-bbb"

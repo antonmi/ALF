@@ -1,8 +1,6 @@
 defmodule ALF.StopPipelineTest do
   use ExUnit.Case, async: false
 
-  alias ALF.Manager
-
   defmodule SimplePipelineToStop do
     use ALF.DSL
 
@@ -33,27 +31,26 @@ defmodule ALF.StopPipelineTest do
   def run_stop_task(milliseconds) do
     Task.async(fn ->
       Process.sleep(milliseconds)
-      Manager.stop(SimplePipelineToStop)
+      SimplePipelineToStop.stop()
     end)
   end
 
   describe "stop the pipeline" do
     setup do
-      Manager.start(SimplePipelineToStop)
+      SimplePipelineToStop.start()
     end
 
     test "with several streams" do
       task = run_stop_task(30)
 
-      stream = Manager.stream_to(0..9, SimplePipelineToStop)
+      result =
+        0..9
+        |> SimplePipelineToStop.stream(timeout: 100)
+        |> Enum.to_list()
 
-      [result] =
-        [stream]
-        |> Enum.map(&Task.async(fn -> Enum.to_list(&1) end))
-        |> Task.await_many()
-
-      assert Enum.count(result) < 10
-
+      errors = Enum.filter(result, fn event -> is_struct(event, ALF.ErrorIP) end)
+      assert length(errors) > 0
+      assert length(errors) < 10
       Task.await(task)
     end
   end

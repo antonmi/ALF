@@ -4,7 +4,7 @@ defmodule Alf.MixProject do
   def project do
     [
       app: :alf,
-      version: "0.7.1",
+      version: "0.8.0",
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       description: description(),
@@ -24,6 +24,7 @@ defmodule Alf.MixProject do
     [
       {:gen_stage, "~> 1.1"},
       {:telemetry, "~> 1.1"},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end

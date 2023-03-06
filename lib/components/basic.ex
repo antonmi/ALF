@@ -38,6 +38,20 @@ defmodule ALF.Components.Basic do
     end
   end
 
+  def build_error_ip(ip, error, stacktrace, state) do
+    %ErrorIP{
+      ip: ip,
+      manager_name: ip.manager_name,
+      destination: ip.destination,
+      ref: ip.ref,
+      stream_ref: ip.stream_ref,
+      error: error,
+      stacktrace: stacktrace,
+      component: state,
+      plugs: ip.plugs
+    }
+  end
+
   def telemetry_data(nil, state) do
     %{ip: nil, component: component_telemetry_data(state)}
   end
@@ -74,6 +88,8 @@ defmodule ALF.Components.Basic do
 
       alias ALF.{Components.Basic, IP, ErrorIP, Manager.Streamer, SourceCode}
 
+      @type t :: %__MODULE__{}
+
       def __state__(pid) when is_pid(pid) do
         GenStage.call(pid, :__state__)
       end
@@ -90,12 +106,23 @@ defmodule ALF.Components.Basic do
         end
       end
 
-      def send_error_result(ip, error, stacktrace, state) do
-        error_ip = build_error_ip(ip, error, stacktrace, state)
-        Streamer.cast_result_ready(error_ip.manager_name, error_ip)
-        error_ip
+      @type result :: :cloned | :destroyed | :created_decomposer | :created_recomposer
+
+      @spec send_result(IP.t() | ErrorIP.t(), result | IP.t() | ErrorIP.t()) ::
+              IP.t() | ErrorIP.t()
+      def send_result(ip, result) do
+        ref = if ip.stream_ref, do: ip.stream_ref, else: ip.ref
+        if ip.destination, do: send(ip.destination, {ref, result})
+        ip
       end
 
+      @spec send_error_result(IP.t(), any, list, __MODULE__.t()) :: ErrorIP.t()
+      def send_error_result(ip, error, stacktrace, state) do
+        error_ip = build_error_ip(ip, error, stacktrace, state)
+        send_result(error_ip, error_ip)
+      end
+
+      @impl true
       def handle_call(:subscribers, _form, state) do
         {:reply, state.subscribers, [], state}
       end
@@ -104,6 +131,7 @@ defmodule ALF.Components.Basic do
         {:reply, state, [], state}
       end
 
+      @impl true
       def handle_subscribe(:consumer, _subscription_options, from, state) do
         subscribers = [from | state.subscribers]
         {:automatic, %{state | subscribers: subscribers}}
@@ -114,6 +142,7 @@ defmodule ALF.Components.Basic do
         {:automatic, %{state | subscribed_to: subscribed_to}}
       end
 
+      @impl true
       def handle_cancel({:cancel, reason}, from, state) do
         subscribed_to = Enum.filter(state.subscribed_to, &(&1 != from))
         subscribers = Enum.filter(state.subscribers, &(&1 != from))
@@ -155,19 +184,7 @@ defmodule ALF.Components.Basic do
       end
 
       def build_error_ip(ip, error, stacktrace, state) do
-        %ErrorIP{
-          ip: ip,
-          manager_name: ip.manager_name,
-          ref: ip.ref,
-          stream_ref: ip.stream_ref,
-          error: error,
-          stacktrace: stacktrace,
-          component: state,
-          decomposed: ip.decomposed,
-          recomposed: ip.recomposed,
-          in_progress: ip.in_progress,
-          plugs: ip.plugs
-        }
+        ALF.Components.Basic.build_error_ip(ip, error, stacktrace, state)
       end
     end
   end

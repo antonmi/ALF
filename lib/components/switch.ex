@@ -16,10 +16,12 @@ defmodule ALF.Components.Switch do
   @dsl_options [:branches, :opts, :name]
   @dsl_requited_options [:branches]
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
+  @impl true
   def init(state) do
     branches = Map.keys(state.branches)
 
@@ -57,6 +59,7 @@ defmodule ALF.Components.Switch do
     }
   end
 
+  @impl true
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],

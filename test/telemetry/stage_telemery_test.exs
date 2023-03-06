@@ -1,6 +1,5 @@
 defmodule ALF.ComponentTelemetryTest do
   use ExUnit.Case
-  alias ALF.Manager
 
   defmodule Pipeline do
     use ALF.DSL
@@ -25,6 +24,7 @@ defmodule ALF.ComponentTelemetryTest do
   defmodule Handler do
     def handle_event([:alf, :component, type], measurements, metadata, %{agent: agent}) do
       Agent.update(agent, fn list -> [{type, measurements, metadata} | list] end)
+      Process.sleep(5)
     end
   end
 
@@ -35,7 +35,7 @@ defmodule ALF.ComponentTelemetryTest do
 
   describe "telemetry events" do
     setup %{agent: agent} do
-      Manager.start(Pipeline, telemetry_enabled: true)
+      Pipeline.start(telemetry_enabled: true)
 
       :ok =
         :telemetry.attach_many(
@@ -51,15 +51,17 @@ defmodule ALF.ComponentTelemetryTest do
 
       on_exit(fn ->
         :telemetry.detach("test-events-handler")
+        Pipeline.stop()
       end)
     end
 
     test "check telemetry events", %{agent: agent} do
       [result] =
         [1]
-        |> Manager.stream_to(Pipeline)
+        |> Pipeline.stream()
         |> Enum.to_list()
 
+      Process.sleep(5)
       assert result == 2
 
       [consumer_stop, consumer_start, stage_stop, stage_start, producer_stop, producer_start] =
@@ -149,7 +151,7 @@ defmodule ALF.ComponentTelemetryTest do
     test "check events if error happens", %{agent: agent} do
       [result] =
         [2]
-        |> Manager.stream_to(Pipeline)
+        |> Pipeline.stream()
         |> Enum.to_list()
 
       assert %ALF.ErrorIP{} = result
@@ -164,10 +166,11 @@ defmodule ALF.ComponentTelemetryTest do
     test "done! event", %{agent: agent} do
       [result] =
         [3]
-        |> Manager.stream_to(Pipeline)
+        |> Pipeline.stream()
         |> Enum.to_list()
 
       assert result == 3
+      Process.sleep(5)
 
       [stage_stop, _, _, _] = Agent.get(agent, & &1)
       {:stop, _, %{ip: ip}} = stage_stop
@@ -178,7 +181,7 @@ defmodule ALF.ComponentTelemetryTest do
 
   describe "telemetry events for sync case" do
     setup %{agent: agent} do
-      Manager.start(Pipeline, telemetry_enabled: true, sync: true)
+      Pipeline.start(telemetry_enabled: true, sync: true)
 
       :ok =
         :telemetry.attach_many(
@@ -194,13 +197,14 @@ defmodule ALF.ComponentTelemetryTest do
 
       on_exit(fn ->
         :telemetry.detach("test-events-handler")
+        Pipeline.stop()
       end)
     end
 
     test "check telemetry events", %{agent: agent} do
       [result] =
         [1]
-        |> Manager.stream_to(Pipeline)
+        |> Pipeline.stream()
         |> Enum.to_list()
 
       assert result == 2
@@ -216,7 +220,7 @@ defmodule ALF.ComponentTelemetryTest do
     test "check events if error happens", %{agent: agent} do
       [result] =
         [2]
-        |> Manager.stream_to(Pipeline)
+        |> Pipeline.stream()
         |> Enum.to_list()
 
       assert %ALF.ErrorIP{} = result
@@ -231,7 +235,7 @@ defmodule ALF.ComponentTelemetryTest do
     test "done! event", %{agent: agent} do
       [result] =
         [3]
-        |> Manager.stream_to(Pipeline)
+        |> Pipeline.stream()
         |> Enum.to_list()
 
       assert result == 3

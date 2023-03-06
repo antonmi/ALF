@@ -1,7 +1,7 @@
 defmodule ALF.DoneTest do
   use ExUnit.Case, async: false
 
-  alias ALF.{Manager, IP}
+  alias ALF.IP
 
   describe "done! in stage" do
     defmodule DoneInStagePipeline do
@@ -17,13 +17,14 @@ defmodule ALF.DoneTest do
     end
 
     setup do
-      Manager.start(DoneInStagePipeline)
+      DoneInStagePipeline.start()
+      on_exit(&DoneInStagePipeline.stop/0)
     end
 
     test "returns result immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(DoneInStagePipeline, return_ips: true)
+        |> DoneInStagePipeline.stream(return_ips: true)
         |> Enum.to_list()
 
       assert [
@@ -39,7 +40,7 @@ defmodule ALF.DoneTest do
     test "without the return_ips option" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(DoneInStagePipeline)
+        |> DoneInStagePipeline.stream()
         |> Enum.to_list()
 
       assert results == [2, 3, 4]
@@ -60,13 +61,14 @@ defmodule ALF.DoneTest do
     end
 
     setup do
-      Manager.start(DoneInLastStagePipeline)
+      DoneInLastStagePipeline.start()
+      on_exit(&DoneInLastStagePipeline.stop/0)
     end
 
     test "returns result immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(DoneInLastStagePipeline, return_ips: true)
+        |> DoneInLastStagePipeline.stream(return_ips: true)
         |> Enum.to_list()
 
       assert [
@@ -82,7 +84,7 @@ defmodule ALF.DoneTest do
     test "without the return_ips option" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(DoneInLastStagePipeline)
+        |> DoneInLastStagePipeline.stream()
         |> Enum.to_list()
 
       assert results == [4, 6, 8]

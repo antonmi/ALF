@@ -6,10 +6,12 @@ defmodule ALF.Components.GotoPoint do
                 type: :goto_point
               ]
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
+  @impl true
   def init(state) do
     {:producer_consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
   end
@@ -22,6 +24,7 @@ defmodule ALF.Components.GotoPoint do
     }
   end
 
+  @impl true
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     ip = %{ip | history: [{state.name, ip.event} | ip.history]}
 

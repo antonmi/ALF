@@ -1,7 +1,7 @@
 defmodule ALF.ComponentThrowTest do
   use ExUnit.Case, async: false
 
-  alias ALF.{Manager, ErrorIP, IP}
+  alias ALF.{ErrorIP, IP}
 
   describe "throw in stage" do
     defmodule ThrowInStagePipeline do
@@ -24,13 +24,14 @@ defmodule ALF.ComponentThrowTest do
     end
 
     setup do
-      Manager.start(ThrowInStagePipeline)
+      ThrowInStagePipeline.start()
+      on_exit(&ThrowInStagePipeline.stop/0)
     end
 
     test "returns error immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(ThrowInStagePipeline)
+        |> ThrowInStagePipeline.stream()
         |> Enum.to_list()
 
       assert [
@@ -69,13 +70,14 @@ defmodule ALF.ComponentThrowTest do
     end
 
     setup do
-      Manager.start(ExitInStagePipeline)
+      ExitInStagePipeline.start()
+      on_exit(&ExitInStagePipeline.stop/0)
     end
 
     test "returns error immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(ExitInStagePipeline)
+        |> ExitInStagePipeline.stream()
         |> Enum.to_list()
 
       assert [
@@ -123,13 +125,14 @@ defmodule ALF.ComponentThrowTest do
     end
 
     setup do
-      Manager.start(ThrowInSwitchPipeline)
+      ThrowInSwitchPipeline.start()
+      on_exit(&ThrowInSwitchPipeline.stop/0)
     end
 
     test "error results" do
       results =
         [1, 2]
-        |> Manager.stream_to(ThrowInSwitchPipeline, return_ips: true)
+        |> ThrowInSwitchPipeline.stream(return_ips: true)
         |> Enum.to_list()
 
       assert [
@@ -164,13 +167,14 @@ defmodule ALF.ComponentThrowTest do
     end
 
     setup do
-      Manager.start(ThrowInGotoPipeline)
+      ThrowInGotoPipeline.start()
+      on_exit(&ThrowInGotoPipeline.stop/0)
     end
 
     test "error results" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(ThrowInGotoPipeline)
+        |> ThrowInGotoPipeline.stream()
         |> Enum.to_list()
 
       assert [

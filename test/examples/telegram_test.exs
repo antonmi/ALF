@@ -15,12 +15,18 @@ defmodule ALF.Examples.Telegram.Pipeline do
   end
 
   def create_lines(word, words, _) do
-    string = Enum.join(words, " ")
+    string_before = Enum.join(words, " ")
+    string_after = Enum.join(words ++ [word], " ")
 
-    if String.length(string <> " " <> word) > @length_limit do
-      string
-    else
-      :continue
+    cond do
+      String.length(string_after) == @length_limit ->
+        string_after
+
+      String.length(string_after) > @length_limit ->
+        {string_before, [word]}
+
+      true ->
+        :continue
     end
   end
 end
@@ -29,18 +35,18 @@ defmodule ALF.Examples.TelegramTest do
   use ExUnit.Case
 
   alias ALF.Examples.Telegram.Pipeline
-  alias ALF.Manager
 
   setup do
     file_stream = File.stream!("test/examples/telegram_input.txt")
-    Manager.start(Pipeline)
+    Pipeline.start()
+    on_exit(&Pipeline.stop/0)
     %{file_stream: file_stream}
   end
 
   test "process input", %{file_stream: file_stream} do
     lines =
       file_stream
-      |> Manager.stream_to(Pipeline)
+      |> Pipeline.stream()
       |> Enum.to_list()
 
     assert Enum.count(lines) > 100

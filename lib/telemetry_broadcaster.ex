@@ -13,16 +13,19 @@ defmodule ALF.TelemetryBroadcaster do
 
   @allowed_opts [:interval]
 
+  @spec start_link([]) :: GenServer.on_start()
   def start_link([]) do
     GenServer.start_link(__MODULE__, %__MODULE__{}, name: __MODULE__)
   end
 
+  @impl true
   def init(%__MODULE__{} = state) do
     state = %{state | pid: self()}
 
     {:ok, state, {:continue, :attach_telemetry}}
   end
 
+  @impl true
   def handle_continue(:attach_telemetry, %__MODULE__{} = state) do
     do_attach_telemetry(state.pid)
     {:noreply, state}
@@ -43,6 +46,7 @@ defmodule ALF.TelemetryBroadcaster do
 
   def remote_function(), do: GenServer.call(__MODULE__, :remote_function)
 
+  @impl true
   def handle_call(:remote_function, _from, state), do: {:reply, state.remote_function, state}
 
   def handle_call({:register_remote_function, {name, module, function, opts}}, _from, state) do
@@ -50,6 +54,7 @@ defmodule ALF.TelemetryBroadcaster do
     {:reply, {name, module, function, opts}, state}
   end
 
+  @impl true
   def handle_cast({:handle_event, [:alf, :component, _], _, _}, %{remote_function: nil} = state) do
     {:noreply, state}
   end

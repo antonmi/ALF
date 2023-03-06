@@ -1,7 +1,7 @@
 defmodule ALF.Components.Consumer do
   use ALF.Components.Basic
 
-  alias ALF.{ErrorIP, IP, Manager.Streamer}
+  alias ALF.{ErrorIP, IP}
 
   defstruct Basic.common_attributes() ++
               [
@@ -9,10 +9,12 @@ defmodule ALF.Components.Consumer do
                 manager_name: nil
               ]
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
+  @impl true
   def init(state) do
     state = %{state | pid: self(), name: :consumer}
     {:consumer, state, subscribe_to: state.subscribe_to}
@@ -22,13 +24,14 @@ defmodule ALF.Components.Consumer do
     %{state | pid: make_ref(), name: :consumer, telemetry_enabled: telemetry_enabled}
   end
 
+  @impl true
   def handle_events([ip], _from, %__MODULE__{telemetry_enabled: true} = state)
       when is_struct(ip, IP) or is_struct(ip, ErrorIP) do
     :telemetry.span(
       [:alf, :component],
       telemetry_data(ip, state),
       fn ->
-        ip = cast_result_ready(ip, state)
+        send_result(ip, ip)
         {{:noreply, [], state}, telemetry_data(ip, state)}
       end
     )
@@ -36,7 +39,7 @@ defmodule ALF.Components.Consumer do
 
   def handle_events([ip], _from, %__MODULE__{telemetry_enabled: false} = state)
       when is_struct(ip, IP) or is_struct(ip, ErrorIP) do
-    cast_result_ready(ip, state)
+    send_result(ip, ip)
     {:noreply, [], state}
   end
 
@@ -52,10 +55,5 @@ defmodule ALF.Components.Consumer do
         {ip, telemetry_data(ip, state)}
       end
     )
-  end
-
-  defp cast_result_ready(ip, state) do
-    Streamer.cast_result_ready(state.manager_name, ip)
-    ip
   end
 end

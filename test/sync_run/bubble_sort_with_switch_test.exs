@@ -56,16 +56,18 @@ defmodule ALF.SyncRun.BubbleSortWithSwitchTest do
   use ExUnit.Case
 
   alias ALF.SyncRun.BubbleSortWithSwitch.Pipeline
-  alias ALF.Manager
 
   @range 1..5
 
-  setup do: Manager.start(Pipeline, sync: true)
+  setup do
+    Pipeline.start(sync: true)
+    on_exit(&Pipeline.stop/0)
+  end
 
   test "sort" do
     [result] =
       [Enum.shuffle(@range)]
-      |> Manager.stream_to(Pipeline)
+      |> Pipeline.stream()
       |> Enum.to_list()
 
     assert result == Enum.to_list(@range)

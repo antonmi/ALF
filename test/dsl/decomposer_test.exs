@@ -22,7 +22,8 @@ defmodule ALF.DSL.DecomposerTest do
     end
 
     test "build PipelineDecomposer1", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineDecomposer1, sup_pid, :manager)
+      {:ok, pipeline} =
+        Builder.build(PipelineDecomposer1, sup_pid, Helpers.random_atom("manager"), false)
 
       [decomposer] = pipeline.components
 
@@ -53,7 +54,8 @@ defmodule ALF.DSL.DecomposerTest do
     end
 
     test "build PipelineDecomposer2", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineDecomposer2, sup_pid, :manager)
+      {:ok, pipeline} =
+        Builder.build(PipelineDecomposer2, sup_pid, Helpers.random_atom("manager"), false)
 
       [decomposer] = pipeline.components
       decomposer = Decomposer.__state__(decomposer.pid)
@@ -79,7 +81,8 @@ defmodule ALF.DSL.DecomposerTest do
     end
 
     test "build PipelineDecomposer3", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineDecomposer3, sup_pid, :manager)
+      {:ok, pipeline} =
+        Builder.build(PipelineDecomposer3, sup_pid, Helpers.random_atom("manager"), false)
 
       [decomposer] = pipeline.components
 

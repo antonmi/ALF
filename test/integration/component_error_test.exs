@@ -1,7 +1,7 @@
 defmodule ALF.ComponentErrorTest do
   use ExUnit.Case, async: false
 
-  alias ALF.{Manager, ErrorIP, IP}
+  alias ALF.{ErrorIP, IP}
 
   describe "Error in stage" do
     defmodule ErrorInStagePipeline do
@@ -24,13 +24,14 @@ defmodule ALF.ComponentErrorTest do
     end
 
     setup do
-      Manager.start(ErrorInStagePipeline)
+      ErrorInStagePipeline.start()
+      on_exit(&ErrorInStagePipeline.stop/0)
     end
 
     test "returns error immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(ErrorInStagePipeline)
+        |> ErrorInStagePipeline.stream()
         |> Enum.to_list()
 
       assert [
@@ -68,13 +69,14 @@ defmodule ALF.ComponentErrorTest do
     end
 
     setup do
-      Manager.start(ThrowInStagePipeline)
+      ThrowInStagePipeline.start()
+      on_exit(&ThrowInStagePipeline.stop/0)
     end
 
     test "returns error immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(ThrowInStagePipeline)
+        |> ThrowInStagePipeline.stream()
         |> Enum.to_list()
 
       assert [
@@ -113,13 +115,13 @@ defmodule ALF.ComponentErrorTest do
     end
 
     setup do
-      Manager.start(ErrorInStageMultTwoPipeline)
+      ErrorInStageMultTwoPipeline.start()
     end
 
     test "returns error" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(ErrorInStageMultTwoPipeline, return_ips: true)
+        |> ErrorInStageMultTwoPipeline.stream(return_ips: true)
         |> Enum.to_list()
 
       assert [
@@ -166,13 +168,14 @@ defmodule ALF.ComponentErrorTest do
     end
 
     setup do
-      Manager.start(ErrorInSwitchPipeline)
+      ErrorInSwitchPipeline.start()
+      on_exit(&ErrorInSwitchPipeline.stop/0)
     end
 
     test "error results" do
       results =
         [1, 2]
-        |> Manager.stream_to(ErrorInSwitchPipeline, return_ips: true)
+        |> ErrorInSwitchPipeline.stream(return_ips: true)
         |> Enum.to_list()
 
       assert [
@@ -206,13 +209,14 @@ defmodule ALF.ComponentErrorTest do
     end
 
     setup do
-      Manager.start(ErrorInGotoPipeline)
+      ErrorInGotoPipeline.start()
+      on_exit(&ErrorInGotoPipeline.stop/0)
     end
 
     test "error results" do
       results =
         [1, 2, 3]
-        |> Manager.stream_to(ErrorInGotoPipeline)
+        |> ErrorInGotoPipeline.stream()
         |> Enum.to_list()
 
       assert [

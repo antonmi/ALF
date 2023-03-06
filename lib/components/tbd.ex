@@ -8,10 +8,12 @@ defmodule ALF.Components.Tbd do
 
   alias ALF.DSLError
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
+  @impl true
   def init(state) do
     state = %{state | pid: self()}
 
@@ -22,6 +24,7 @@ defmodule ALF.Components.Tbd do
     %{state | pid: make_ref()}
   end
 
+  @impl true
   def handle_events([%IP{} = ip], _from, state) do
     ip = %{ip | history: [{state.name, ip.event} | ip.history]}
     {:noreply, [ip], state}

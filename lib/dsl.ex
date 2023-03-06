@@ -257,6 +257,36 @@ defmodule ALF.DSL do
       def done!(event) do
         raise ALF.DoneStatement, event
       end
+
+      @spec start() :: :ok
+      def start() do
+        ALF.Manager.start(__MODULE__, __MODULE__, [])
+      end
+
+      @spec start(list) :: :ok
+      def start(opts) when is_list(opts) do
+        ALF.Manager.start(__MODULE__, __MODULE__, opts)
+      end
+
+      @spec stop() :: :ok | {:exit, {atom, any}}
+      def stop do
+        ALF.Manager.stop(__MODULE__)
+      end
+
+      @spec call(any, Keyword.t()) :: any | [any] | nil
+      def call(event, opts \\ [return_ip: false]) do
+        ALF.Manager.call(event, __MODULE__, opts)
+      end
+
+      @spec call(any, Keyword.t()) :: reference
+      def cast(event, opts \\ [send_result: false]) do
+        ALF.Manager.cast(event, __MODULE__, opts)
+      end
+
+      @spec stream(Enumerable.t(), Keyword.t()) :: Enumerable.t()
+      def stream(stream, opts \\ [return_ips: false]) do
+        ALF.Manager.stream(stream, __MODULE__, opts)
+      end
     end
   end
 

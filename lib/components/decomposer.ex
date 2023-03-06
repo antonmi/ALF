@@ -10,14 +10,15 @@ defmodule ALF.Components.Decomposer do
                 source_code: nil
               ]
 
-  alias ALF.{DSLError, Manager.Streamer}
-
+  alias ALF.DSLError
   @dsl_options [:opts, :name]
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
+  @impl true
   def init(state) do
     state = %{
       state
@@ -29,6 +30,7 @@ defmodule ALF.Components.Decomposer do
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
   end
 
+  @spec init_sync(t(), boolean) :: t()
   def init_sync(state, telemetry_enabled) do
     %{
       state
@@ -39,6 +41,7 @@ defmodule ALF.Components.Decomposer do
     }
   end
 
+  @impl true
   def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
       [:alf, :component],
@@ -68,18 +71,19 @@ defmodule ALF.Components.Decomposer do
   defp process_ip(ip, state) do
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:ok, events} when is_list(events) ->
-        Streamer.call_remove_from_registry(ip.manager_name, [ip], ip.stream_ref)
-
         ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
 
-        Streamer.call_add_to_registry(ip.manager_name, ips, ip.stream_ref)
+        Enum.each(ips, &send_result(&1, :created_decomposer))
+        send_result(ip, :destroyed)
+
         {ips, state}
 
       {:ok, {events, event}} when is_list(events) ->
         ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
 
+        Enum.each(ips, &send_result(&1, :created_decomposer))
+
         ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
-        Streamer.call_add_to_registry(ip.manager_name, ips, ip.stream_ref)
         {ips ++ [ip], state}
 
       {:error, error, stacktrace} ->
@@ -124,8 +128,9 @@ defmodule ALF.Components.Decomposer do
     |> Enum.map(fn event ->
       %IP{
         stream_ref: ip.stream_ref,
-        ref: make_ref(),
-        init_datum: event,
+        destination: ip.destination,
+        ref: ip.ref,
+        init_event: event,
         event: event,
         manager_name: ip.manager_name,
         decomposed: true,

@@ -17,14 +17,15 @@ defmodule ALF.PerformanceStatsTest do
 
   describe "stats" do
     setup do
-      Manager.start(SimplePipeline, autoscaling_enabled: true, telemetry_enabled: true)
+      Manager.start(SimplePipeline, telemetry_enabled: true)
     end
 
     test "stats for the pipeline" do
       [1, 2, 3]
-      |> Manager.stream_to(SimplePipeline)
+      |> Manager.stream(SimplePipeline)
       |> Enum.to_list()
 
+      Process.sleep(5)
       stats = PerformanceStats.stats_for(SimplePipeline)
 
       stats

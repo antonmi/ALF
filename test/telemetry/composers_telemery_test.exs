@@ -1,6 +1,5 @@
 defmodule ALF.ComposersTelemetryTest do
   use ExUnit.Case
-  alias ALF.Manager
 
   defmodule Pipeline do
     use ALF.DSL
@@ -37,7 +36,7 @@ defmodule ALF.ComposersTelemetryTest do
     end
 
     setup %{agent: agent} do
-      Manager.start(Pipeline, telemetry_enabled: true)
+      Pipeline.start(telemetry_enabled: true)
 
       :ok =
         :telemetry.attach_many(
@@ -51,16 +50,20 @@ defmodule ALF.ComposersTelemetryTest do
           %{agent: agent}
         )
 
-      on_exit(fn -> :telemetry.detach("test-events-handler") end)
+      on_exit(fn ->
+        :telemetry.detach("test-events-handler")
+        Pipeline.stop()
+      end)
     end
 
     test "check recomposer events", %{agent: agent} do
       [result] =
         [2]
-        |> Manager.stream_to(Pipeline)
+        |> Pipeline.stream()
         |> Enum.to_list()
 
       assert result == 5
+      Process.sleep(5)
 
       [
         _consumer_stop,

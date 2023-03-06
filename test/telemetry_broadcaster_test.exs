@@ -22,6 +22,8 @@ defmodule ALF.TelemetryBroadcasterTest do
       Agent.update(agent, fn list ->
         [{:start, metadata.component, metadata.ip} | list]
       end)
+
+      Process.sleep(5)
     end
 
     def handle_event([:alf, :component, :stop], %{duration: _duration}, metadata) do
@@ -30,6 +32,8 @@ defmodule ALF.TelemetryBroadcasterTest do
       Agent.update(agent, fn list ->
         [{:stop, metadata.component, metadata.ip} | list]
       end)
+
+      Process.sleep(5)
     end
   end
 
@@ -67,7 +71,7 @@ defmodule ALF.TelemetryBroadcasterTest do
         # no events because of interval
         %{agent: agent, number: 2}
       ]
-      |> Manager.stream_to(SimplePipeline)
+      |> Manager.stream(SimplePipeline)
       |> Enum.to_list()
 
       Process.sleep(50)

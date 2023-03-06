@@ -12,10 +12,12 @@ defmodule ALF.Components.Clone do
   @dsl_options [:to]
   @dsl_requited_options [:to]
 
+  @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
     GenStage.start_link(__MODULE__, state)
   end
 
+  @impl true
   def init(state) do
     {:producer_consumer, %{state | pid: self()},
      dispatcher: GenStage.BroadcastDispatcher, subscribe_to: state.subscribe_to}
@@ -25,6 +27,7 @@ defmodule ALF.Components.Clone do
     %{state | pid: make_ref(), telemetry_enabled: telemetry_enabled}
   end
 
+  @impl true
   def handle_events(
         [%ALF.IP{} = ip],
         _from,
@@ -68,6 +71,8 @@ defmodule ALF.Components.Clone do
   end
 
   defp process_ip(ip, state) do
+    send_result(ip, :cloned)
+
     %{ip | history: [{state.name, ip.event} | ip.history]}
   end
 
