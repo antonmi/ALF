@@ -5,7 +5,7 @@ defmodule ALF.Components.StageTest do
 
   defmodule Component do
     def init(opts) do
-      Map.put(opts, :foo, opts[:foo] <> "bar")
+      Keyword.put(opts, :foo, opts[:foo] <> "bar")
     end
 
     def call(event, opts) do
@@ -33,7 +33,7 @@ defmodule ALF.Components.StageTest do
       module: Component,
       pipeline_module: __MODULE__,
       function: :call,
-      opts: %{foo: "foo"},
+      opts: [foo: "foo"],
       subscribe_to: [{producer_pid, max_demand: 1}]
     }
 
