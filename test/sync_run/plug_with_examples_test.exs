@@ -29,7 +29,7 @@ defmodule ALF.SyncRun.PlugWith.Pipeline do
 end
 
 defmodule ALF.SyncRun.PlugWithExamplesTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.SyncRun.PlugWith.Pipeline
 

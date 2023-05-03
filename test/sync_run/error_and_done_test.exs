@@ -13,7 +13,7 @@ defmodule ALF.SyncRun.ErrorAndDone.Pipeline do
 end
 
 defmodule ALF.SyncRun.ErrorAndDoneTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.SyncRun.ErrorAndDone.Pipeline
 

@@ -1,5 +1,5 @@
 defmodule ALF.TelemetryBroadcasterTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   alias ALF.{Manager, TelemetryBroadcaster}
 

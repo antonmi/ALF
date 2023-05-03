@@ -3,7 +3,7 @@ Code.ensure_loaded(ALF.Test.Bar.Baz)
 Code.ensure_loaded(ALF.Test2)
 
 defmodule ALF.SourceCodeTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias ALF.SourceCode
 
   alias ALF.Test.Foo

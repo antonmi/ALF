@@ -1,5 +1,5 @@
 defmodule ALF.StopPipelineTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   defmodule SimplePipelineToStop do
     use ALF.DSL

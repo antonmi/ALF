@@ -1,5 +1,5 @@
 defmodule ALF.PerformanceStatsTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   alias ALF.{PerformanceStats, Manager}
 

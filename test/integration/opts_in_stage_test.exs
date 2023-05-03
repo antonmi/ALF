@@ -1,5 +1,5 @@
 defmodule ALF.OptsInStageTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   defmodule ComponentA do
     def init(opts) do

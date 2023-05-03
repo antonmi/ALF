@@ -44,7 +44,7 @@ defmodule ALF.SyncRun.BubbleSort.Pipeline do
 end
 
 defmodule ALF.SyncRun.BubbleSortTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.SyncRun.BubbleSort.Pipeline
 

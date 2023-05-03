@@ -1,4 +1,4 @@
-defmodule ALF.ComposersTelemetryTest do
+defmodule ALF.Telemetry.ComposersTelemetryTest do
   use ExUnit.Case
 
   defmodule Pipeline do

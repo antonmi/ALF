@@ -13,7 +13,7 @@ defmodule ALF.SyncRun.SimplePipeline.Pipeline do
 end
 
 defmodule ALF.SyncRun.SimplePipelineTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.SyncRun.SimplePipeline.Pipeline
   alias ALF.IP

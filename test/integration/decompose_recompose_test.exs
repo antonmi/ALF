@@ -1,5 +1,5 @@
 defmodule ALF.DecomposeRecomposeTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   describe "decompose an recompose" do
     defmodule Pipeline do

@@ -45,7 +45,7 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
 end
 
 defmodule ALF.Examples.BubbleSortTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.Examples.BubbleSort.Pipeline
 

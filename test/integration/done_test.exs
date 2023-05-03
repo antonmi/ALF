@@ -1,5 +1,5 @@
 defmodule ALF.DoneTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   alias ALF.IP
 

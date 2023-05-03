@@ -28,7 +28,7 @@ defmodule ALF.Examples.PlugWith.Pipeline do
 end
 
 defmodule ALF.Examples.PlugWithExamplesTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.Examples.PlugWith.Pipeline
 

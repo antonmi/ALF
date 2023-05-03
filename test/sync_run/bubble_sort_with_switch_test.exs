@@ -53,7 +53,7 @@ defmodule ALF.SyncRun.BubbleSortWithSwitch.Pipeline do
 end
 
 defmodule ALF.SyncRun.BubbleSortWithSwitchTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.SyncRun.BubbleSortWithSwitch.Pipeline
 

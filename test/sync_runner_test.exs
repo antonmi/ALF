@@ -1,5 +1,5 @@
 defmodule ALF.SyncRunnerTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.{Builder, SyncRunner}
   alias ALF.Components.{Producer, Stage, Switch, Clone, DeadEnd, Consumer}

@@ -1,5 +1,5 @@
 defmodule ALF.PipelineTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.{Builder, Pipeline}
   alias ALF.Components.{Producer, Stage, Switch, Clone, DeadEnd, Consumer}

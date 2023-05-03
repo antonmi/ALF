@@ -32,7 +32,7 @@ defmodule ALF.Examples.Telegram.Pipeline do
 end
 
 defmodule ALF.Examples.TelegramTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.Examples.Telegram.Pipeline
 

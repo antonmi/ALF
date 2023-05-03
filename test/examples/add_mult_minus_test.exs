@@ -13,7 +13,7 @@ defmodule ALF.Examples.AddMultMinus.Pipeline do
 end
 
 defmodule ALF.Examples.AddMultMinusTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ALF.Examples.AddMultMinus.Pipeline
 
