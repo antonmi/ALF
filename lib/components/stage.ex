@@ -47,20 +47,6 @@ defmodule ALF.Components.Stage do
     }
   end
 
-  def inc_count(%__MODULE__{pid: pid}), do: GenStage.call(pid, :inc_count)
-  def dec_count(%__MODULE__{pid: pid}), do: GenStage.call(pid, :dec_count)
-
-  @impl true
-  def handle_call(:inc_count, _from, state) do
-    state = %{state | count: state.count + 1}
-    {:reply, state, [], state}
-  end
-
-  def handle_call(:dec_count, _from, state) do
-    state = %{state | count: state.count - 1}
-    {:reply, state, [], state}
-  end
-
   @impl true
   def handle_events([%IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
     :telemetry.span(
