@@ -287,6 +287,11 @@ defmodule ALF.DSL do
       def stream(stream, opts \\ [return_ips: false]) do
         ALF.Manager.stream(stream, __MODULE__, opts)
       end
+
+      @spec components() :: list(map())
+      def components() do
+        ALF.Manager.components(__MODULE__)
+      end
     end
   end
 
