@@ -303,7 +303,7 @@ Send packet to a given `goto_point`
 ```elixir
 goto(:my_goto_function, to: :my_goto_point, opts: [foo: :bar])
 # or
-goto(:MyGotoModule, to: :my_goto_point, opts: [foo: :bar])
+goto(MyGotoModule, to: :my_goto_point, opts: [foo: :bar])
 ```
 
 The `function` function is 2-arity function that must return `true` of `false`
