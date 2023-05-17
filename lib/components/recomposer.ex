@@ -98,6 +98,20 @@ defmodule ALF.Components.Recomposer do
            | new_collected_ips: Map.put(state.new_collected_ips, current_ip.stream_ref, collected)
          }}
 
+      {:ok, {nil, events}} ->
+        send_result(current_ip, :destroyed)
+
+        collected =
+          Enum.map(events, fn event ->
+            build_ip(event, current_ip, [{state.name, current_ip.event} | current_ip.history])
+          end)
+
+        {nil,
+         %{
+           state
+           | new_collected_ips: Map.put(state.new_collected_ips, current_ip.stream_ref, collected)
+         }}
+
       {:ok, {event, events}} ->
         ip = build_ip(event, current_ip, [{state.name, current_ip.event} | current_ip.history])
 
@@ -160,6 +174,15 @@ defmodule ALF.Components.Recomposer do
       {:ok, :continue} ->
         collected_ips = collected_ips ++ [ip]
         put_to_process_dict({state.pid, ip.stream_ref}, collected_ips)
+        nil
+
+      {:ok, {nil, events}} ->
+        collected =
+          Enum.map(events, fn event ->
+            build_ip(event, ip, [{state.name, ip.event} | ip.history])
+          end)
+
+        put_to_process_dict({state.pid, ip.stream_ref}, collected)
         nil
 
       {:ok, {event, events}} ->

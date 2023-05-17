@@ -20,7 +20,12 @@ defmodule ALF.SyncRun.DecomposeRecomposeTest do
         if String.length(string) > 10 do
           string
         else
-          :continue
+          # testing identical behaviour
+          if Enum.random([true, false]) do
+            :continue
+          else
+            {nil, prev_events ++ [event]}
+          end
         end
       end
     end
