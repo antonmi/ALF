@@ -26,6 +26,8 @@ defmodule ALF.PipelineTest do
         %Stage{name: :last_stage}
       ]
     end
+
+    def custom_source_code, do: nil
   end
 
   setup do

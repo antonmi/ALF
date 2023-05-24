@@ -27,7 +27,7 @@ defmodule ALF.Components.Stage do
       state
       | pid: self(),
         opts: init_opts(state.module, state.opts),
-        source_code: read_source_code(state.module, state.function),
+        source_code: state.source_code || read_source_code(state.module, state.function),
         subscribers: []
     }
 
@@ -42,7 +42,7 @@ defmodule ALF.Components.Stage do
       | pid: ref,
         stage_set_ref: ref,
         opts: init_opts(state.module, state.opts),
-        source_code: read_source_code(state.module, state.function),
+        source_code: state.source_code || read_source_code(state.module, state.function),
         telemetry_enabled: telemetry_enabled
     }
   end

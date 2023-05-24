@@ -23,7 +23,7 @@ defmodule ALF.Components.Producer do
        state
        | pid: self(),
          name: :producer,
-         source_code: read_source_code(state.pipeline_module)
+         source_code: state.source_code || read_source_code(state.pipeline_module)
      }}
   end
 
@@ -32,7 +32,7 @@ defmodule ALF.Components.Producer do
       state
       | pid: make_ref(),
         name: :producer,
-        source_code: read_source_code(state.pipeline_module),
+        source_code: state.source_code || read_source_code(state.pipeline_module),
         telemetry_enabled: telemetry_enabled
     }
   end

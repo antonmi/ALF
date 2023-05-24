@@ -29,7 +29,7 @@ defmodule ALF.Components.Goto do
       state
       | pid: self(),
         opts: init_opts(state.module, state.opts),
-        source_code: read_source_code(state.module, state.function)
+        source_code: state.source_code || read_source_code(state.module, state.function)
     }
 
     {:producer_consumer, state, subscribe_to: state.subscribe_to}
@@ -40,7 +40,7 @@ defmodule ALF.Components.Goto do
       state
       | pid: make_ref(),
         opts: init_opts(state.module, state.opts),
-        source_code: read_source_code(state.module, state.function),
+        source_code: state.source_code || read_source_code(state.module, state.function),
         telemetry_enabled: telemetry_enabled
     }
   end

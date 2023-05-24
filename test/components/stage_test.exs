@@ -58,4 +58,20 @@ defmodule ALF.Components.StageTest do
     %{source_code: source_code} = Stage.__state__(pid)
     assert String.starts_with?(source_code, "defmodule Component do")
   end
+
+  test "when source_code is provided" do
+    stage = %Stage{
+      name: :test_stage2,
+      module: Component,
+      pipeline_module: __MODULE__,
+      function: :call,
+      opts: [foo: "foo"],
+      source_code: "The source code"
+    }
+
+    %{pid: pid} = setup_stage(stage)
+
+    %{source_code: source_code} = Stage.__state__(pid)
+    assert source_code == "The source code"
+  end
 end
