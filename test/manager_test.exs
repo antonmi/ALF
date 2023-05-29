@@ -224,6 +224,31 @@ defmodule ALF.ManagerTest do
     end
   end
 
+  describe "started?" do
+    defmodule StatusPipeline do
+      use ALF.DSL
+
+      @components [stage(:add_one)]
+
+      def add_one(event, _), do: event + 1
+    end
+
+    test "not started" do
+      assert Manager.started?(StatusPipeline) == false
+      assert StatusPipeline.started?() == false
+    end
+
+    test "started" do
+      Manager.start(StatusPipeline)
+      assert Manager.started?(StatusPipeline) == true
+      assert StatusPipeline.started?() == true
+    end
+
+    test "when pipeline is undefined" do
+      assert Manager.started?(UndefinedPipeline) == false
+    end
+  end
+
   describe "call/2" do
     defmodule SimplePipelineToCall do
       use ALF.DSL

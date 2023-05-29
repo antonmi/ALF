@@ -268,6 +268,11 @@ defmodule ALF.DSL do
         ALF.Manager.start(__MODULE__, __MODULE__, opts)
       end
 
+      @spec started?() :: true | false
+      def started?() do
+        ALF.Manager.started?(__MODULE__)
+      end
+
       @spec stop() :: :ok | {:exit, {atom, any}}
       def stop do
         ALF.Manager.stop(__MODULE__)

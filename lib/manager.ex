@@ -94,6 +94,11 @@ defmodule ALF.Manager do
     end
   end
 
+  @spec started?(atom()) :: true | false
+  def started?(name) when is_atom(name) do
+    if Process.whereis(name), do: true, else: false
+  end
+
   @spec stop(atom) :: :ok | {:exit, {atom, any}}
   def stop(module) when is_atom(module) do
     result = GenServer.call(module, :stop, :infinity)
@@ -106,7 +111,7 @@ defmodule ALF.Manager do
 
   @spec call(any, atom, Keyword.t()) :: any | [any] | nil
   def call(event, name, opts \\ [return_ip: false]) do
-    case status(name) do
+    case check_if_ready(name) do
       {:ok, producer_name} ->
         do_call(name, producer_name, event, opts)
 
@@ -149,7 +154,7 @@ defmodule ALF.Manager do
 
   @spec cast(any, atom, Keyword.t()) :: reference
   def cast(event, name, opts \\ [send_result: false]) do
-    case status(name) do
+    case check_if_ready(name) do
       {:ok, producer_name} ->
         do_cast(name, producer_name, event, opts)
 
@@ -174,7 +179,7 @@ defmodule ALF.Manager do
 
   @spec stream(Enumerable.t(), atom, Keyword.t()) :: Enumerable.t()
   def stream(stream, name, opts \\ [return_ips: false]) do
-    case status(name) do
+    case check_if_ready(name) do
       {:ok, producer_name} ->
         do_stream(name, producer_name, stream, opts)
 
@@ -385,7 +390,7 @@ defmodule ALF.Manager do
     Application.get_env(:alf, :telemetry_enabled, false)
   end
 
-  defp status(name) do
+  defp check_if_ready(name) do
     producer_name = :"#{name}.Producer"
 
     cond do
