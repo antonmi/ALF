@@ -289,7 +289,7 @@ defmodule ALF.DSL do
       end
 
       @spec stream(Enumerable.t(), Keyword.t()) :: Enumerable.t()
-      def stream(stream, opts \\ [return_ips: false]) do
+      def stream(stream, opts \\ [return_ip: false]) do
         ALF.Manager.stream(stream, __MODULE__, opts)
       end
 

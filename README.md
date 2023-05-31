@@ -137,6 +137,7 @@ inputs = [1,2,3]
 output_stream = ThePipeline.stream(inputs)
 Enum.to_list(output_stream) # it returns [1, 3, 5]
 ```
+The `return_ip: true` option also works for streams
 
 ### Parallel processing of several streams
 

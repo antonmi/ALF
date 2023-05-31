@@ -271,7 +271,7 @@ defmodule ALF.ManagerTest do
       on_exit(&SimplePipelineToCall.stop/0)
     end
 
-    test "run stream and check events" do
+    test "run call and check event" do
       assert SimplePipelineToCall.call(1) == 4
     end
 
@@ -315,7 +315,7 @@ defmodule ALF.ManagerTest do
       on_exit(&SimplePipelineToSyncCall.stop/0)
     end
 
-    test "run stream and check events" do
+    test "call and check event" do
       assert SimplePipelineToSyncCall.call(1) == 4
       assert %ALF.IP{event: 4} = SimplePipelineToSyncCall.call(1, return_ip: true)
     end
@@ -365,10 +365,10 @@ defmodule ALF.ManagerTest do
       assert Enum.sort(result3) == Enum.map(201..300, &((&1 + 1) * 2))
     end
 
-    test "run with return_ips: true option" do
+    test "run with return_ip: true option" do
       results =
         sample_stream()
-        |> Manager.stream(SimplePipelineToStream, return_ips: true)
+        |> Manager.stream(SimplePipelineToStream, return_ip: true)
         |> Enum.to_list()
 
       assert [
@@ -410,10 +410,10 @@ defmodule ALF.ManagerTest do
       assert results == [4, 6, 8]
     end
 
-    test "stream with return_ips option" do
+    test "stream with return_ip option" do
       assert [%ALF.IP{event: 4}, %ALF.IP{event: 6}, %ALF.IP{event: 8}] =
                @sample_stream
-               |> SimplePipelineToSyncStream.stream(return_ips: true)
+               |> SimplePipelineToSyncStream.stream(return_ip: true)
                |> Enum.to_list()
     end
   end

@@ -132,7 +132,7 @@ defmodule ALF.ComponentThrowTest do
     test "error results" do
       results =
         [1, 2]
-        |> ThrowInSwitchPipeline.stream(return_ips: true)
+        |> ThrowInSwitchPipeline.stream(return_ip: true)
         |> Enum.to_list()
 
       assert [

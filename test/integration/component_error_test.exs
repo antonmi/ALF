@@ -121,7 +121,7 @@ defmodule ALF.ComponentErrorTest do
     test "returns error" do
       results =
         [1, 2, 3]
-        |> ErrorInStageMultTwoPipeline.stream(return_ips: true)
+        |> ErrorInStageMultTwoPipeline.stream(return_ip: true)
         |> Enum.to_list()
 
       assert [
@@ -175,7 +175,7 @@ defmodule ALF.ComponentErrorTest do
     test "error results" do
       results =
         [1, 2]
-        |> ErrorInSwitchPipeline.stream(return_ips: true)
+        |> ErrorInSwitchPipeline.stream(return_ip: true)
         |> Enum.to_list()
 
       assert [

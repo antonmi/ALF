@@ -24,7 +24,7 @@ defmodule ALF.DoneTest do
     test "returns result immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> DoneInStagePipeline.stream(return_ips: true)
+        |> DoneInStagePipeline.stream(return_ip: true)
         |> Enum.to_list()
 
       assert [
@@ -37,7 +37,7 @@ defmodule ALF.DoneTest do
              ] = results
     end
 
-    test "without the return_ips option" do
+    test "without the return_ip option" do
       results =
         [1, 2, 3]
         |> DoneInStagePipeline.stream()
@@ -68,7 +68,7 @@ defmodule ALF.DoneTest do
     test "returns result immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> DoneInLastStagePipeline.stream(return_ips: true)
+        |> DoneInLastStagePipeline.stream(return_ip: true)
         |> Enum.to_list()
 
       assert [
@@ -81,7 +81,7 @@ defmodule ALF.DoneTest do
              ] = results
     end
 
-    test "without the return_ips option" do
+    test "without the return_ip option" do
       results =
         [1, 2, 3]
         |> DoneInLastStagePipeline.stream()

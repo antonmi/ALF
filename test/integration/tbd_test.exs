@@ -18,7 +18,7 @@ defmodule ALF.TbdTest do
   test "returns the event" do
     [result] =
       [1]
-      |> TbdPipeline.stream(return_ips: true)
+      |> TbdPipeline.stream(return_ip: true)
       |> Enum.to_list()
 
     assert result.event == 1

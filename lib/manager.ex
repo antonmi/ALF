@@ -178,7 +178,7 @@ defmodule ALF.Manager do
   end
 
   @spec stream(Enumerable.t(), atom, Keyword.t()) :: Enumerable.t()
-  def stream(stream, name, opts \\ [return_ips: false]) do
+  def stream(stream, name, opts \\ [return_ip: false]) do
     case check_if_ready(name) do
       {:ok, producer_name} ->
         do_stream(name, producer_name, stream, opts)
@@ -205,7 +205,7 @@ defmodule ALF.Manager do
             {[], nil}
 
           ips ->
-            ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ips]) end)
+            ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ip]) end)
             {ips, nil}
         end
       end
@@ -219,7 +219,7 @@ defmodule ALF.Manager do
       fn event, nil ->
         ip = build_ip(event, name)
         ips = SyncRunner.run(pipeline, ip)
-        ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ips]) end)
+        ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ip]) end)
         {ips, nil}
       end
     )
