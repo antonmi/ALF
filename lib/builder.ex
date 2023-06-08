@@ -34,7 +34,9 @@ defmodule ALF.Builder do
         telemetry_enabled
       )
 
-    {producer, consumer} = set_modules({producer, consumer}, last_stages)
+    {producer, consumer} =
+      set_modules_to_producer_and_consumer({producer, consumer}, pipeline_module)
+
     pipeline = %Pipeline{producer: producer, consumer: consumer, components: final_stages}
     {:ok, pipeline}
   end
@@ -210,20 +212,9 @@ defmodule ALF.Builder do
     %{consumer | pid: consumer_pid}
   end
 
-  defp set_modules({producer, consumer}, last_stages) do
-    last_stage = hd(last_stages)
-
-    producer = %{
-      producer
-      | pipe_module: last_stage.pipeline_module,
-        pipeline_module: last_stage.pipeline_module
-    }
-
-    consumer = %{
-      consumer
-      | pipe_module: last_stage.pipeline_module,
-        pipeline_module: last_stage.pipeline_module
-    }
+  defp set_modules_to_producer_and_consumer({producer, consumer}, pipeline_module) do
+    producer = %{producer | pipe_module: pipeline_module, pipeline_module: pipeline_module}
+    consumer = %{consumer | pipe_module: pipeline_module, pipeline_module: pipeline_module}
 
     {producer, consumer}
   end
