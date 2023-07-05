@@ -93,6 +93,11 @@ defmodule ALF.Components.Switch do
             "Wrong options for the #{name} switch: #{inspect(wrong_options)}. " <>
               "Available options are #{inspect(@dsl_options)}"
     end
+
+    if Enum.count(Keyword.get(options, :branches)) == 0 do
+      raise DSLError,
+            "There must be at least one branch in the #{name} switch."
+    end
   end
 
   def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do

@@ -131,4 +131,24 @@ defmodule ALF.DSL.SwitchTest do
              } = switch
     end
   end
+
+  describe "Switch without branches" do
+    test "build PipelineSwitch2", %{sup_pid: sup_pid} do
+      assert_raise ALF.DSLError,
+                   "There must be at least one branch in the do_switch switch.",
+                   fn ->
+                     defmodule PipelineSwitch4 do
+                       use ALF.DSL
+
+                       @components [
+                         switch(:do_switch,
+                           branches: %{},
+                           opts: [foo: :bar],
+                           name: :custom_name
+                         )
+                       ]
+                     end
+                   end
+    end
+  end
 end
