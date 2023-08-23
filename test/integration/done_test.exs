@@ -1,13 +1,13 @@
 defmodule ALF.DoneTest do
   use ExUnit.Case, async: true
 
-  describe "done?" do
+  describe "done" do
     defmodule DoneInStagePipeline do
       use ALF.DSL
 
       @components [
         stage(:add_one),
-        done?(:event_is_big_enough),
+        done(:event_is_big_enough),
         stage(:mult_two)
       ]
 
@@ -31,13 +31,13 @@ defmodule ALF.DoneTest do
     end
   end
 
-  describe "done? when error in condition" do
+  describe "done when error in condition" do
     defmodule DoneWithErrorInStagePipeline do
       use ALF.DSL
 
       @components [
         stage(:add_one),
-        done?(:event_is_big_enough),
+        done(:event_is_big_enough),
         stage(:mult_two)
       ]
 
@@ -65,13 +65,13 @@ defmodule ALF.DoneTest do
     end
   end
 
-  describe "done? in sync pipeline" do
+  describe "done in sync pipeline" do
     defmodule DoneInStagePipelineSync do
       use ALF.DSL
 
       @components [
         stage(:add_one),
-        done?(:event_is_big_enough),
+        done(:event_is_big_enough),
         stage(:mult_two)
       ]
 
@@ -95,13 +95,13 @@ defmodule ALF.DoneTest do
     end
   end
 
-  describe "done? in sync pipeline when error in condition" do
+  describe "done in sync pipeline when error in condition" do
     defmodule DoneWithErrorInStagePipelineSync do
       use ALF.DSL
 
       @components [
         stage(:add_one),
-        done?(:event_is_big_enough),
+        done(:event_is_big_enough),
         stage(:mult_two)
       ]
 

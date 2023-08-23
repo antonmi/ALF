@@ -129,7 +129,7 @@ defmodule ALF.Components.Done do
 
     if Enum.any?(wrong_options) do
       raise DSLError,
-            "Wrong options for the #{atom} done?: #{inspect(wrong_options)}. " <>
+            "Wrong options for the #{atom} done: #{inspect(wrong_options)}. " <>
               "Available options are #{inspect(@dsl_options)}"
     end
   end

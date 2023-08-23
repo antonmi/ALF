@@ -114,7 +114,7 @@ defmodule ALF.DSL do
     end
   end
 
-  defmacro done?(atom, options \\ [name: nil, opts: []]) do
+  defmacro done(atom, options \\ [name: nil, opts: []]) do
     opts = options[:opts]
     name = options[:name]
 

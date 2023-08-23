@@ -3,7 +3,7 @@ defmodule ALF.SyncRun.ErrorAndDone.Pipeline do
 
   @components [
     stage(:add_one),
-    done?(:is_enough),
+    done(:is_enough),
     stage(:mult_by_two),
     stage(:minus_three)
   ]
