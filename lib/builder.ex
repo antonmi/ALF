@@ -9,6 +9,7 @@ defmodule ALF.Builder do
     GotoPoint,
     Switch,
     Clone,
+    Done,
     Consumer,
     Plug,
     Unplug,
@@ -104,6 +105,10 @@ defmodule ALF.Builder do
           clone = %{clone | to: final_stages}
 
           {last_stages ++ [clone], stages ++ [clone]}
+
+        %Done{} = done ->
+          done = start_stage(done, supervisor_pid, prev_stages, telemetry_enabled)
+          {[done], stages ++ [done]}
 
         %Plug{} = plug ->
           plug = start_stage(plug, supervisor_pid, prev_stages, telemetry_enabled)

@@ -22,13 +22,22 @@ defmodule ALF.SyncRun.ErrorAndDoneTest do
     on_exit(&Pipeline.stop/0)
   end
 
-  test "sync run" do
+  test "sync run, done" do
     results =
-      [1, 2, 3]
+      [3]
       |> Pipeline.stream()
       |> Enum.to_list()
 
-    assert [1, error_ip, 3] = results
+    assert [3] = results
+  end
+
+  test "sync run, raise error" do
+    results =
+      [2]
+      |> Pipeline.stream()
+      |> Enum.to_list()
+
+    assert [error_ip] = results
     assert error_ip.error == %RuntimeError{message: "error"}
   end
 end

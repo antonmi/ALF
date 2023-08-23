@@ -7,6 +7,7 @@ defmodule ALF.DSL do
     DeadEnd,
     GotoPoint,
     Goto,
+    Done,
     Plug,
     Unplug,
     Decomposer,
@@ -110,6 +111,23 @@ defmodule ALF.DSL do
         pipe_module: __MODULE__,
         pipeline_module: __MODULE__
       }
+    end
+  end
+
+  defmacro done?(atom, options \\ [name: nil, opts: []]) do
+    opts = options[:opts]
+    name = options[:name]
+
+    quote do
+      Done.validate_options(unquote(atom), unquote(options))
+
+      Basic.build_component(
+        Done,
+        unquote(atom),
+        unquote(name),
+        unquote(opts),
+        __MODULE__
+      )
     end
   end
 

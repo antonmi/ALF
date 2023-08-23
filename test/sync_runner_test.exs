@@ -158,6 +158,11 @@ defmodule ALF.SyncRunnerTest do
                consumer_pid
              ]
     end
+
+    test "for consumer_pid", %{pipeline: pipeline, consumer_pid: consumer_pid} do
+      {path, true} = SyncRunner.path(pipeline, consumer_pid)
+      assert path == [consumer_pid]
+    end
   end
 
   describe "find_component/2" do

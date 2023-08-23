@@ -3,7 +3,8 @@ defmodule ALF.SyncRunner do
     Goto,
     GotoPoint,
     Switch,
-    Clone
+    Clone,
+    Done
   }
 
   alias ALF.Pipeline
@@ -85,6 +86,17 @@ defmodule ALF.SyncRunner do
             goto_point = find_goto_point(pipeline, goto.to)
             {sync_path, true} = path(pipeline, goto_point)
             %{ip | sync_path: sync_path}
+        end
+
+      %Done{} = done ->
+        case done.__struct__.sync_process(ip, component) do
+          {true, ip} ->
+            consumer = List.last(pipeline)
+            {sync_path, true} = path(pipeline, consumer.pid)
+            %{ip | sync_path: sync_path}
+
+          {false, ip} ->
+            ip
         end
 
       component ->

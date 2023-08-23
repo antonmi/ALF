@@ -103,6 +103,7 @@ defmodule ALF.Components.Stage do
 
       {:error, %DoneStatement{event: event}, _stacktrace} ->
         ip = %{ip | event: event, done!: true}
+
         send_result(ip, ip)
 
       {:error, error, stacktrace} ->
