@@ -107,15 +107,12 @@ defmodule ALF.Components.Goto do
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)
 
-      true ->
+      falsy when falsy in [false, nil] ->
+        ip
+
+      _truthy ->
         :ok = GenStage.call(state.to_pid, {:goto, ip})
         nil
-
-      false ->
-        ip
-
-      nil ->
-        ip
     end
   end
 
@@ -141,14 +138,11 @@ defmodule ALF.Components.Goto do
       {:error, error, stacktrace} ->
         {false, build_error_ip(ip, error, stacktrace, state)}
 
-      true ->
+      falsy when falsy in [false, nil] ->
+        {false, ip}
+
+      _truthy ->
         {true, ip}
-
-      false ->
-        {false, ip}
-
-      nil ->
-        {false, ip}
     end
   end
 

@@ -81,15 +81,12 @@ defmodule ALF.Components.Done do
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)
 
-      true ->
+      falsy when falsy in [false, nil] ->
+        ip
+
+      _truthy ->
         send_result(ip, ip)
         nil
-
-      false ->
-        ip
-
-      nil ->
-        ip
     end
   end
 
@@ -115,14 +112,11 @@ defmodule ALF.Components.Done do
       {:error, error, stacktrace} ->
         {false, build_error_ip(ip, error, stacktrace, state)}
 
-      true ->
+      falsy when falsy in [false, nil] ->
+        {false, ip}
+
+      _truthy ->
         {true, ip}
-
-      false ->
-        {false, ip}
-
-      nil ->
-        {false, ip}
     end
   end
 
