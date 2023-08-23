@@ -218,11 +218,7 @@ Check `@dsl_options` in [lib/components](https://github.com/antonmi/ALF/tree/mai
 
 ## Components overview
 
-![alt text](images/all_components.png "All the components")
-
-### Producer and Consumer
-
-Nothing special to know, these are internal components that put at the beginning and at the end of your pipeline.
+![alt text](images/components.png "ALF components")
 
 ### Stage
 
@@ -323,6 +319,16 @@ The `Goto` component companion
 goto_point(:goto_point)
 ```
 
+### Done
+
+If the `condition_fun` returns truthy value, the event will go directly to the consumer.
+It allows to exit early if the work is already done or when the controlled error occurred in execution flow.
+The same behavior can be also implemented using "switch" or "goto", however the "done" component is much simpler.
+
+```elixir
+done(:condition_fun)
+```
+
 ### DeadEnd
 
 Event won't propagate further. It's used alongside with the `Clone` component to avoid duplicate IPs in output
@@ -330,12 +336,6 @@ Event won't propagate further. It's used alongside with the `Clone` component to
 ```elixir
 dead_end(:dead_end)
 ```
-
-### Plug and Unplug
-
-Plug and Unplug are used for transforming events before and after reusable parts of a pipeline.
-The components can not be used directly and are generated automatically when one use `plug_with` macro. See below.
-
 ### Decomposer and Recomposer
 
 These components transform IPs. Decomposer creates several IPs based on one input IP. Recomposer does the opposite - creates a single IP based on a list of previously received IPs.
@@ -389,6 +389,20 @@ end
 
 In that case, the sum will be returned and the first `event` from `prev_events` will be stored.
 See the [telegram_test.exs](https://github.com/antonmi/ALF/tree/main/test/examples/telegram_test.exs) example which solves the famous "Telegram Problem".
+
+## Implicit components
+
+![alt text](images/implicit_components.png "Implicit components")
+
+### Producer and Consumer
+
+Nothing special to know, these are internal components that put at the beginning and at the end of your pipeline.
+
+### Plug and Unplug
+
+Plug and Unplug are used for transforming events before and after reusable parts of a pipeline.
+The components can not be used directly and are generated automatically when one use `plug_with` macro. See below.
+
 
 ## Components / Pipeline reusing
 
