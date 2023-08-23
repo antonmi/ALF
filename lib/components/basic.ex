@@ -65,7 +65,7 @@ defmodule ALF.Components.Basic do
   end
 
   defp ip_telemetry_data(ip) do
-    Map.take(ip, [:type, :event, :ref, :done!, :error, :stacktrace])
+    Map.take(ip, [:type, :event, :ref, :error, :stacktrace])
   end
 
   defp component_telemetry_data(state) do

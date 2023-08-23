@@ -21,7 +21,7 @@ defmodule ALF.SyncRunner do
     do_run(pipeline, ip, [], [])
   end
 
-  defp do_run(pipeline, %IP{sync_path: sync_path, done!: false} = ip, queue, results) do
+  defp do_run(pipeline, %IP{sync_path: sync_path} = ip, queue, results) do
     case sync_path do
       [] ->
         do_run(pipeline, nil, queue, [ip | results])
@@ -41,10 +41,6 @@ defmodule ALF.SyncRunner do
             do_run(pipeline, ip, queue, results)
         end
     end
-  end
-
-  defp do_run(pipeline, %IP{done!: true} = ip, queue, results) do
-    do_run(pipeline, nil, queue, [ip | results])
   end
 
   defp do_run(_pipeline, nil, [], results), do: Enum.reverse(results)

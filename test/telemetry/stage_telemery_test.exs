@@ -13,10 +13,6 @@ defmodule ALF.Telemetry.ComponentTelemetryTest do
         raise "Ooops!"
       end
 
-      if event == 3 do
-        done!(3)
-      end
-
       event + 1
     end
   end
@@ -162,21 +158,6 @@ defmodule ALF.Telemetry.ComponentTelemetryTest do
       assert ip[:stacktrace]
       assert ip[:type] == :error_ip
     end
-
-    test "done! event", %{agent: agent} do
-      [result] =
-        [3]
-        |> Pipeline.stream()
-        |> Enum.to_list()
-
-      assert result == 3
-      Process.sleep(5)
-
-      [stage_stop, _, _, _] = Agent.get(agent, & &1)
-      {:stop, _, %{ip: ip}} = stage_stop
-      assert ip[:type] == :ip
-      assert ip[:done!] == true
-    end
   end
 
   describe "telemetry events for sync case" do
@@ -230,20 +211,6 @@ defmodule ALF.Telemetry.ComponentTelemetryTest do
       assert ip[:error] == %RuntimeError{message: "Ooops!"}
       assert ip[:stacktrace]
       assert ip[:type] == :error_ip
-    end
-
-    test "done! event", %{agent: agent} do
-      [result] =
-        [3]
-        |> Pipeline.stream()
-        |> Enum.to_list()
-
-      assert result == 3
-
-      [stage_stop, _, _, _] = Agent.get(agent, & &1)
-      {:stop, _, %{ip: ip}} = stage_stop
-      assert ip[:type] == :ip
-      assert ip[:done!] == true
     end
   end
 end

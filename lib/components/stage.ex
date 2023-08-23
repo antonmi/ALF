@@ -13,7 +13,7 @@ defmodule ALF.Components.Stage do
                 source_code: nil
               ]
 
-  alias ALF.{DoneStatement, DSLError}
+  alias ALF.DSLError
   @dsl_options [:opts, :count, :name]
 
   @spec start_link(t()) :: GenServer.on_start()
@@ -54,11 +54,8 @@ defmodule ALF.Components.Stage do
       telemetry_data(ip, state),
       fn ->
         case process_ip(ip, state) do
-          %IP{done!: false} = ip ->
+          %IP{} = ip ->
             {{:noreply, [ip], state}, telemetry_data(ip, state)}
-
-          %IP{done!: true} = ip ->
-            {{:noreply, [], state}, telemetry_data(ip, state)}
 
           %ErrorIP{} = ip ->
             {{:noreply, [], state}, telemetry_data(ip, state)}
@@ -69,11 +66,8 @@ defmodule ALF.Components.Stage do
 
   def handle_events([%IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
     case process_ip(ip, state) do
-      %IP{done!: false} = ip ->
+      %IP{} = ip ->
         {:noreply, [ip], state}
-
-      %IP{done!: true} ->
-        {:noreply, [], state}
 
       %ErrorIP{} ->
         {:noreply, [], state}
@@ -101,11 +95,6 @@ defmodule ALF.Components.Stage do
       {:ok, new_event} ->
         %{ip | event: new_event}
 
-      {:error, %DoneStatement{event: event}, _stacktrace} ->
-        ip = %{ip | event: event, done!: true}
-
-        send_result(ip, ip)
-
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)
     end
@@ -130,9 +119,6 @@ defmodule ALF.Components.Stage do
     case try_apply(ip.event, {state.module, state.function, state.opts}) do
       {:ok, new_event} ->
         %{ip | event: new_event}
-
-      {:error, %DoneStatement{event: event}, _stacktrace} ->
-        %{ip | event: event, done!: true}
 
       {:error, error, stacktrace} ->
         build_error_ip(ip, error, stacktrace, state)

@@ -1,5 +1,5 @@
 defmodule ALF.DSLError do
-  @moduledoc "Controls done! flow"
+  @moduledoc "ALF.DSLError"
 
   defexception [:message]
 

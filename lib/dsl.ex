@@ -272,10 +272,6 @@ defmodule ALF.DSL do
 
       @before_compile ALF.DSL
 
-      def done!(event) do
-        raise ALF.DoneStatement, event
-      end
-
       @spec start() :: :ok
       def start() do
         ALF.Manager.start(__MODULE__, __MODULE__, [])

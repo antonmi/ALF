@@ -3,12 +3,14 @@ defmodule ALF.SyncRun.ErrorAndDone.Pipeline do
 
   @components [
     stage(:add_one),
+    done?(:is_enough),
     stage(:mult_by_two),
     stage(:minus_three)
   ]
 
-  def add_one(event, _), do: if(event == 3, do: done!(event), else: event + 1)
-  def mult_by_two(event, _), do: if(event == 3, do: raise("error"), else: event * 2)
+  def add_one(event, _), do: event + 1
+  def is_enough(event, _), do: event == 3
+  def mult_by_two(event, _), do: if(event == 4, do: raise("error"), else: event * 2)
   def minus_three(event, _), do: event - 3
 end
 
@@ -24,7 +26,7 @@ defmodule ALF.SyncRun.ErrorAndDoneTest do
 
   test "sync run, done" do
     results =
-      [3]
+      [2]
       |> Pipeline.stream()
       |> Enum.to_list()
 
@@ -33,7 +35,7 @@ defmodule ALF.SyncRun.ErrorAndDoneTest do
 
   test "sync run, raise error" do
     results =
-      [2]
+      [3]
       |> Pipeline.stream()
       |> Enum.to_list()
 
