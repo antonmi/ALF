@@ -31,6 +31,45 @@ defmodule ALF.DoneTest do
     end
   end
 
+  describe "done with a module" do
+    defmodule DoneModuleInStagePipeline do
+      use ALF.DSL
+
+      defmodule EventIsTooBig do
+        def init(opts) do
+          opts
+        end
+
+        def call(event, opts) do
+          event > opts[:max]
+        end
+      end
+
+      @components [
+        stage(:add_one),
+        done(EventIsTooBig, opts: [max: 2]),
+        stage(:mult_two)
+      ]
+
+      def add_one(event, _), do: event + 1
+      def mult_two(event, _), do: event * 2
+    end
+
+    setup do
+      DoneModuleInStagePipeline.start()
+      on_exit(&DoneModuleInStagePipeline.stop/0)
+    end
+
+    test "returns some results immediately (skips mult_two)" do
+      results =
+        [1, 2, 3]
+        |> DoneModuleInStagePipeline.stream()
+        |> Enum.to_list()
+
+      assert results == [4, 3, 4]
+    end
+  end
+
   describe "done when error in condition" do
     defmodule DoneWithErrorInStagePipeline do
       use ALF.DSL
