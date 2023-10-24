@@ -18,8 +18,9 @@ defmodule ALF.Components.StageTest do
     %{producer_pid: producer_pid}
   end
 
-  def setup_stage(stage) do
+  def setup_stage(stage, producer_pid) do
     {:ok, pid} = Stage.start_link(stage)
+    GenStage.sync_subscribe(pid, to: producer_pid, max_demand: 1, cancel: :temporary)
 
     {:ok, consumer_pid} =
       TestConsumer.start_link(%TestConsumer{subscribe_to: [{pid, max_demand: 1}]})
@@ -33,11 +34,10 @@ defmodule ALF.Components.StageTest do
       module: Component,
       pipeline_module: __MODULE__,
       function: :call,
-      opts: [foo: "foo"],
-      subscribe_to: [{producer_pid, max_demand: 1}]
+      opts: [foo: "foo"]
     }
 
-    setup_stage(stage)
+    setup_stage(stage, producer_pid)
   end
 
   test "init options", %{pid: pid} do
@@ -69,7 +69,7 @@ defmodule ALF.Components.StageTest do
       source_code: "The source code"
     }
 
-    %{pid: pid} = setup_stage(stage)
+    %{pid: pid} = setup_stage(stage, self())
 
     %{source_code: source_code} = Stage.__state__(pid)
     assert source_code == "The source code"

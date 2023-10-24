@@ -21,13 +21,12 @@ defmodule ALF.Components.DoneTest do
     end
   end
 
-  def build_done(producer_pid, function) do
+  def build_done(function) do
     %Done{
       name: :done,
       module: __MODULE__,
       function: function,
-      pipeline_module: __MODULE__,
-      subscribe_to: [{producer_pid, max_demand: 1}]
+      pipeline_module: __MODULE__
     }
   end
 
@@ -35,18 +34,19 @@ defmodule ALF.Components.DoneTest do
     event + 1
   end
 
-  def build_stage(goto_point_pid) do
+  def build_stage() do
     %Stage{
       name: :test_stage,
       module: __MODULE__,
-      function: :stage_function,
-      subscribe_to: [{goto_point_pid, max_demand: 1}]
+      function: :stage_function
     }
   end
 
   setup %{producer_pid: producer_pid} do
-    {:ok, done_pid} = Done.start_link(build_done(producer_pid, :done_function))
-    {:ok, stage_pid} = Stage.start_link(build_stage(done_pid))
+    {:ok, done_pid} = Done.start_link(build_done(:done_function))
+    GenStage.sync_subscribe(done_pid, to: producer_pid, max_demand: 1, cancel: :temporary)
+    {:ok, stage_pid} = Stage.start_link(build_stage())
+    GenStage.sync_subscribe(stage_pid, to: done_pid, max_demand: 1, cancel: :temporary)
 
     {:ok, consumer_pid} =
       TestConsumer.start_link(%TestConsumer{subscribe_to: [{stage_pid, max_demand: 1}]})

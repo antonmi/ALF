@@ -15,7 +15,7 @@ defmodule ALF.Components.SwitchTest do
     end
   end
 
-  def build_switch(cond_function, producer_pid) do
+  def build_switch(cond_function) do
     %Switch{
       name: :switch,
       branches: %{
@@ -23,7 +23,6 @@ defmodule ALF.Components.SwitchTest do
         part2: []
       },
       module: __MODULE__,
-      subscribe_to: [{producer_pid, max_demand: 1}],
       function: cond_function,
       opts: %{add: 1}
     }
@@ -45,7 +44,8 @@ defmodule ALF.Components.SwitchTest do
 
   describe "with function as &function/2" do
     setup %{producer_pid: producer_pid} do
-      {:ok, pid} = Switch.start_link(build_switch(&cond_function/2, producer_pid))
+      {:ok, pid} = Switch.start_link(build_switch(&cond_function/2))
+      GenStage.sync_subscribe(pid, to: producer_pid, max_demand: 1, cancel: :temporary)
 
       {consumer1_pid, consumer2_pid} = setup_consumers(pid)
       %{pid: pid, consumer1_pid: consumer1_pid, consumer2_pid: consumer2_pid}
@@ -83,7 +83,8 @@ defmodule ALF.Components.SwitchTest do
 
   describe "with function as atom" do
     setup %{producer_pid: producer_pid} do
-      {:ok, pid} = Switch.start_link(build_switch(:cond_function, producer_pid))
+      {:ok, pid} = Switch.start_link(build_switch(:cond_function))
+      GenStage.sync_subscribe(pid, to: producer_pid, max_demand: 1, cancel: :temporary)
 
       {consumer1_pid, consumer2_pid} = setup_consumers(pid)
       %{pid: pid, consumer1_pid: consumer1_pid, consumer2_pid: consumer2_pid}

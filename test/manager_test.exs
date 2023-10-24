@@ -92,7 +92,6 @@ defmodule ALF.ManagerTest do
         pipeline_module: SimplePipeline,
         pid: pid,
         pipeline: %ALF.Pipeline{},
-        components: _components,
         pipeline_sup_pid: pipeline_sup_pid,
         sup_pid: sup_pid
       } = state
@@ -102,30 +101,28 @@ defmodule ALF.ManagerTest do
       assert is_pid(sup_pid)
     end
 
-    test "components", %{state: state} do
-      %Manager{components: [producer, add, mult, consumer]} = state
+    test "components" do
+      [producer, add, mult, consumer] = SimplePipeline.components()
 
       assert producer.name == :producer
       assert is_pid(producer.pid)
 
       assert add.name == :add_one
-      assert add.subscribe_to == [{producer.pid, [max_demand: 1, cancel: :transient]}]
       producer_pid = producer.pid
-      assert [{^producer_pid, _ref}] = add.subscribed_to
+      assert [{{^producer_pid, _ref}, _opts}] = add.subscribed_to
       mult_pid = mult.pid
-      assert [{^mult_pid, _ref}] = add.subscribers
+      assert [{{^mult_pid, _ref}, _opts}] = add.subscribers
 
       assert mult.name == :mult_two
-      assert mult.subscribe_to == [{add.pid, [max_demand: 1, cancel: :transient]}]
+
       add_pid = add.pid
-      assert [{^add_pid, _ref}] = mult.subscribed_to
+      assert [{{^add_pid, _ref}, _opts}] = mult.subscribed_to
       consumer_pid = consumer.pid
-      assert [{^consumer_pid, _ref}] = mult.subscribers
+      assert [{{^consumer_pid, _ref}, _opts}] = mult.subscribers
 
       assert consumer.name == :consumer
-      assert consumer.subscribe_to == [{mult.pid, [max_demand: 1, cancel: :transient]}]
       mult_pid = mult.pid
-      assert [{^mult_pid, _ref}] = consumer.subscribed_to
+      assert [{{^mult_pid, _ref}, _opts}] = consumer.subscribed_to
     end
   end
 
@@ -166,8 +163,7 @@ defmodule ALF.ManagerTest do
       refute Process.alive?(state.pid)
       refute Process.alive?(state.pipeline_sup_pid)
 
-      state.components
-      |> Enum.each(fn component ->
+      Enum.each(state.stages, fn {_pid, component} ->
         refute Process.alive?(component.pid)
       end)
     end
@@ -217,8 +213,8 @@ defmodule ALF.ManagerTest do
       %{state: state}
     end
 
-    test "set to_pid in goto component", %{state: state} do
-      %Manager{components: [_producer, point, goto, _consumer]} = state
+    test "set to_pid in goto component" do
+      [_producer, point, goto, _consumer] = GoToPipeline.components()
       assert is_pid(point.pid)
       assert goto.to_pid == point.pid
     end

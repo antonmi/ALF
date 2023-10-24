@@ -36,6 +36,8 @@ defmodule ALF.DSL.GotoTest do
                pipeline_module: PipelineGoto1
              } = point
 
+      assert is_pid(point_pid)
+
       assert %Goto{
                name: :goto,
                module: PipelineGoto1,
@@ -43,8 +45,7 @@ defmodule ALF.DSL.GotoTest do
                to: :goto_point,
                opts: [foo: :bar],
                pipe_module: PipelineGoto1,
-               pipeline_module: PipelineGoto1,
-               subscribe_to: [{^point_pid, [max_demand: 1, cancel: :transient]}]
+               pipeline_module: PipelineGoto1
              } = goto
     end
   end

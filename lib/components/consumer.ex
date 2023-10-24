@@ -17,7 +17,8 @@ defmodule ALF.Components.Consumer do
   @impl true
   def init(state) do
     state = %{state | pid: self(), name: :consumer}
-    {:consumer, state, subscribe_to: state.subscribe_to}
+    component_added(state)
+    {:consumer, state}
   end
 
   def init_sync(state, telemetry_enabled) do

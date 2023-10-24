@@ -8,26 +8,22 @@ defmodule ALF.Components.GotoTest do
     %{producer_pid: producer_pid}
   end
 
-  def build_goto_point(producer_pid) do
-    %GotoPoint{
-      name: :goto_point,
-      subscribe_to: [{producer_pid, max_demand: 1}]
-    }
+  def build_goto_point() do
+    %GotoPoint{name: :goto_point}
   end
 
   def if_function(event, opts) do
     event < opts[:max]
   end
 
-  def build_goto(stage_pid, goto_point_pid, function) do
+  def build_goto(goto_point_pid, function) do
     %Goto{
       name: :goto,
       module: __MODULE__,
       function: function,
       pipeline_module: __MODULE__,
       opts: %{max: 2},
-      to_pid: goto_point_pid,
-      subscribe_to: [{stage_pid, max_demand: 1}]
+      to_pid: goto_point_pid
     }
   end
 
@@ -35,19 +31,21 @@ defmodule ALF.Components.GotoTest do
     event + 1
   end
 
-  def build_stage(goto_point_pid) do
+  def build_stage() do
     %Stage{
       name: :test_stage,
       module: __MODULE__,
-      function: :stage_function,
-      subscribe_to: [{goto_point_pid, max_demand: 1}]
+      function: :stage_function
     }
   end
 
   def setup_pipeline(producer_pid, if_function) do
-    {:ok, goto_point_pid} = GotoPoint.start_link(build_goto_point(producer_pid))
-    {:ok, stage_pid} = Stage.start_link(build_stage(goto_point_pid))
-    {:ok, goto_pid} = Goto.start_link(build_goto(stage_pid, goto_point_pid, if_function))
+    {:ok, goto_point_pid} = GotoPoint.start_link(build_goto_point())
+    GenStage.sync_subscribe(goto_point_pid, to: producer_pid, max_demand: 1, cancel: :temporary)
+    {:ok, stage_pid} = Stage.start_link(build_stage())
+    GenStage.sync_subscribe(stage_pid, to: goto_point_pid, max_demand: 1, cancel: :temporary)
+    {:ok, goto_pid} = Goto.start_link(build_goto(goto_point_pid, if_function))
+    GenStage.sync_subscribe(goto_pid, to: stage_pid, max_demand: 1, cancel: :temporary)
 
     {:ok, consumer_pid} =
       TestConsumer.start_link(%TestConsumer{subscribe_to: [{goto_pid, max_demand: 1}]})

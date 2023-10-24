@@ -52,30 +52,46 @@ defmodule ALF.Builder do
 
           new_stages =
             Enum.map(0..(count - 1), fn number ->
-              start_stage(
-                %{stage | stage_set_ref: stage_set_ref, number: number},
-                supervisor_pid,
-                prev_stages,
-                telemetry_enabled
-              )
+              stage
+              |> Map.merge(%{
+                stage_set_ref: stage_set_ref,
+                number: number,
+                telemetry_enabled: telemetry_enabled
+              })
+              |> start_stage(supervisor_pid, prev_stages)
             end)
 
           {new_stages, stages ++ new_stages}
 
         %Goto{} = goto ->
-          goto = start_stage(goto, supervisor_pid, prev_stages, telemetry_enabled)
+          goto =
+            goto
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> start_stage(supervisor_pid, prev_stages)
+
           {[goto], stages ++ [goto]}
 
         %DeadEnd{} = dead_end ->
-          dead_end = start_stage(dead_end, supervisor_pid, prev_stages, telemetry_enabled)
+          dead_end =
+            dead_end
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> start_stage(supervisor_pid, prev_stages)
+
           {[], stages ++ [dead_end]}
 
         %GotoPoint{} = goto_point ->
-          goto_point = start_stage(goto_point, supervisor_pid, prev_stages, telemetry_enabled)
+          goto_point =
+            goto_point
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> start_stage(supervisor_pid, prev_stages)
+
           {[goto_point], stages ++ [goto_point]}
 
         %Switch{branches: branches} = switch ->
-          switch = start_stage(switch, supervisor_pid, prev_stages, telemetry_enabled)
+          switch =
+            switch
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> start_stage(supervisor_pid, prev_stages)
 
           {last_stages, branches} =
             Enum.reduce(branches, {[], %{}}, fn {key, inner_pipe_spec},
@@ -97,7 +113,10 @@ defmodule ALF.Builder do
           {last_stages, stages ++ [switch]}
 
         %Clone{to: pipe_stages} = clone ->
-          clone = start_stage(clone, supervisor_pid, prev_stages, telemetry_enabled)
+          clone =
+            clone
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> start_stage(supervisor_pid, prev_stages)
 
           {last_stages, final_stages} =
             do_build_pipeline(pipe_stages, [clone], supervisor_pid, [], telemetry_enabled)
@@ -107,27 +126,51 @@ defmodule ALF.Builder do
           {last_stages ++ [clone], stages ++ [clone]}
 
         %Done{} = done ->
-          done = start_stage(done, supervisor_pid, prev_stages, telemetry_enabled)
+          done =
+            done
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> start_stage(supervisor_pid, prev_stages)
+
           {[done], stages ++ [done]}
 
         %Plug{} = plug ->
-          plug = start_stage(plug, supervisor_pid, prev_stages, telemetry_enabled)
+          plug =
+            plug
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> start_stage(supervisor_pid, prev_stages)
+
           {[plug], stages ++ [plug]}
 
         %Unplug{} = unplug ->
-          unplug = start_stage(unplug, supervisor_pid, prev_stages, telemetry_enabled)
+          unplug =
+            unplug
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> start_stage(supervisor_pid, prev_stages)
+
           {[unplug], stages ++ [unplug]}
 
         %Decomposer{} = decomposer ->
-          decomposer = start_stage(decomposer, supervisor_pid, prev_stages, telemetry_enabled)
+          decomposer =
+            decomposer
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> start_stage(supervisor_pid, prev_stages)
+
           {[decomposer], stages ++ [decomposer]}
 
         %Recomposer{} = recomposer ->
-          recomposer = start_stage(recomposer, supervisor_pid, prev_stages, telemetry_enabled)
+          recomposer =
+            recomposer
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> start_stage(supervisor_pid, prev_stages)
+
           {[recomposer], stages ++ [recomposer]}
 
         %Tbd{} = tbd ->
-          tbd = start_stage(tbd, supervisor_pid, prev_stages, telemetry_enabled)
+          tbd =
+            tbd
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> start_stage(supervisor_pid, prev_stages)
+
           {[tbd], stages ++ [tbd]}
       end
     end)
@@ -190,6 +233,7 @@ defmodule ALF.Builder do
     producer = %Producer{
       manager_name: manager_name,
       pipeline_module: pipeline_module,
+      stage_set_ref: make_ref(),
       telemetry_enabled: telemetry_enabled
     }
 
@@ -204,16 +248,17 @@ defmodule ALF.Builder do
          pipeline_module,
          telemetry_enabled
        ) do
-    subscribe_to = subscribe_to_opts(last_stages)
+    #    subscribe_to = subscribe_to_opts(last_stages)
 
     consumer = %Consumer{
-      subscribe_to: subscribe_to,
       manager_name: manager_name,
       pipeline_module: pipeline_module,
       telemetry_enabled: telemetry_enabled
     }
 
     {:ok, consumer_pid} = DynamicSupervisor.start_child(supervisor_pid, {Consumer, consumer})
+    subscribe(consumer_pid, last_stages)
+
     %{consumer | pid: consumer_pid}
   end
 
@@ -224,25 +269,26 @@ defmodule ALF.Builder do
     {producer, consumer}
   end
 
-  defp start_stage(stage, supervisor_pid, prev_stages, telemetry_enabled) do
-    stage = %{
-      stage
-      | subscribe_to: subscribe_to_opts(prev_stages),
-        telemetry_enabled: telemetry_enabled
-    }
-
+  defp start_stage(stage, supervisor_pid, prev_stages) do
     {:ok, stage_pid} = DynamicSupervisor.start_child(supervisor_pid, {stage.__struct__, stage})
+    subscribe(stage_pid, prev_stages)
     %{stage | pid: stage_pid}
   end
 
-  defp subscribe_to_opts(stages) do
-    Enum.map(stages, fn stage ->
+  defp subscribe(stage_pid, stages) do
+    stages
+    |> Enum.each(fn stage ->
       case stage do
         {stage, partition: key} ->
-          {stage.pid, max_demand: 1, cancel: :transient, partition: key}
+          GenStage.async_subscribe(stage_pid,
+            to: stage.pid,
+            max_demand: 1,
+            cancel: :temporary,
+            partition: key
+          )
 
         stage ->
-          {stage.pid, max_demand: 1, cancel: :transient}
+          GenStage.async_subscribe(stage_pid, to: stage.pid, max_demand: 1, cancel: :temporary)
       end
     end)
   end

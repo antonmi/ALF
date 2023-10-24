@@ -18,13 +18,16 @@ defmodule ALF.Components.Producer do
 
   @impl true
   def init(state) do
-    {:producer,
-     %{
-       state
-       | pid: self(),
-         name: :producer,
-         source_code: state.source_code || read_source_code(state.pipeline_module)
-     }}
+    state = %{
+      state
+      | pid: self(),
+        name: :producer,
+        source_code: state.source_code || read_source_code(state.pipeline_module)
+    }
+
+    component_added(state)
+
+    {:producer, state}
   end
 
   def init_sync(state, telemetry_enabled) do

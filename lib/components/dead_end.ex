@@ -13,7 +13,9 @@ defmodule ALF.Components.DeadEnd do
 
   @impl true
   def init(state) do
-    {:consumer, %{state | pid: self()}, subscribe_to: state.subscribe_to}
+    state = %{state | pid: self()}
+    component_added(state)
+    {:consumer, state}
   end
 
   def init_sync(state, telemetry_enabled) do

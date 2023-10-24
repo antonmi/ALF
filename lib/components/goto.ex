@@ -32,7 +32,8 @@ defmodule ALF.Components.Goto do
         source_code: state.source_code || read_source_code(state.module, state.function)
     }
 
-    {:producer_consumer, state, subscribe_to: state.subscribe_to}
+    component_added(state)
+    {:producer_consumer, state}
   end
 
   def init_sync(state, telemetry_enabled) do

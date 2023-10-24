@@ -27,7 +27,8 @@ defmodule ALF.Components.Decomposer do
         source_code: state.source_code || read_source_code(state.module, state.function)
     }
 
-    {:producer_consumer, state, subscribe_to: state.subscribe_to}
+    component_added(state)
+    {:producer_consumer, state}
   end
 
   @spec init_sync(t(), boolean) :: t()

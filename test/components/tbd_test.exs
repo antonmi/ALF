@@ -8,8 +8,9 @@ defmodule ALF.Components.TbdTest do
     %{producer_pid: producer_pid}
   end
 
-  def setup_stage(stage) do
+  def setup_stage(stage, producer_pid) do
     {:ok, pid} = Tbd.start_link(stage)
+    GenStage.sync_subscribe(pid, to: producer_pid, max_demand: 1, cancel: :temporary)
 
     {:ok, consumer_pid} =
       TestConsumer.start_link(%TestConsumer{subscribe_to: [{pid, max_demand: 1}]})
@@ -20,12 +21,9 @@ defmodule ALF.Components.TbdTest do
   def tdb_function(event, _), do: event
 
   setup %{producer_pid: producer_pid} do
-    stage = %Tbd{
-      name: :tbd,
-      subscribe_to: [{producer_pid, max_demand: 1}]
-    }
+    stage = %Tbd{name: :tbd}
 
-    setup_stage(stage)
+    setup_stage(stage, producer_pid)
   end
 
   test "call component", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do

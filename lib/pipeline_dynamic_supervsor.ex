@@ -7,6 +7,6 @@ defmodule ALF.PipelineDynamicSupervisor do
 
   @impl true
   def init(_state) do
-    DynamicSupervisor.init(strategy: :one_for_one)
+    DynamicSupervisor.init(strategy: :one_for_one, max_restarts: 3, max_seconds: 5)
   end
 end

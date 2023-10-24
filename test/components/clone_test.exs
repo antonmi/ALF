@@ -8,12 +8,11 @@ defmodule ALF.Components.CloneTest do
     %{producer_pid: producer_pid}
   end
 
-  def build_clone(producer_pid) do
+  def build_clone() do
     %Clone{
       name: :clone,
       to: [],
-      pipeline_module: __MODULE__,
-      subscribe_to: [{producer_pid, max_demand: 1}]
+      pipeline_module: __MODULE__
     }
   end
 
@@ -28,7 +27,9 @@ defmodule ALF.Components.CloneTest do
   end
 
   setup %{producer_pid: producer_pid} do
-    {:ok, pid} = Clone.start_link(build_clone(producer_pid))
+    {:ok, pid} = Clone.start_link(build_clone())
+
+    GenStage.sync_subscribe(pid, to: producer_pid, max_demand: 1, cancel: :temporary)
 
     {consumer1_pid, consumer2_pid} = setup_consumers(pid)
     %{pid: pid, consumer1_pid: consumer1_pid, consumer2_pid: consumer2_pid}

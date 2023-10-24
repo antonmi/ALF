@@ -33,6 +33,7 @@ defmodule ALF.TestConsumer do
 
   defstruct subscribe_to: [],
             subscribed_to: [],
+            pipeline_module: nil,
             ips: []
 
   def start_link(%__MODULE__{} = state) do

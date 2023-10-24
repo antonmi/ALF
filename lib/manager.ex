@@ -5,21 +5,24 @@ defmodule ALF.Manager do
             pipeline_module: nil,
             pid: nil,
             pipeline: nil,
-            components: [],
+            stages: %{},
+            removed_components: %{},
             pipeline_sup_pid: nil,
             sup_pid: nil,
             producer_pid: nil,
             telemetry_enabled: nil,
             sync: false
 
-  alias ALF.Components.{Goto, Producer}
+  alias ALF.Components.{Consumer, Goto, GotoPoint, Producer}
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline, SyncRunner}
   alias ALF.{ErrorIP, IP}
+
+  require Logger
 
   @type t :: %__MODULE__{}
 
   @available_options [:telemetry_enabled, :sync]
-  @default_timeout 60_000
+  @default_timeout 10_000
 
   @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
@@ -31,11 +34,21 @@ defmodule ALF.Manager do
     state = %{state | pid: self()}
 
     if state.sync do
-      pipeline = Builder.build_sync(state.pipeline_module, state.telemetry_enabled)
-      {:ok, %{state | pipeline: pipeline, components: Pipeline.stages_to_list(pipeline)}}
+      {:ok, start_sync_pipeline(state)}
     else
       {:ok, start_pipeline(state)}
     end
+  end
+
+  defp start_sync_pipeline(state) do
+    pipeline = Builder.build_sync(state.pipeline_module, state.telemetry_enabled)
+
+    stages =
+      pipeline
+      |> Pipeline.stages_to_list()
+      |> Enum.reduce(%{}, &Map.put(&2, &1.pid, &1))
+
+    %{state | pipeline: pipeline, stages: stages}
   end
 
   @spec start(atom) :: :ok
@@ -254,15 +267,25 @@ defmodule ALF.Manager do
     GenServer.call(name, :components)
   end
 
+  @spec component_added(atom, map) :: :ok
+  def component_added(name, component) when is_atom(name) do
+    GenServer.cast(name, {:component_added, component})
+  end
+
+  @spec component_updated(atom, map) :: :ok
+  def component_updated(name, component) when is_atom(name) do
+    GenServer.cast(name, {:component_updated, component})
+  end
+
   @spec reload_components_states(atom()) :: list(map())
   def reload_components_states(name) when is_atom(name) do
     GenServer.call(name, :reload_components_states)
   end
 
   @impl true
-  def terminate(:normal, state) do
+  def terminate(_reason, state) do
     unless state.sync do
-      Supervisor.stop(state.pipeline_sup_pid)
+      Process.alive?(state.pipeline_sup_pid) and Supervisor.stop(state.pipeline_sup_pid)
     end
   end
 
@@ -278,8 +301,6 @@ defmodule ALF.Manager do
     state
     |> start_pipeline_supervisor()
     |> build_pipeline()
-    |> save_stages_states()
-    |> prepare_gotos()
   end
 
   defp start_pipeline_supervisor(%__MODULE__{} = state) do
@@ -306,34 +327,18 @@ defmodule ALF.Manager do
     %{state | pipeline: pipeline, producer_pid: pipeline.producer.pid}
   end
 
-  defp save_stages_states(%__MODULE__{} = state) do
-    components =
-      [state.pipeline.producer | Pipeline.stages_to_list(state.pipeline.components)] ++
-        [state.pipeline.consumer]
+  defp prepare_gotos(state) do
+    state.stages
+    |> Enum.each(fn {_pid, component} ->
+      case component do
+        %Goto{} ->
+          goto = Goto.find_where_to_go(component.pid, Map.values(state.stages))
+          component_updated(state.pipeline_module, goto)
 
-    components =
-      components
-      |> Enum.map(fn stage ->
-        stage.__struct__.__state__(stage.pid)
-      end)
-
-    %{state | components: components}
-  end
-
-  defp prepare_gotos(%__MODULE__{} = state) do
-    components =
-      state.components
-      |> Enum.map(fn component ->
-        case component do
-          %Goto{} ->
-            Goto.find_where_to_go(component.pid, state.components)
-
-          stage ->
-            stage
-        end
-      end)
-
-    %{state | components: components}
+        _stage ->
+          :ok
+      end
+    end)
   end
 
   @impl true
@@ -348,21 +353,25 @@ defmodule ALF.Manager do
   end
 
   def handle_call(:components, _from, state) do
-    {:reply, state.components, state}
+    components = Map.values(state.stages)
+    {:reply, components, state}
+  end
+
+  def handle_call(:stages, _from, state) do
+    {:reply, state.stages, state}
   end
 
   def handle_call(:reload_components_states, _from, %__MODULE__{sync: false} = state) do
-    components =
-      state.components
-      |> Enum.map(fn stage ->
-        stage.__struct__.__state__(stage.pid)
+    stages =
+      Enum.reduce(state.stages, %{}, fn {pid, stage}, acc ->
+        Map.put(acc, pid, stage.__struct__.__state__(stage.pid))
       end)
 
-    {:reply, components, %{state | components: components}}
+    {:reply, Map.values(stages), %{state | stages: stages}}
   end
 
   def handle_call(:reload_components_states, _from, %__MODULE__{sync: true} = state) do
-    {:reply, state.components, state}
+    {:reply, Map.values(state.stages), state}
   end
 
   def handle_call(:sync_pipeline, _from, state) do
@@ -374,11 +383,73 @@ defmodule ALF.Manager do
   end
 
   @impl true
-  def handle_info({:DOWN, _ref, :process, _pid, :shutdown}, %__MODULE__{} = state) do
-    state = start_pipeline(state)
+  def handle_cast({:component_added, component}, state) do
+    stages = Map.put(state.stages, component.pid, component)
+
+    removed_components =
+      maybe_resubscribe(state.removed_components, component.stage_set_ref, component.pid)
+
+    Process.monitor(component.pid)
+    state = %{state | stages: stages, removed_components: removed_components}
+
+    maybe_prepare_gotos(component, state)
 
     {:noreply, state}
   end
+
+  @impl true
+  def handle_cast({:component_updated, component}, state) do
+    stages = Map.put(state.stages, component.pid, component)
+
+    {:noreply, %{state | stages: stages}}
+  end
+
+  @impl true
+  def handle_info({:DOWN, _ref, :process, pid, reason}, %__MODULE__{} = state) do
+    Logger.error(
+      "Component #{inspect(pid)} is :DOWN with reason: #{reason} in pipeline: #{state.pipeline_module}"
+    )
+
+    if pid == state.pipeline_sup_pid do
+      state = start_pipeline(state)
+      {:noreply, state}
+    else
+      case Map.get(state.stages, pid) do
+        nil ->
+          {:noreply, state}
+
+        component ->
+          removed_components =
+            Map.put(state.removed_components, component.stage_set_ref, component)
+
+          stages = Map.delete(state.stages, pid)
+          {:noreply, %{state | stages: stages, removed_components: removed_components}}
+      end
+    end
+  end
+
+  defp maybe_resubscribe(removed_components, stage_set_ref, component_pid) do
+    case Map.get(removed_components, stage_set_ref) do
+      nil ->
+        removed_components
+
+      %{subscribed_to: subscribed_to, subscribers: subscribers} ->
+        Enum.each(subscribed_to, fn {{pid, _ref}, opts} ->
+          GenStage.async_subscribe(component_pid, Keyword.put(opts, :to, pid))
+        end)
+
+        Enum.each(subscribers, fn {{pid, _ref}, opts} ->
+          GenStage.async_subscribe(pid, Keyword.put(opts, :to, component_pid))
+        end)
+
+        Map.delete(removed_components, stage_set_ref)
+    end
+  end
+
+  defp maybe_prepare_gotos(%Consumer{}, state), do: prepare_gotos(state)
+  defp maybe_prepare_gotos(%GotoPoint{}, state), do: prepare_gotos(state)
+  defp maybe_prepare_gotos(%Goto{}, state), do: prepare_gotos(state)
+  defp maybe_prepare_gotos(_other_components, _state), do: :nothing
 
   defp is_pipeline_module?(module) when is_atom(module) do
     is_list(module.alf_components())
