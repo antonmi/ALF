@@ -229,6 +229,7 @@ defmodule ALF.ManagerTest do
 
     test "not started" do
       Manager.stop(StatusPipeline)
+      Process.sleep(10)
       assert Manager.started?(StatusPipeline) == false
       assert StatusPipeline.started?() == false
     end

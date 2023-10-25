@@ -61,7 +61,8 @@ defmodule ALF.Components.Goto do
           raise "Goto component error: found #{Enum.count(components)} components with name #{state.to}"
 
         [] ->
-          raise "Goto component error: no component with name #{state.to}"
+          #          raise "Goto component error: no component with name #{state.to}"
+          nil
       end
 
     state = %{state | to_pid: pid}
@@ -112,7 +113,12 @@ defmodule ALF.Components.Goto do
         ip
 
       _truthy ->
-        :ok = GenStage.call(state.to_pid, {:goto, ip})
+        if state.to_pid do
+          :ok = GenStage.call(state.to_pid, {:goto, ip})
+        else
+          raise "Goto component error: no component with name #{state.to}"
+        end
+
         nil
     end
   end
