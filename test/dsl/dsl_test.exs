@@ -197,7 +197,6 @@ defmodule ALF.DSLTest do
                name: :decomposer_function,
                opts: [foo: :bar],
                pid: decomposer_pid,
-               pipe_module: ALF.DSLTest.PipelineCompose,
                pipeline_module: ALF.DSLTest.PipelineCompose,
                subscribed_to: [{{producer_pid, _ref1}, _opts1}],
                subscribers: [{{recomposer_pid, _ref2}, _opts2}]
@@ -213,7 +212,6 @@ defmodule ALF.DSLTest do
                name: :recomposer_function,
                opts: [foo: :bar],
                pid: ^recomposer_pid,
-               pipe_module: ALF.DSLTest.PipelineCompose,
                pipeline_module: ALF.DSLTest.PipelineCompose,
                subscribed_to: [{{^decomposer_pid, _ref1}, _opts1}],
                subscribers: [{{consumer_pid, _ref2}, _opts2}]

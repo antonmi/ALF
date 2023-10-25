@@ -24,7 +24,14 @@ defmodule ALF.Builder do
     producer = start_producer(supervisor_pid, pipeline_module, telemetry_enabled)
 
     {last_stages, final_stages} =
-      do_build_pipeline(pipe_spec, [producer], supervisor_pid, [], telemetry_enabled)
+      do_build_pipeline(
+        pipeline_module,
+        pipe_spec,
+        [producer],
+        supervisor_pid,
+        [],
+        telemetry_enabled
+      )
 
     consumer =
       start_consumer(
@@ -41,7 +48,14 @@ defmodule ALF.Builder do
     {:ok, pipeline}
   end
 
-  defp do_build_pipeline(pipe_spec, producers, supervisor_pid, final_stages, telemetry_enabled)
+  defp do_build_pipeline(
+         pipeline_module,
+         pipe_spec,
+         producers,
+         supervisor_pid,
+         final_stages,
+         telemetry_enabled
+       )
        when is_list(pipe_spec) do
     pipe_spec
     |> Enum.reduce({producers, final_stages}, fn stage_spec, {prev_stages, stages} ->
@@ -53,6 +67,7 @@ defmodule ALF.Builder do
             Enum.map(0..(count - 1), fn number ->
               stage
               |> Map.merge(%{
+                pipeline_module: pipeline_module,
                 stage_set_ref: stage_set_ref,
                 number: number,
                 telemetry_enabled: telemetry_enabled
@@ -65,7 +80,11 @@ defmodule ALF.Builder do
         %Goto{} = goto ->
           goto =
             goto
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> Map.merge(%{
+              pipeline_module: pipeline_module,
+              stage_set_ref: make_ref(),
+              telemetry_enabled: telemetry_enabled
+            })
             |> start_stage(supervisor_pid, prev_stages)
 
           {[goto], stages ++ [goto]}
@@ -73,7 +92,11 @@ defmodule ALF.Builder do
         %DeadEnd{} = dead_end ->
           dead_end =
             dead_end
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> Map.merge(%{
+              pipeline_module: pipeline_module,
+              stage_set_ref: make_ref(),
+              telemetry_enabled: telemetry_enabled
+            })
             |> start_stage(supervisor_pid, prev_stages)
 
           {[], stages ++ [dead_end]}
@@ -81,7 +104,11 @@ defmodule ALF.Builder do
         %GotoPoint{} = goto_point ->
           goto_point =
             goto_point
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> Map.merge(%{
+              pipeline_module: pipeline_module,
+              stage_set_ref: make_ref(),
+              telemetry_enabled: telemetry_enabled
+            })
             |> start_stage(supervisor_pid, prev_stages)
 
           {[goto_point], stages ++ [goto_point]}
@@ -89,7 +116,11 @@ defmodule ALF.Builder do
         %Switch{branches: branches} = switch ->
           switch =
             switch
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> Map.merge(%{
+              pipeline_module: pipeline_module,
+              stage_set_ref: make_ref(),
+              telemetry_enabled: telemetry_enabled
+            })
             |> start_stage(supervisor_pid, prev_stages)
 
           {last_stages, branches} =
@@ -97,6 +128,7 @@ defmodule ALF.Builder do
                                                 {all_last_stages, branches} ->
               {last_stages, final_stages} =
                 do_build_pipeline(
+                  pipeline_module,
                   inner_pipe_spec,
                   [{switch, partition: key}],
                   supervisor_pid,
@@ -114,11 +146,22 @@ defmodule ALF.Builder do
         %Clone{to: pipe_stages} = clone ->
           clone =
             clone
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> Map.merge(%{
+              pipeline_module: pipeline_module,
+              stage_set_ref: make_ref(),
+              telemetry_enabled: telemetry_enabled
+            })
             |> start_stage(supervisor_pid, prev_stages)
 
           {last_stages, final_stages} =
-            do_build_pipeline(pipe_stages, [clone], supervisor_pid, [], telemetry_enabled)
+            do_build_pipeline(
+              pipeline_module,
+              pipe_stages,
+              [clone],
+              supervisor_pid,
+              [],
+              telemetry_enabled
+            )
 
           clone = %{clone | to: final_stages}
 
@@ -127,7 +170,11 @@ defmodule ALF.Builder do
         %Done{} = done ->
           done =
             done
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> Map.merge(%{
+              pipeline_module: pipeline_module,
+              stage_set_ref: make_ref(),
+              telemetry_enabled: telemetry_enabled
+            })
             |> start_stage(supervisor_pid, prev_stages)
 
           {[done], stages ++ [done]}
@@ -257,8 +304,8 @@ defmodule ALF.Builder do
   end
 
   defp set_modules_to_producer_and_consumer({producer, consumer}, pipeline_module) do
-    producer = %{producer | pipe_module: pipeline_module, pipeline_module: pipeline_module}
-    consumer = %{consumer | pipe_module: pipeline_module, pipeline_module: pipeline_module}
+    producer = %{producer | pipeline_module: pipeline_module}
+    consumer = %{consumer | pipeline_module: pipeline_module}
 
     {producer, consumer}
   end

@@ -4,7 +4,6 @@ defmodule ALF.Components.Basic do
   @common_attributes [
     name: nil,
     pid: nil,
-    pipe_module: nil,
     pipeline_module: nil,
     subscribed_to: [],
     subscribers: [],
@@ -19,7 +18,6 @@ defmodule ALF.Components.Basic do
 
     if module_exist?(atom) do
       struct(component_module, %{
-        pipe_module: current_module,
         pipeline_module: current_module,
         name: name,
         module: atom,
@@ -28,7 +26,6 @@ defmodule ALF.Components.Basic do
       })
     else
       struct(component_module, %{
-        pipe_module: current_module,
         pipeline_module: current_module,
         name: name,
         module: current_module,

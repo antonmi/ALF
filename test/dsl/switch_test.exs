@@ -43,7 +43,6 @@ defmodule ALF.DSL.SwitchTest do
                },
                opts: [foo: :bar],
                pid: pid,
-               pipe_module: PipelineSwitch1,
                pipeline_module: PipelineSwitch1
              } = switch
 
@@ -85,7 +84,6 @@ defmodule ALF.DSL.SwitchTest do
                module: PipelineSwitch2.DoSwitch,
                function: :call,
                opts: [baz: :qux, foo: :bar],
-               pipe_module: PipelineSwitch2,
                pipeline_module: PipelineSwitch2
              } = switch
     end
@@ -117,7 +115,6 @@ defmodule ALF.DSL.SwitchTest do
                module: PipelineSwitch3,
                function: :do_switch,
                opts: [foo: :bar],
-               pipe_module: PipelineSwitch3,
                pipeline_module: PipelineSwitch3
              } = switch
     end

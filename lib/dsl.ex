@@ -44,7 +44,7 @@ defmodule ALF.DSL do
 
     quote do
       Switch.validate_options(unquote(atom), unquote(options))
-      branches = ALF.DSL.build_branches(unquote(options)[:branches], __MODULE__)
+      branches = build_branches(unquote(options)[:branches])
 
       switch =
         Basic.build_component(
@@ -62,14 +62,9 @@ defmodule ALF.DSL do
   defmacro clone(name, options) do
     quote do
       Clone.validate_options(unquote(name), unquote(options))
-      stages = set_pipeline_module(unquote(options)[:to], __MODULE__)
+      stages = unquote(options)[:to]
 
-      %Clone{
-        name: unquote(name),
-        to: stages,
-        pipe_module: __MODULE__,
-        pipeline_module: __MODULE__
-      }
+      %Clone{name: unquote(name), to: stages}
     end
   end
 
@@ -96,21 +91,13 @@ defmodule ALF.DSL do
 
   defmacro goto_point(name) do
     quote do
-      %GotoPoint{
-        name: unquote(name),
-        pipe_module: __MODULE__,
-        pipeline_module: __MODULE__
-      }
+      %GotoPoint{name: unquote(name)}
     end
   end
 
   defmacro dead_end(name) do
     quote do
-      %DeadEnd{
-        name: unquote(name),
-        pipe_module: __MODULE__,
-        pipeline_module: __MODULE__
-      }
+      %DeadEnd{name: unquote(name)}
     end
   end
 
@@ -172,9 +159,7 @@ defmodule ALF.DSL do
     quote do
       validate_stages_from_options(unquote(options))
 
-      unquote(module).alf_components
-      |> ALF.DSL.set_pipeline_module(__MODULE__)
-      |> ALF.DSL.set_options(unquote(opts), unquote(count))
+      set_options(unquote(module).alf_components, unquote(opts), unquote(count))
     end
   end
 
@@ -184,20 +169,8 @@ defmodule ALF.DSL do
     quote do
       validate_plug_with_options(unquote(options))
       name = if unquote(name), do: unquote(name), else: unquote(module)
-
-      plug = %Plug{
-        name: name,
-        module: unquote(module),
-        pipe_module: __MODULE__,
-        pipeline_module: __MODULE__
-      }
-
-      unplug = %Unplug{
-        name: name,
-        module: unquote(module),
-        pipe_module: __MODULE__,
-        pipeline_module: __MODULE__
-      }
+      plug = %Plug{name: name, module: unquote(module)}
+      unplug = %Unplug{name: name, module: unquote(module)}
 
       [plug] ++ unquote(block) ++ [unplug]
     end
@@ -239,17 +212,10 @@ defmodule ALF.DSL do
     end
   end
 
-  def build_branches(branches, module) do
+  def build_branches(branches) do
     branches
     |> Enum.reduce(%{}, fn {key, stages}, final_specs ->
-      stages = set_pipeline_module(stages, module)
       Map.put(final_specs, key, stages)
-    end)
-  end
-
-  def set_pipeline_module(stages, module) do
-    Enum.map(stages, fn stage ->
-      %{stage | pipeline_module: module}
     end)
   end
 
