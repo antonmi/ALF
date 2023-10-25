@@ -18,10 +18,10 @@ defmodule ALF.Builder do
     Tbd
   }
 
-  @spec build(atom, pid, atom, boolean) :: {:ok, Pipeline.t()}
-  def build(pipeline_module, supervisor_pid, manager_name, telemetry_enabled) do
+  @spec build(atom, pid, boolean) :: {:ok, Pipeline.t()}
+  def build(pipeline_module, supervisor_pid, telemetry_enabled) do
     pipe_spec = pipeline_module.alf_components()
-    producer = start_producer(supervisor_pid, manager_name, pipeline_module, telemetry_enabled)
+    producer = start_producer(supervisor_pid, pipeline_module, telemetry_enabled)
 
     {last_stages, final_stages} =
       do_build_pipeline(pipe_spec, [producer], supervisor_pid, [], telemetry_enabled)
@@ -30,7 +30,6 @@ defmodule ALF.Builder do
       start_consumer(
         supervisor_pid,
         last_stages,
-        manager_name,
         pipeline_module,
         telemetry_enabled
       )
@@ -229,9 +228,8 @@ defmodule ALF.Builder do
     end)
   end
 
-  defp start_producer(supervisor_pid, manager_name, pipeline_module, telemetry_enabled) do
+  defp start_producer(supervisor_pid, pipeline_module, telemetry_enabled) do
     producer = %Producer{
-      manager_name: manager_name,
       pipeline_module: pipeline_module,
       stage_set_ref: make_ref(),
       telemetry_enabled: telemetry_enabled
@@ -244,14 +242,10 @@ defmodule ALF.Builder do
   defp start_consumer(
          supervisor_pid,
          last_stages,
-         manager_name,
          pipeline_module,
          telemetry_enabled
        ) do
-    #    subscribe_to = subscribe_to_opts(last_stages)
-
     consumer = %Consumer{
-      manager_name: manager_name,
       pipeline_module: pipeline_module,
       telemetry_enabled: telemetry_enabled
     }

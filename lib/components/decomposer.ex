@@ -133,7 +133,7 @@ defmodule ALF.Components.Decomposer do
         ref: ip.ref,
         init_event: event,
         event: event,
-        manager_name: ip.manager_name,
+        pipeline_module: ip.pipeline_module,
         decomposed: true,
         history: history,
         sync_path: ip.sync_path

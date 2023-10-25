@@ -92,18 +92,8 @@ defmodule ALF.DSLTest do
   end
 
   describe "PipelineA" do
-    test "build PipelineA", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineA, sup_pid, Helpers.random_atom("manager"), false)
-
-      [one, two, three, four] = pipeline.components
-      assert %Stage{name: ModuleA} = one
-      assert %Stage{name: :custom_name} = two
-      assert %Stage{name: :just_function} = three
-      assert %Stage{name: :custom_name} = four
-    end
-
-    test "build with telemetry_enabled", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineA, sup_pid, Helpers.random_atom("manager"), true)
+    test "build PipelineA with telemetry_enabled", %{sup_pid: sup_pid} do
+      {:ok, pipeline} = Builder.build(PipelineA, sup_pid, true)
 
       [one, two, three, four] = pipeline.components
       assert %Stage{name: ModuleA, telemetry_enabled: true} = one
@@ -115,7 +105,7 @@ defmodule ALF.DSLTest do
 
   describe "PipelineB" do
     test "build PipelineB", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineB, sup_pid, Helpers.random_atom("manager"), false)
+      {:ok, pipeline} = Builder.build(PipelineB, sup_pid, false)
 
       [goto_point, clone, switch, goto] = pipeline.components
 
@@ -144,7 +134,7 @@ defmodule ALF.DSLTest do
 
   describe "PipelineC" do
     test "build PipelineC", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineC, sup_pid, Helpers.random_atom("manager"), false)
+      {:ok, pipeline} = Builder.build(PipelineC, sup_pid, false)
 
       [stage, plug, stage_in_plug, unplug, another_plug, _, _, _, last_stage, another_unplug] =
         pipeline.components
@@ -196,8 +186,7 @@ defmodule ALF.DSLTest do
 
   describe "PipelineCompose" do
     test "build PipelineCompose", %{sup_pid: sup_pid} do
-      {:ok, pipeline} =
-        Builder.build(PipelineCompose, sup_pid, Helpers.random_atom("manager"), false)
+      {:ok, pipeline} = Builder.build(PipelineCompose, sup_pid, false)
 
       Process.sleep(10)
       [decomposer, recomposer] = pipeline.components

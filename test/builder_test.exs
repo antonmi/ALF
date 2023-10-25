@@ -77,8 +77,7 @@ defmodule ALF.BuilderTest do
 
   describe "simple pipeline" do
     test "build simple pipeline", %{sup_pid: sup_pid} do
-      {:ok, pipeline} =
-        Builder.build(SimplePipeline, sup_pid, Helpers.random_atom("manager"), :pipeline)
+      {:ok, pipeline} = Builder.build(SimplePipeline, sup_pid, :pipeline)
 
       components = pipeline.components
       stage = hd(components)
@@ -106,8 +105,7 @@ defmodule ALF.BuilderTest do
 
   describe "switch" do
     test "build pipeline with switch", %{sup_pid: sup_pid} do
-      {:ok, pipeline} =
-        Builder.build(PipelineWithSwitch, sup_pid, Helpers.random_atom("manager"), :pipeline)
+      {:ok, pipeline} = Builder.build(PipelineWithSwitch, sup_pid, :pipeline)
 
       switch = hd(pipeline.components)
 
@@ -126,8 +124,7 @@ defmodule ALF.BuilderTest do
 
   describe "clone" do
     test "build pipeline with clone", %{sup_pid: sup_pid} do
-      {:ok, pipeline} =
-        Builder.build(PipelineWithClone, sup_pid, Helpers.random_atom("manager"), :pipeline)
+      {:ok, pipeline} = Builder.build(PipelineWithClone, sup_pid, :pipeline)
 
       [clone | [stage2]] = pipeline.components
 
@@ -144,13 +141,7 @@ defmodule ALF.BuilderTest do
     end
 
     test "build pipeline with clone and dead_end", %{sup_pid: sup_pid} do
-      {:ok, pipeline} =
-        Builder.build(
-          PipelineWithCloneAndDeadEnd,
-          sup_pid,
-          Helpers.random_atom("manager"),
-          :pipeline
-        )
+      {:ok, pipeline} = Builder.build(PipelineWithCloneAndDeadEnd, sup_pid, :pipeline)
 
       [clone | [stage2]] = pipeline.components
 
@@ -169,13 +160,7 @@ defmodule ALF.BuilderTest do
     end
 
     test "build pipeline with clone and dead_end, reversed", %{sup_pid: sup_pid} do
-      {:ok, pipeline} =
-        Builder.build(
-          PipelineWithCloneAndDeadEndReversed,
-          sup_pid,
-          Helpers.random_atom("manager"),
-          :pipeline
-        )
+      {:ok, pipeline} = Builder.build(PipelineWithCloneAndDeadEndReversed, sup_pid, :pipeline)
 
       [clone | [stage2, dead_end]] = pipeline.components
 

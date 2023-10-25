@@ -313,7 +313,6 @@ defmodule ALF.Manager do
       Builder.build(
         state.pipeline_module,
         state.pipeline_sup_pid,
-        state.pipeline_module,
         state.telemetry_enabled
       )
 
@@ -479,7 +478,7 @@ defmodule ALF.Manager do
       destination: self(),
       init_event: event,
       event: event,
-      manager_name: pipeline_module
+      pipeline_module: pipeline_module
     }
   end
 end

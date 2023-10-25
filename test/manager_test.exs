@@ -99,6 +99,7 @@ defmodule ALF.ManagerTest do
     end
 
     test "components" do
+      Process.sleep(10)
       [producer, add, mult, consumer] = SimplePipeline.components()
 
       assert producer.name == :producer
@@ -501,7 +502,7 @@ defmodule ALF.ManagerTest do
     end
 
     test "run stream and check events" do
-      assert %ALF.ErrorIP{error: :timeout} = TimeoutPipeline.call(1, timeout: 5)
+      assert %ALF.ErrorIP{error: :timeout} = TimeoutPipeline.call(1, timeout: 1)
     end
   end
 

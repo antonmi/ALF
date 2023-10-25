@@ -41,7 +41,7 @@ defmodule ALF.Components.Basic do
   def build_error_ip(ip, error, stacktrace, state) do
     %ErrorIP{
       ip: ip,
-      manager_name: ip.manager_name,
+      pipeline_module: ip.pipeline_module,
       destination: ip.destination,
       ref: ip.ref,
       stream_ref: ip.stream_ref,

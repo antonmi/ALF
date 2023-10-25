@@ -5,8 +5,7 @@ defmodule ALF.Components.Consumer do
 
   defstruct Basic.common_attributes() ++
               [
-                type: :consumer,
-                manager_name: nil
+                type: :consumer
               ]
 
   @spec start_link(t()) :: GenServer.on_start()

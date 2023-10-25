@@ -213,7 +213,7 @@ defmodule ALF.Components.Recomposer do
       destination: ip.destination,
       init_event: event,
       event: event,
-      manager_name: ip.manager_name,
+      pipeline_module: ip.pipeline_module,
       recomposed: true,
       history: history,
       sync_path: ip.sync_path
