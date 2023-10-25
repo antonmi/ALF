@@ -39,9 +39,10 @@ defmodule ALF.CrashPipelineTest do
       SimplePipelineToCrash.start()
 
       on_exit(&SimplePipelineToCrash.stop/0)
+      %{state: ALF.Manager.__state__(SimplePipelineToCrash)}
     end
 
-    test "with one stream two crashes" do
+    test "with one stream two crashes", %{state: state} do
       capture_log(fn ->
         results =
           0..9
@@ -52,15 +53,22 @@ defmodule ALF.CrashPipelineTest do
         [error1, error2] = Enum.filter(results, fn event -> is_struct(event, ALF.ErrorIP) end)
         assert error1.error == :timeout
         assert error2.error == :timeout
+        Process.sleep(10)
       end)
 
+      pids = Enum.map(Map.values(state.stages), &(&1.pid))
+      new_state = ALF.Manager.__state__(SimplePipelineToCrash)
+      new_pids = Enum.map(Map.values(new_state.stages), &(&1.pid))
+
+      assert new_state.pipeline_sup_pid == state.pipeline_sup_pid
+      assert length(pids -- new_pids) == 2
       assert SimplePipelineToCrash.call(1) == "1-foo-bar-baz"
     end
 
-    test "with one stream lost of crashes (manager crash)" do
+    test "with one stream lost of crashes (pipeline supervisor crash)", %{state: state} do
       capture_log(fn ->
         results =
-          [1, 6, 6, 1, 7, 2, 7, 7, 6, 2]
+          [1, 6, 7, 1, 6, 2, 7, 7, 6, 2]
           |> SimplePipelineToCrash.stream(timeout: 20)
           |> Enum.to_list()
 
@@ -68,9 +76,16 @@ defmodule ALF.CrashPipelineTest do
 
         errors = Enum.filter(results, fn event -> is_struct(event, ALF.ErrorIP) end)
         assert length(errors) >= 6
+        Process.sleep(20)
       end) =~ "terminating"
 
-      Process.sleep(50)
+      pids = Enum.map(Map.values(state.stages), &(&1.pid))
+      new_state = ALF.Manager.__state__(SimplePipelineToCrash)
+      new_pids = Enum.map(Map.values(new_state.stages), &(&1.pid))
+
+      assert length(pids -- new_pids) == 7
+      assert new_state.pipeline_sup_pid != state.pipeline_sup_pid
+
       assert SimplePipelineToCrash.call(1) == "1-foo-bar-baz"
     end
 
@@ -93,9 +108,9 @@ defmodule ALF.CrashPipelineTest do
           Enum.filter(result1 ++ result2 ++ result3, fn event -> is_struct(event, ALF.ErrorIP) end)
 
         assert length(errors) == 2
+        Process.sleep(10)
       end)
 
-      Process.sleep(10)
       assert SimplePipelineToCrash.call(1) == "1-foo-bar-baz"
     end
   end
@@ -207,9 +222,10 @@ defmodule ALF.CrashPipelineTest do
     end
 
     test "crash in switch", %{components: components} do
-      Process.sleep(10)
+      Process.sleep(20)
       switch = Enum.find(components, &(&1.name == :ready_or_not))
       kill(switch.pid)
+      Process.sleep(10)
       assert BubbleSortWithSwitchPipeline.call([3, 1, 2]) == [1, 2, 3]
     end
 
@@ -270,12 +286,14 @@ defmodule ALF.CrashPipelineTest do
     end
 
     test "kill decomposer", %{components: components} do
+      Process.sleep(10)
       decomposer = Enum.find(components, &(&1.name == :decomposer_function))
       kill(decomposer.pid)
       it_works!()
     end
 
     test "kill recomposer", %{components: components} do
+      Process.sleep(10)
       recomposer = Enum.find(components, &(&1.name == :recomposer_function))
       kill(recomposer.pid)
       it_works!()

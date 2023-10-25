@@ -6,7 +6,7 @@ defmodule ALF.Manager do
             pid: nil,
             pipeline: nil,
             stages: %{},
-            removed_components: %{},
+            removed_stages: %{},
             pipeline_sup_pid: nil,
             sup_pid: nil,
             producer_pid: nil,
@@ -386,11 +386,11 @@ defmodule ALF.Manager do
   def handle_cast({:component_added, component}, state) do
     stages = Map.put(state.stages, component.pid, component)
 
-    removed_components =
-      maybe_resubscribe(state.removed_components, component.stage_set_ref, component.pid)
+    removed_stages =
+      maybe_resubscribe(state.removed_stages, component.stage_set_ref, component.pid)
 
     Process.monitor(component.pid)
-    state = %{state | stages: stages, removed_components: removed_components}
+    state = %{state | stages: stages, removed_stages: removed_stages}
 
     maybe_prepare_gotos(component, state)
 
@@ -419,19 +419,19 @@ defmodule ALF.Manager do
           {:noreply, state}
 
         component ->
-          removed_components =
-            Map.put(state.removed_components, component.stage_set_ref, component)
+          removed_stages =
+            Map.put(state.removed_stages, component.stage_set_ref, component)
 
           stages = Map.delete(state.stages, pid)
-          {:noreply, %{state | stages: stages, removed_components: removed_components}}
+          {:noreply, %{state | stages: stages, removed_stages: removed_stages}}
       end
     end
   end
 
-  defp maybe_resubscribe(removed_components, stage_set_ref, component_pid) do
-    case Map.get(removed_components, stage_set_ref) do
+  defp maybe_resubscribe(removed_stages, stage_set_ref, component_pid) do
+    case Map.get(removed_stages, stage_set_ref) do
       nil ->
-        removed_components
+        removed_stages
 
       %{subscribed_to: subscribed_to, subscribers: subscribers} ->
         Enum.each(subscribed_to, fn {{pid, _ref}, opts} ->
@@ -442,7 +442,7 @@ defmodule ALF.Manager do
           GenStage.async_subscribe(pid, Keyword.put(opts, :to, component_pid))
         end)
 
-        Map.delete(removed_components, stage_set_ref)
+        Map.delete(removed_stages, stage_set_ref)
     end
   end
 

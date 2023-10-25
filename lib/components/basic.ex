@@ -1,5 +1,5 @@
 defmodule ALF.Components.Basic do
-  alias ALF.{ErrorIP, IP}
+  alias ALF.{ErrorIP, Manager, IP}
 
   @common_attributes [
     name: nil,
@@ -137,14 +137,14 @@ defmodule ALF.Components.Basic do
       def handle_subscribe(:consumer, subscription_options, from, state) do
         subscribers = [{from, subscription_options} | state.subscribers]
         new_state = %{state | subscribers: subscribers}
-        ALF.Manager.component_updated(state.pipeline_module, new_state)
+        Manager.component_updated(state.pipeline_module, new_state)
         {:automatic, new_state}
       end
 
       def handle_subscribe(:producer, subscription_options, from, state) do
         subscribed_to = [{from, subscription_options} | state.subscribed_to]
         new_state = %{state | subscribed_to: subscribed_to}
-        ALF.Manager.component_updated(state.pipeline_module, new_state)
+        Manager.component_updated(state.pipeline_module, new_state)
         {:automatic, new_state}
       end
 
@@ -153,7 +153,7 @@ defmodule ALF.Components.Basic do
         subscribed_to = Enum.filter(state.subscribed_to, &(&1 != from))
         subscribers = Enum.filter(state.subscribers, &(&1 != from))
         state = %{state | subscribed_to: subscribed_to, subscribers: subscribers}
-        ALF.Manager.component_updated(state.pipeline_module, state)
+        Manager.component_updated(state.pipeline_module, state)
         {:noreply, [], state}
       end
 
@@ -181,7 +181,7 @@ defmodule ALF.Components.Basic do
       end
 
       def component_added(component) do
-        ALF.Manager.component_added(component.pipeline_module, component)
+        Manager.component_added(component.pipeline_module, component)
       end
 
       defp do_read_source_code(module, function) do
