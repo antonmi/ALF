@@ -198,6 +198,7 @@ defmodule ALF.DSLTest do
     test "build PipelineCompose", %{sup_pid: sup_pid} do
       {:ok, pipeline} =
         Builder.build(PipelineCompose, sup_pid, Helpers.random_atom("manager"), false)
+
       Process.sleep(10)
       [decomposer, recomposer] = pipeline.components
 

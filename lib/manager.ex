@@ -1,8 +1,7 @@
 defmodule ALF.Manager do
   use GenServer
 
-  defstruct name: nil,
-            pipeline_module: nil,
+  defstruct pipeline_module: nil,
             pid: nil,
             pipeline: nil,
             stages: %{},
@@ -26,7 +25,7 @@ defmodule ALF.Manager do
 
   @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
-    GenServer.start_link(__MODULE__, state, name: state.name)
+    GenServer.start_link(__MODULE__, state, name: state.pipeline_module)
   end
 
   @impl true
@@ -53,16 +52,11 @@ defmodule ALF.Manager do
 
   @spec start(atom) :: :ok
   def start(module) when is_atom(module) do
-    start(module, module, [])
+    start(module, [])
   end
 
   @spec start(atom, list) :: :ok
   def start(module, opts) when is_atom(module) and is_list(opts) do
-    start(module, module, opts)
-  end
-
-  @spec start(atom, atom, list) :: :ok
-  def start(module, name, opts) when is_atom(module) and is_atom(name) and is_list(opts) do
     unless is_pipeline_module?(module) do
       raise "The #{module} doesn't implement any pipeline"
     end
@@ -70,13 +64,11 @@ defmodule ALF.Manager do
     wrong_options = Keyword.keys(opts) -- @available_options
 
     if Enum.any?(wrong_options) do
-      raise "Wrong options for the '#{name}' pipeline: #{inspect(wrong_options)}. " <>
+      raise "Wrong options for the '#{module}' pipeline: #{inspect(wrong_options)}. " <>
               "Available options are #{inspect(@available_options)}"
     end
 
     sup_pid = Process.whereis(ALF.DynamicSupervisor)
-
-    name = if name, do: name, else: module
 
     case DynamicSupervisor.start_child(
            sup_pid,
@@ -87,7 +79,6 @@ defmodule ALF.Manager do
                 [
                   %__MODULE__{
                     sup_pid: sup_pid,
-                    name: name,
                     pipeline_module: module,
                     telemetry_enabled:
                       Keyword.get(opts, :telemetry_enabled, nil) ||
@@ -108,8 +99,8 @@ defmodule ALF.Manager do
   end
 
   @spec started?(atom()) :: true | false
-  def started?(name) when is_atom(name) do
-    if Process.whereis(name), do: true, else: false
+  def started?(pipeline_module) when is_atom(pipeline_module) do
+    if Process.whereis(pipeline_module), do: true, else: false
   end
 
   @spec stop(atom) :: :ok | {:exit, {atom, any}}
@@ -123,18 +114,18 @@ defmodule ALF.Manager do
   end
 
   @spec call(any, atom, Keyword.t()) :: any | [any] | nil
-  def call(event, name, opts \\ [return_ip: false]) do
-    case check_if_ready(name) do
+  def call(event, pipeline_module, opts \\ [return_ip: false]) do
+    case check_if_ready(pipeline_module) do
       {:ok, producer_name} ->
-        do_call(name, producer_name, event, opts)
+        do_call(pipeline_module, producer_name, event, opts)
 
       {:sync, pipeline} ->
-        do_sync_call(name, pipeline, event, opts)
+        do_sync_call(pipeline_module, pipeline, event, opts)
     end
   end
 
-  defp do_call(name, producer_name, event, opts) do
-    ip = build_ip(event, name)
+  defp do_call(pipeline_module, producer_name, event, opts) do
+    ip = build_ip(event, pipeline_module)
     Producer.load_ip(producer_name, ip)
     timeout = opts[:timeout] || @default_timeout
 
@@ -150,8 +141,8 @@ defmodule ALF.Manager do
     end
   end
 
-  defp do_sync_call(name, pipeline, event, opts) do
-    ip = build_ip(event, name)
+  defp do_sync_call(pipeline_module, pipeline, event, opts) do
+    ip = build_ip(event, pipeline_module)
 
     case SyncRunner.run(pipeline, ip) do
       [] ->
@@ -166,24 +157,24 @@ defmodule ALF.Manager do
   end
 
   @spec cast(any, atom, Keyword.t()) :: reference
-  def cast(event, name, opts \\ [send_result: false]) do
-    case check_if_ready(name) do
+  def cast(event, pipeline_module, opts \\ [send_result: false]) do
+    case check_if_ready(pipeline_module) do
       {:ok, producer_name} ->
-        do_cast(name, producer_name, event, opts)
+        do_cast(pipeline_module, producer_name, event, opts)
 
       {:sync, _pipeline} ->
         raise "Not implemented"
     end
   end
 
-  defp do_cast(name, producer_name, event, opts) do
+  defp do_cast(pipeline_module, producer_name, event, opts) do
     ip =
       case opts[:send_result] do
         true ->
-          build_ip(event, name)
+          build_ip(event, pipeline_module)
 
         false ->
-          %{build_ip(event, name) | destination: false}
+          %{build_ip(event, pipeline_module) | destination: false}
       end
 
     Producer.load_ip(producer_name, ip)
@@ -191,17 +182,17 @@ defmodule ALF.Manager do
   end
 
   @spec stream(Enumerable.t(), atom, Keyword.t()) :: Enumerable.t()
-  def stream(stream, name, opts \\ [return_ip: false]) do
-    case check_if_ready(name) do
+  def stream(stream, pipeline_module, opts \\ [return_ip: false]) do
+    case check_if_ready(pipeline_module) do
       {:ok, producer_name} ->
-        do_stream(name, producer_name, stream, opts)
+        do_stream(pipeline_module, producer_name, stream, opts)
 
       {:sync, pipeline} ->
-        do_sync_stream(name, pipeline, stream, opts)
+        do_sync_stream(pipeline_module, pipeline, stream, opts)
     end
   end
 
-  defp do_stream(name, producer_name, stream, opts) do
+  defp do_stream(pipeline_module, producer_name, stream, opts) do
     stream_ref = make_ref()
     timeout = opts[:timeout] || @default_timeout
 
@@ -209,7 +200,7 @@ defmodule ALF.Manager do
     |> Stream.transform(
       nil,
       fn event, nil ->
-        ip = build_ip(event, name)
+        ip = build_ip(event, pipeline_module)
         ip = %{ip | stream_ref: stream_ref}
         Producer.load_ip(producer_name, ip)
 
@@ -225,12 +216,12 @@ defmodule ALF.Manager do
     )
   end
 
-  defp do_sync_stream(name, pipeline, stream, opts) do
+  defp do_sync_stream(pipeline_module, pipeline, stream, opts) do
     stream
     |> Stream.transform(
       nil,
       fn event, nil ->
-        ip = build_ip(event, name)
+        ip = build_ip(event, pipeline_module)
         ips = SyncRunner.run(pipeline, ip)
         ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ip]) end)
         {ips, nil}
@@ -263,23 +254,23 @@ defmodule ALF.Manager do
   end
 
   @spec components(atom) :: list(map())
-  def components(name) when is_atom(name) do
-    GenServer.call(name, :components)
+  def components(pipeline_module) when is_atom(pipeline_module) do
+    GenServer.call(pipeline_module, :components)
   end
 
   @spec component_added(atom, map) :: :ok
-  def component_added(name, component) when is_atom(name) do
-    GenServer.cast(name, {:component_added, component})
+  def component_added(pipeline_module, component) when is_atom(pipeline_module) do
+    GenServer.cast(pipeline_module, {:component_added, component})
   end
 
   @spec component_updated(atom, map) :: :ok
-  def component_updated(name, component) when is_atom(name) do
-    GenServer.cast(name, {:component_updated, component})
+  def component_updated(pipeline_module, component) when is_atom(pipeline_module) do
+    GenServer.cast(pipeline_module, {:component_updated, component})
   end
 
   @spec reload_components_states(atom()) :: list(map())
-  def reload_components_states(name) when is_atom(name) do
-    GenServer.call(name, :reload_components_states)
+  def reload_components_states(pipeline_module) when is_atom(pipeline_module) do
+    GenServer.call(pipeline_module, :reload_components_states)
   end
 
   @impl true
@@ -305,7 +296,9 @@ defmodule ALF.Manager do
 
   defp start_pipeline_supervisor(%__MODULE__{} = state) do
     pipeline_sup_pid =
-      case PipelineDynamicSupervisor.start_link(%{name: :"#{state.name}_DynamicSupervisor"}) do
+      case PipelineDynamicSupervisor.start_link(%{
+             pipeline_module: :"#{state.pipeline_module}_DynamicSupervisor"
+           }) do
         {:ok, pid} -> pid
         {:error, {:already_started, pid}} -> pid
       end
@@ -320,7 +313,7 @@ defmodule ALF.Manager do
       Builder.build(
         state.pipeline_module,
         state.pipeline_sup_pid,
-        state.name,
+        state.pipeline_module,
         state.telemetry_enabled
       )
 
@@ -378,7 +371,7 @@ defmodule ALF.Manager do
     if state.sync do
       {:reply, state.pipeline, state}
     else
-      raise "#{state.name} is not a sync pipeline"
+      raise "#{state.pipeline_module} is not a sync pipeline"
     end
   end
 
@@ -419,8 +412,7 @@ defmodule ALF.Manager do
           {:noreply, state}
 
         component ->
-          removed_stages =
-            Map.put(state.removed_stages, component.stage_set_ref, component)
+          removed_stages = Map.put(state.removed_stages, component.stage_set_ref, component)
 
           stages = Map.delete(state.stages, pid)
           {:noreply, %{state | stages: stages, removed_stages: removed_stages}}
@@ -461,18 +453,18 @@ defmodule ALF.Manager do
     Application.get_env(:alf, :telemetry_enabled, false)
   end
 
-  defp check_if_ready(name) do
-    producer_name = :"#{name}.Producer"
+  defp check_if_ready(pipeline_module) do
+    producer_name = :"#{pipeline_module}.Producer"
 
     cond do
-      Process.whereis(producer_name) && Process.whereis(name) ->
+      Process.whereis(producer_name) && Process.whereis(pipeline_module) ->
         {:ok, producer_name}
 
-      is_nil(Process.whereis(producer_name)) && Process.whereis(name) ->
-        {:sync, GenServer.call(name, :sync_pipeline)}
+      is_nil(Process.whereis(producer_name)) && Process.whereis(pipeline_module) ->
+        {:sync, GenServer.call(pipeline_module, :sync_pipeline)}
 
       true ->
-        raise("Pipeline #{name} is not started")
+        raise("Pipeline #{pipeline_module} is not started")
     end
   end
 
@@ -481,13 +473,13 @@ defmodule ALF.Manager do
   defp format_ip(%IP{} = ip, nil), do: ip.event
   defp format_ip(%ErrorIP{} = ip, _return_ips), do: ip
 
-  defp build_ip(event, name) do
+  defp build_ip(event, pipeline_module) do
     %IP{
       ref: make_ref(),
       destination: self(),
       init_event: event,
       event: event,
-      manager_name: name
+      manager_name: pipeline_module
     }
   end
 end

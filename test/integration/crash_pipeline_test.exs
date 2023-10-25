@@ -56,9 +56,9 @@ defmodule ALF.CrashPipelineTest do
         Process.sleep(10)
       end)
 
-      pids = Enum.map(Map.values(state.stages), &(&1.pid))
+      pids = Enum.map(Map.values(state.stages), & &1.pid)
       new_state = ALF.Manager.__state__(SimplePipelineToCrash)
-      new_pids = Enum.map(Map.values(new_state.stages), &(&1.pid))
+      new_pids = Enum.map(Map.values(new_state.stages), & &1.pid)
 
       assert new_state.pipeline_sup_pid == state.pipeline_sup_pid
       assert length(pids -- new_pids) == 2
@@ -79,9 +79,9 @@ defmodule ALF.CrashPipelineTest do
         Process.sleep(20)
       end) =~ "terminating"
 
-      pids = Enum.map(Map.values(state.stages), &(&1.pid))
+      pids = Enum.map(Map.values(state.stages), & &1.pid)
       new_state = ALF.Manager.__state__(SimplePipelineToCrash)
-      new_pids = Enum.map(Map.values(new_state.stages), &(&1.pid))
+      new_pids = Enum.map(Map.values(new_state.stages), & &1.pid)
 
       assert length(pids -- new_pids) == 7
       assert new_state.pipeline_sup_pid != state.pipeline_sup_pid

@@ -19,7 +19,6 @@ defmodule ALF.ManagerTest do
       state = Manager.__state__(ExtremelySimplePipeline)
 
       %Manager{
-        name: ExtremelySimplePipeline,
         pipeline_module: ExtremelySimplePipeline,
         pipeline: %ALF.Pipeline{},
         telemetry_enabled: false
@@ -49,7 +48,6 @@ defmodule ALF.ManagerTest do
       state = Manager.__state__(ExtremelySimplePipeline)
 
       %Manager{
-        name: ExtremelySimplePipeline,
         pipeline_module: ExtremelySimplePipeline,
         pipeline: %ALF.Pipeline{},
         telemetry_enabled: true
@@ -58,10 +56,10 @@ defmodule ALF.ManagerTest do
 
     test "with invalid opts" do
       assert_raise RuntimeError,
-                   "Wrong options for the 'simple_pipeline' pipeline: [:a]. " <>
+                   "Wrong options for the 'Elixir.ALF.ManagerTest.ExtremelySimplePipeline' pipeline: [:a]. " <>
                      "Available options are [:telemetry_enabled, :sync]",
                    fn ->
-                     Manager.start(ExtremelySimplePipeline, :simple_pipeline, a: :b)
+                     Manager.start(ExtremelySimplePipeline, a: :b)
                    end
     end
   end
@@ -88,7 +86,6 @@ defmodule ALF.ManagerTest do
 
     test "state after start", %{state: state} do
       %Manager{
-        name: SimplePipeline,
         pipeline_module: SimplePipeline,
         pid: pid,
         pipeline: %ALF.Pipeline{},

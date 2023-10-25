@@ -274,12 +274,12 @@ defmodule ALF.DSL do
 
       @spec start() :: :ok
       def start() do
-        ALF.Manager.start(__MODULE__, __MODULE__, [])
+        ALF.Manager.start(__MODULE__, [])
       end
 
       @spec start(list) :: :ok
       def start(opts) when is_list(opts) do
-        ALF.Manager.start(__MODULE__, __MODULE__, opts)
+        ALF.Manager.start(__MODULE__, opts)
       end
 
       @spec started?() :: true | false
