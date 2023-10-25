@@ -19,9 +19,9 @@ defmodule ALF.Builder do
   }
 
   @spec build(atom, pid, boolean) :: {:ok, Pipeline.t()}
-  def build(pipeline_module, supervisor_pid, telemetry_enabled) do
+  def build(pipeline_module, supervisor_pid, telemetry) do
     pipe_spec = pipeline_module.alf_components()
-    producer = start_producer(supervisor_pid, pipeline_module, telemetry_enabled)
+    producer = start_producer(supervisor_pid, pipeline_module, telemetry)
 
     {last_stages, final_stages} =
       do_build_pipeline(
@@ -30,7 +30,7 @@ defmodule ALF.Builder do
         [producer],
         supervisor_pid,
         [],
-        telemetry_enabled
+        telemetry
       )
 
     consumer =
@@ -38,7 +38,7 @@ defmodule ALF.Builder do
         supervisor_pid,
         last_stages,
         pipeline_module,
-        telemetry_enabled
+        telemetry
       )
 
     {producer, consumer} =
@@ -54,7 +54,7 @@ defmodule ALF.Builder do
          producers,
          supervisor_pid,
          final_stages,
-         telemetry_enabled
+         telemetry
        )
        when is_list(pipe_spec) do
     pipe_spec
@@ -70,7 +70,7 @@ defmodule ALF.Builder do
                 pipeline_module: pipeline_module,
                 stage_set_ref: stage_set_ref,
                 number: number,
-                telemetry_enabled: telemetry_enabled
+                telemetry: telemetry
               })
               |> start_stage(supervisor_pid, prev_stages)
             end)
@@ -83,7 +83,7 @@ defmodule ALF.Builder do
             |> Map.merge(%{
               pipeline_module: pipeline_module,
               stage_set_ref: make_ref(),
-              telemetry_enabled: telemetry_enabled
+              telemetry: telemetry
             })
             |> start_stage(supervisor_pid, prev_stages)
 
@@ -95,7 +95,7 @@ defmodule ALF.Builder do
             |> Map.merge(%{
               pipeline_module: pipeline_module,
               stage_set_ref: make_ref(),
-              telemetry_enabled: telemetry_enabled
+              telemetry: telemetry
             })
             |> start_stage(supervisor_pid, prev_stages)
 
@@ -107,7 +107,7 @@ defmodule ALF.Builder do
             |> Map.merge(%{
               pipeline_module: pipeline_module,
               stage_set_ref: make_ref(),
-              telemetry_enabled: telemetry_enabled
+              telemetry: telemetry
             })
             |> start_stage(supervisor_pid, prev_stages)
 
@@ -119,7 +119,7 @@ defmodule ALF.Builder do
             |> Map.merge(%{
               pipeline_module: pipeline_module,
               stage_set_ref: make_ref(),
-              telemetry_enabled: telemetry_enabled
+              telemetry: telemetry
             })
             |> start_stage(supervisor_pid, prev_stages)
 
@@ -133,7 +133,7 @@ defmodule ALF.Builder do
                   [{switch, partition: key}],
                   supervisor_pid,
                   [],
-                  telemetry_enabled
+                  telemetry
                 )
 
               {all_last_stages ++ last_stages, Map.put(branches, key, final_stages)}
@@ -149,7 +149,7 @@ defmodule ALF.Builder do
             |> Map.merge(%{
               pipeline_module: pipeline_module,
               stage_set_ref: make_ref(),
-              telemetry_enabled: telemetry_enabled
+              telemetry: telemetry
             })
             |> start_stage(supervisor_pid, prev_stages)
 
@@ -160,7 +160,7 @@ defmodule ALF.Builder do
               [clone],
               supervisor_pid,
               [],
-              telemetry_enabled
+              telemetry
             )
 
           clone = %{clone | to: final_stages}
@@ -173,7 +173,7 @@ defmodule ALF.Builder do
             |> Map.merge(%{
               pipeline_module: pipeline_module,
               stage_set_ref: make_ref(),
-              telemetry_enabled: telemetry_enabled
+              telemetry: telemetry
             })
             |> start_stage(supervisor_pid, prev_stages)
 
@@ -182,7 +182,7 @@ defmodule ALF.Builder do
         %Plug{} = plug ->
           plug =
             plug
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry: telemetry})
             |> start_stage(supervisor_pid, prev_stages)
 
           {[plug], stages ++ [plug]}
@@ -190,7 +190,7 @@ defmodule ALF.Builder do
         %Unplug{} = unplug ->
           unplug =
             unplug
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry: telemetry})
             |> start_stage(supervisor_pid, prev_stages)
 
           {[unplug], stages ++ [unplug]}
@@ -198,7 +198,7 @@ defmodule ALF.Builder do
         %Decomposer{} = decomposer ->
           decomposer =
             decomposer
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry: telemetry})
             |> start_stage(supervisor_pid, prev_stages)
 
           {[decomposer], stages ++ [decomposer]}
@@ -206,7 +206,7 @@ defmodule ALF.Builder do
         %Recomposer{} = recomposer ->
           recomposer =
             recomposer
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry: telemetry})
             |> start_stage(supervisor_pid, prev_stages)
 
           {[recomposer], stages ++ [recomposer]}
@@ -214,7 +214,7 @@ defmodule ALF.Builder do
         %Tbd{} = tbd ->
           tbd =
             tbd
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry_enabled: telemetry_enabled})
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry: telemetry})
             |> start_stage(supervisor_pid, prev_stages)
 
           {[tbd], stages ++ [tbd]}
@@ -223,28 +223,27 @@ defmodule ALF.Builder do
   end
 
   @spec build_sync(atom, boolean) :: [map]
-  def build_sync(pipeline_module, telemetry_enabled) do
+  def build_sync(pipeline_module, telemetry) do
     pipe_spec = pipeline_module.alf_components()
-    producer = Producer.init_sync(%Producer{pipeline_module: pipeline_module}, telemetry_enabled)
-    {components, last_stage_refs} = do_build_sync(pipe_spec, [producer.pid], telemetry_enabled)
-    consumer = Consumer.init_sync(%Consumer{pipeline_module: pipeline_module}, telemetry_enabled)
+    producer = Producer.init_sync(%Producer{pipeline_module: pipeline_module}, telemetry)
+    {components, last_stage_refs} = do_build_sync(pipe_spec, [producer.pid], telemetry)
+    consumer = Consumer.init_sync(%Consumer{pipeline_module: pipeline_module}, telemetry)
     subscribed_to = Enum.map(last_stage_refs, &{&1, :sync})
     consumer = %{consumer | subscribed_to: subscribed_to}
     [producer | components] ++ [consumer]
   end
 
-  defp do_build_sync(pipe_spec, stage_refs, telemetry_enabled) when is_list(pipe_spec) do
+  defp do_build_sync(pipe_spec, stage_refs, telemetry) when is_list(pipe_spec) do
     Enum.reduce(pipe_spec, {[], stage_refs}, fn comp, {stages, last_stage_refs} ->
       subscribed_to = Enum.map(last_stage_refs, &{&1, :sync})
 
       case comp do
         %Switch{branches: branches} = switch ->
-          switch = switch.__struct__.init_sync(switch, telemetry_enabled)
+          switch = switch.__struct__.init_sync(switch, telemetry)
 
           branches =
             Enum.reduce(branches, %{}, fn {key, inner_pipe_spec}, branch_pipes ->
-              {branch_stages, _last_ref} =
-                do_build_sync(inner_pipe_spec, [switch.pid], telemetry_enabled)
+              {branch_stages, _last_ref} = do_build_sync(inner_pipe_spec, [switch.pid], telemetry)
 
               Map.put(branch_pipes, key, branch_stages)
             end)
@@ -262,24 +261,24 @@ defmodule ALF.Builder do
           {stages ++ [switch], last_stage_refs}
 
         %Clone{to: pipe_stages} = clone ->
-          clone = clone.__struct__.init_sync(clone, telemetry_enabled)
-          {to_stages, _last_ref} = do_build_sync(pipe_stages, [clone.pid], telemetry_enabled)
+          clone = clone.__struct__.init_sync(clone, telemetry)
+          {to_stages, _last_ref} = do_build_sync(pipe_stages, [clone.pid], telemetry)
           clone = %{clone | to: to_stages, subscribed_to: subscribed_to}
           {stages ++ [clone], [clone.pid]}
 
         component ->
-          component = component.__struct__.init_sync(component, telemetry_enabled)
+          component = component.__struct__.init_sync(component, telemetry)
           component = %{component | subscribed_to: subscribed_to}
           {stages ++ [component], [component.pid]}
       end
     end)
   end
 
-  defp start_producer(supervisor_pid, pipeline_module, telemetry_enabled) do
+  defp start_producer(supervisor_pid, pipeline_module, telemetry) do
     producer = %Producer{
       pipeline_module: pipeline_module,
       stage_set_ref: make_ref(),
-      telemetry_enabled: telemetry_enabled
+      telemetry: telemetry
     }
 
     {:ok, producer_pid} = DynamicSupervisor.start_child(supervisor_pid, {Producer, producer})
@@ -290,11 +289,11 @@ defmodule ALF.Builder do
          supervisor_pid,
          last_stages,
          pipeline_module,
-         telemetry_enabled
+         telemetry
        ) do
     consumer = %Consumer{
       pipeline_module: pipeline_module,
-      telemetry_enabled: telemetry_enabled
+      telemetry: telemetry
     }
 
     {:ok, consumer_pid} = DynamicSupervisor.start_child(supervisor_pid, {Consumer, consumer})

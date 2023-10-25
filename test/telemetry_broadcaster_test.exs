@@ -53,7 +53,7 @@ defmodule ALF.TelemetryBroadcasterTest do
 
   describe "broadcasting" do
     setup do
-      Manager.start(SimplePipeline, telemetry_enabled: true)
+      Manager.start(SimplePipeline, telemetry: true)
 
       TelemetryBroadcaster.register_remote_function(
         Node.self(),

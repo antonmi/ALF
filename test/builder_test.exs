@@ -187,7 +187,7 @@ defmodule ALF.BuilderTest do
       assert is_reference(producer.pid)
 
       assert is_reference(stage.pid)
-      assert stage.telemetry_enabled
+      assert stage.telemetry
       assert stage.subscribed_to == [{producer.pid, :sync}]
 
       assert consumer.name == :consumer
@@ -198,7 +198,7 @@ defmodule ALF.BuilderTest do
     test "build with spec_with_switch" do
       [producer, switch, consumer] = Builder.build_sync(PipelineWithSwitch, true)
 
-      assert switch.telemetry_enabled
+      assert switch.telemetry
       assert switch.subscribed_to == [{producer.pid, :sync}]
 
       %{branches: %{part1: [stage1], part2: [stage2]}} = switch
@@ -217,7 +217,7 @@ defmodule ALF.BuilderTest do
     test "build with spec_with_clone" do
       [producer, clone, stage, consumer] = Builder.build_sync(PipelineWithClone, true)
 
-      assert clone.telemetry_enabled
+      assert clone.telemetry
       [to_stage] = clone.to
       assert clone.subscribed_to == [{producer.pid, :sync}]
 

@@ -8,7 +8,7 @@ defmodule ALF.Components.Basic do
     subscribed_to: [],
     subscribers: [],
     stage_set_ref: nil,
-    telemetry_enabled: false
+    telemetry: false
   ]
 
   def common_attributes, do: @common_attributes

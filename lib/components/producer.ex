@@ -29,13 +29,13 @@ defmodule ALF.Components.Producer do
     {:producer, state}
   end
 
-  def init_sync(state, telemetry_enabled) do
+  def init_sync(state, telemetry) do
     %{
       state
       | pid: make_ref(),
         name: :producer,
         source_code: state.source_code || read_source_code(state.pipeline_module),
-        telemetry_enabled: telemetry_enabled
+        telemetry: telemetry
     }
   end
 
@@ -51,16 +51,16 @@ defmodule ALF.Components.Producer do
 
   @impl true
   def handle_cast({:load_ip, ip}, state) do
-    if state.telemetry_enabled do
+    if state.telemetry do
       send_telemetry_event(ip, state)
     end
 
     {:noreply, [ip], state}
   end
 
-  def sync_process(ip, %__MODULE__{telemetry_enabled: false}), do: ip
+  def sync_process(ip, %__MODULE__{telemetry: false}), do: ip
 
-  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+  def sync_process(ip, %__MODULE__{telemetry: true} = state) do
     telemetry_data = telemetry_data(ip, state)
 
     :telemetry.span(

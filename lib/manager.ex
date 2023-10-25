@@ -9,7 +9,7 @@ defmodule ALF.Manager do
             pipeline_sup_pid: nil,
             sup_pid: nil,
             producer_pid: nil,
-            telemetry_enabled: nil,
+            telemetry: nil,
             sync: false
 
   alias ALF.Components.{Consumer, Goto, GotoPoint, Producer}
@@ -20,7 +20,7 @@ defmodule ALF.Manager do
 
   @type t :: %__MODULE__{}
 
-  @available_options [:telemetry_enabled, :sync]
+  @available_options [:telemetry, :sync]
   @default_timeout Application.compile_env(:alf, :default_timeout, 10_000)
 
   @spec start_link(t()) :: GenServer.on_start()
@@ -40,7 +40,7 @@ defmodule ALF.Manager do
   end
 
   defp start_sync_pipeline(state) do
-    pipeline = Builder.build_sync(state.pipeline_module, state.telemetry_enabled)
+    pipeline = Builder.build_sync(state.pipeline_module, state.telemetry)
 
     stages =
       pipeline
@@ -80,8 +80,8 @@ defmodule ALF.Manager do
                   %__MODULE__{
                     sup_pid: sup_pid,
                     pipeline_module: module,
-                    telemetry_enabled:
-                      Keyword.get(opts, :telemetry_enabled, nil) ||
+                    telemetry:
+                      Keyword.get(opts, :telemetry, nil) ||
                         telemetry_enabled_in_configs?(),
                     sync: Keyword.get(opts, :sync, false)
                   }
@@ -313,7 +313,7 @@ defmodule ALF.Manager do
       Builder.build(
         state.pipeline_module,
         state.pipeline_sup_pid,
-        state.telemetry_enabled
+        state.telemetry
       )
 
     %{state | pipeline: pipeline, producer_pid: pipeline.producer.pid}
@@ -449,7 +449,7 @@ defmodule ALF.Manager do
   end
 
   defp telemetry_enabled_in_configs? do
-    Application.get_env(:alf, :telemetry_enabled, false)
+    Application.get_env(:alf, :telemetry, false)
   end
 
   defp check_if_ready(pipeline_module) do

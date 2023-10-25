@@ -51,17 +51,17 @@ defmodule ALF.Components.Switch do
      dispatcher: {GenStage.PartitionDispatcher, partitions: branches, hash: hash}}
   end
 
-  def init_sync(state, telemetry_enabled) do
+  def init_sync(state, telemetry) do
     %{
       state
       | opts: init_opts(state.module, state.opts),
         pid: make_ref(),
-        telemetry_enabled: telemetry_enabled
+        telemetry: telemetry
     }
   end
 
   @impl true
-  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
+  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry: true} = state) do
     :telemetry.span(
       [:alf, :component],
       telemetry_data(ip, state),
@@ -71,7 +71,7 @@ defmodule ALF.Components.Switch do
     )
   end
 
-  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
+  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry: false} = state) do
     {:noreply, [ip], state}
   end
 
@@ -101,7 +101,7 @@ defmodule ALF.Components.Switch do
     end
   end
 
-  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+  def sync_process(ip, %__MODULE__{telemetry: false} = state) do
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:error, error, stacktrace} ->
         build_error_ip(ip, error, stacktrace, state)
@@ -111,7 +111,7 @@ defmodule ALF.Components.Switch do
     end
   end
 
-  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+  def sync_process(ip, %__MODULE__{telemetry: true} = state) do
     :telemetry.span(
       [:alf, :component],
       telemetry_data(ip, state),

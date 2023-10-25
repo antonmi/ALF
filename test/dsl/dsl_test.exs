@@ -92,14 +92,14 @@ defmodule ALF.DSLTest do
   end
 
   describe "PipelineA" do
-    test "build PipelineA with telemetry_enabled", %{sup_pid: sup_pid} do
+    test "build PipelineA with telemetry enabled", %{sup_pid: sup_pid} do
       {:ok, pipeline} = Builder.build(PipelineA, sup_pid, true)
 
       [one, two, three, four] = pipeline.components
-      assert %Stage{name: ModuleA, telemetry_enabled: true} = one
-      assert %Stage{name: :custom_name, telemetry_enabled: true} = two
-      assert %Stage{name: :just_function, telemetry_enabled: true} = three
-      assert %Stage{name: :custom_name, telemetry_enabled: true} = four
+      assert %Stage{name: ModuleA, telemetry: true} = one
+      assert %Stage{name: :custom_name, telemetry: true} = two
+      assert %Stage{name: :just_function, telemetry: true} = three
+      assert %Stage{name: :custom_name, telemetry: true} = four
     end
   end
 

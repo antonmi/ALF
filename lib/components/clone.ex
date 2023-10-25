@@ -25,15 +25,15 @@ defmodule ALF.Components.Clone do
     {:producer_consumer, state, dispatcher: GenStage.BroadcastDispatcher}
   end
 
-  def init_sync(state, telemetry_enabled) do
-    %{state | pid: make_ref(), telemetry_enabled: telemetry_enabled}
+  def init_sync(state, telemetry) do
+    %{state | pid: make_ref(), telemetry: telemetry}
   end
 
   @impl true
   def handle_events(
         [%ALF.IP{} = ip],
         _from,
-        %__MODULE__{telemetry_enabled: true} = state
+        %__MODULE__{telemetry: true} = state
       ) do
     :telemetry.span(
       [:alf, :component],
@@ -45,16 +45,16 @@ defmodule ALF.Components.Clone do
     )
   end
 
-  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
+  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry: false} = state) do
     ip = process_ip(ip, state)
     {:noreply, [ip], state}
   end
 
-  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+  def sync_process(ip, %__MODULE__{telemetry: false} = state) do
     do_sync_process(ip, state)
   end
 
-  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+  def sync_process(ip, %__MODULE__{telemetry: true} = state) do
     :telemetry.span(
       [:alf, :component],
       telemetry_data(ip, state),

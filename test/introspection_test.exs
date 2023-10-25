@@ -106,7 +106,7 @@ defmodule ALF.IntrospectionTest do
 
   describe "performance_stats/1" do
     setup do
-      SimplePipeline.start(telemetry_enabled: true)
+      SimplePipeline.start(telemetry: true)
 
       [1, 2, 3]
       |> SimplePipeline.stream()
