@@ -257,8 +257,8 @@ defmodule ALF.Builder do
   end
 
   defp set_modules_to_producer_and_consumer({producer, consumer}, pipeline_module) do
-    producer = %{producer | pipe_module: pipeline_module, pipeline_module: pipeline_module}
-    consumer = %{consumer | pipe_module: pipeline_module, pipeline_module: pipeline_module}
+    producer = %{producer | pipeline_module: pipeline_module}
+    consumer = %{consumer | pipeline_module: pipeline_module}
 
     {producer, consumer}
   end

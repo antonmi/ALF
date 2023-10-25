@@ -67,7 +67,6 @@ defmodule ALF.DSL do
       %Clone{
         name: unquote(name),
         to: stages,
-        pipe_module: __MODULE__,
         pipeline_module: __MODULE__
       }
     end
@@ -98,7 +97,6 @@ defmodule ALF.DSL do
     quote do
       %GotoPoint{
         name: unquote(name),
-        pipe_module: __MODULE__,
         pipeline_module: __MODULE__
       }
     end
@@ -108,7 +106,6 @@ defmodule ALF.DSL do
     quote do
       %DeadEnd{
         name: unquote(name),
-        pipe_module: __MODULE__,
         pipeline_module: __MODULE__
       }
     end
@@ -188,14 +185,12 @@ defmodule ALF.DSL do
       plug = %Plug{
         name: name,
         module: unquote(module),
-        pipe_module: __MODULE__,
         pipeline_module: __MODULE__
       }
 
       unplug = %Unplug{
         name: name,
         module: unquote(module),
-        pipe_module: __MODULE__,
         pipeline_module: __MODULE__
       }
 

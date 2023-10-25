@@ -21,7 +21,7 @@ defmodule ALF.Manager do
   @type t :: %__MODULE__{}
 
   @available_options [:telemetry_enabled, :sync]
-  @default_timeout 10_000
+  @default_timeout Application.compile_env(:alf, :default_timeout, 10_000)
 
   @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
@@ -321,10 +321,10 @@ defmodule ALF.Manager do
 
   defp prepare_gotos(state) do
     state.stages
-    |> Enum.each(fn {_pid, component} ->
+    |> Enum.each(fn {pid, component} ->
       case component do
         %Goto{} ->
-          goto = Goto.find_where_to_go(component.pid, Map.values(state.stages))
+          goto = Goto.find_where_to_go(pid, Map.values(state.stages))
           component_updated(state.pipeline_module, goto)
 
         _stage ->

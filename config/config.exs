@@ -2,6 +2,6 @@ import Config
 
 config :alf,
   telemetry_enabled: false,
-  auto_scaler_interval: 1000
+  default_timeout: 10_000
 
 import_config "#{config_env()}.exs"

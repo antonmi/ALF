@@ -31,7 +31,6 @@ defmodule ALF.DSL.RecomposerTest do
                module: PipelineRecomposer1,
                function: :the_recomposer,
                opts: [foo: :bar],
-               pipe_module: PipelineRecomposer1,
                pipeline_module: PipelineRecomposer1
              } = recomposer
     end
@@ -63,7 +62,6 @@ defmodule ALF.DSL.RecomposerTest do
                module: PipelineRecomposer2.RecomposerModule,
                function: :call,
                opts: [baz: :qux, foo: :bar],
-               pipe_module: PipelineRecomposer2,
                pipeline_module: PipelineRecomposer2
              } = recomposer
     end
@@ -88,7 +86,6 @@ defmodule ALF.DSL.RecomposerTest do
                module: PipelineRecomposer3,
                function: :the_recomposer,
                opts: [foo: :bar],
-               pipe_module: PipelineRecomposer3,
                pipeline_module: PipelineRecomposer3
              } = recomposer
     end

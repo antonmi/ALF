@@ -31,7 +31,6 @@ defmodule ALF.DSL.GotoTest do
       assert %GotoPoint{
                name: :goto_point,
                pid: point_pid,
-               pipe_module: PipelineGoto1,
                pipeline_module: PipelineGoto1
              } = point
 
@@ -43,7 +42,6 @@ defmodule ALF.DSL.GotoTest do
                function: :goto,
                to: :goto_point,
                opts: [foo: :bar],
-               pipe_module: PipelineGoto1,
                pipeline_module: PipelineGoto1
              } = goto
     end
@@ -77,7 +75,6 @@ defmodule ALF.DSL.GotoTest do
                function: :call,
                to: :goto_point,
                opts: [baz: :qux, foo: :bar],
-               pipe_module: PipelineGoto2,
                pipeline_module: PipelineGoto2
              } = goto
     end
@@ -104,7 +101,6 @@ defmodule ALF.DSL.GotoTest do
                function: :goto,
                to: :goto_point,
                opts: [foo: :bar],
-               pipe_module: PipelineGoto3,
                pipeline_module: PipelineGoto3
              } = goto
     end

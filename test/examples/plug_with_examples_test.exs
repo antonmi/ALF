@@ -34,12 +34,14 @@ defmodule ALF.Examples.PlugWithExamplesTest do
 
   setup do
     Pipeline.start()
+    Process.sleep(10)
     on_exit(&Pipeline.stop/0)
   end
 
   test "process input" do
     inputs = ["Anton", "Baton"]
 
+#    Pipeline.components |> IO.inspect
     results =
       inputs
       |> Pipeline.stream()
