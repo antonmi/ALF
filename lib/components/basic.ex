@@ -1,14 +1,14 @@
 defmodule ALF.Components.Basic do
-  alias ALF.{ErrorIP, IP}
+  alias ALF.{ErrorIP, Manager, IP}
 
   @common_attributes [
     name: nil,
     pid: nil,
     pipe_module: nil,
     pipeline_module: nil,
-    subscribe_to: [],
     subscribed_to: [],
     subscribers: [],
+    stage_set_ref: nil,
     telemetry_enabled: false
   ]
 
@@ -41,7 +41,7 @@ defmodule ALF.Components.Basic do
   def build_error_ip(ip, error, stacktrace, state) do
     %ErrorIP{
       ip: ip,
-      manager_name: ip.manager_name,
+      pipeline_module: ip.pipeline_module,
       destination: ip.destination,
       ref: ip.ref,
       stream_ref: ip.stream_ref,
@@ -50,6 +50,10 @@ defmodule ALF.Components.Basic do
       component: state,
       plugs: ip.plugs
     }
+  end
+
+  def __state__(pid) when is_pid(pid) do
+    GenStage.call(pid, :__state__)
   end
 
   def telemetry_data(nil, state) do
@@ -90,9 +94,7 @@ defmodule ALF.Components.Basic do
 
       @type t :: %__MODULE__{}
 
-      def __state__(pid) when is_pid(pid) do
-        GenStage.call(pid, :__state__)
-      end
+      def __state__(pid) when is_pid(pid), do: Basic.__state__(pid)
 
       def subscribers(pid) do
         GenStage.call(pid, :subscribers)
@@ -132,21 +134,27 @@ defmodule ALF.Components.Basic do
       end
 
       @impl true
-      def handle_subscribe(:consumer, _subscription_options, from, state) do
-        subscribers = [from | state.subscribers]
-        {:automatic, %{state | subscribers: subscribers}}
+      def handle_subscribe(:consumer, subscription_options, from, state) do
+        subscribers = [{from, subscription_options} | state.subscribers]
+        new_state = %{state | subscribers: subscribers}
+        Manager.component_updated(state.pipeline_module, new_state)
+        {:automatic, new_state}
       end
 
-      def handle_subscribe(:producer, _subscription_options, from, state) do
-        subscribed_to = [from | state.subscribed_to]
-        {:automatic, %{state | subscribed_to: subscribed_to}}
+      def handle_subscribe(:producer, subscription_options, from, state) do
+        subscribed_to = [{from, subscription_options} | state.subscribed_to]
+        new_state = %{state | subscribed_to: subscribed_to}
+        Manager.component_updated(state.pipeline_module, new_state)
+        {:automatic, new_state}
       end
 
       @impl true
-      def handle_cancel({:cancel, reason}, from, state) do
+      def handle_cancel(_any, from, state) do
         subscribed_to = Enum.filter(state.subscribed_to, &(&1 != from))
         subscribers = Enum.filter(state.subscribers, &(&1 != from))
-        {:noreply, [], %{state | subscribed_to: subscribed_to, subscribers: subscribers}}
+        state = %{state | subscribed_to: subscribed_to, subscribers: subscribers}
+        Manager.component_updated(state.pipeline_module, state)
+        {:noreply, [], state}
       end
 
       def telemetry_data(ip, state), do: ALF.Components.Basic.telemetry_data(ip, state)
@@ -170,6 +178,10 @@ defmodule ALF.Components.Basic do
       rescue
         error ->
           inspect(error)
+      end
+
+      def component_added(component) do
+        Manager.component_added(component.pipeline_module, component)
       end
 
       defp do_read_source_code(module, function) do

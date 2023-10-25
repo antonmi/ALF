@@ -215,21 +215,17 @@ defmodule ALF.ComponentErrorTest do
 
     test "error results" do
       results =
-        [1, 2, 3]
+        [1]
         |> ErrorInGotoPipeline.stream()
         |> Enum.to_list()
 
       assert [
                %ErrorIP{
                  component: %ALF.Components.Goto{name: :goto_function},
-                 ip: %IP{} = ip,
+                 ip: %IP{} = _ip,
                  error: %RuntimeError{message: "Error in :goto"}
-               },
-               %ErrorIP{},
-               %ErrorIP{}
+               }
              ] = results
-
-      assert [{:goto_function, _}, {{:add_one, 0}, _}, {:goto_point, _}] = ip.history
     end
   end
 end

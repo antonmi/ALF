@@ -1,29 +1,31 @@
 defmodule ALF.Manager do
   use GenServer
 
-  defstruct name: nil,
-            pipeline_module: nil,
+  defstruct pipeline_module: nil,
             pid: nil,
             pipeline: nil,
-            components: [],
+            stages: %{},
+            removed_stages: %{},
             pipeline_sup_pid: nil,
             sup_pid: nil,
             producer_pid: nil,
             telemetry_enabled: nil,
             sync: false
 
-  alias ALF.Components.{Goto, Producer}
+  alias ALF.Components.{Consumer, Goto, GotoPoint, Producer}
   alias ALF.{Builder, Introspection, PipelineDynamicSupervisor, Pipeline, SyncRunner}
   alias ALF.{ErrorIP, IP}
+
+  require Logger
 
   @type t :: %__MODULE__{}
 
   @available_options [:telemetry_enabled, :sync]
-  @default_timeout 60_000
+  @default_timeout 10_000
 
   @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
-    GenServer.start_link(__MODULE__, state, name: state.name)
+    GenServer.start_link(__MODULE__, state, name: state.pipeline_module)
   end
 
   @impl true
@@ -31,25 +33,30 @@ defmodule ALF.Manager do
     state = %{state | pid: self()}
 
     if state.sync do
-      pipeline = Builder.build_sync(state.pipeline_module, state.telemetry_enabled)
-      {:ok, %{state | pipeline: pipeline, components: Pipeline.stages_to_list(pipeline)}}
+      {:ok, start_sync_pipeline(state)}
     else
       {:ok, start_pipeline(state)}
     end
   end
 
+  defp start_sync_pipeline(state) do
+    pipeline = Builder.build_sync(state.pipeline_module, state.telemetry_enabled)
+
+    stages =
+      pipeline
+      |> Pipeline.stages_to_list()
+      |> Enum.reduce(%{}, &Map.put(&2, &1.pid, &1))
+
+    %{state | pipeline: pipeline, stages: stages}
+  end
+
   @spec start(atom) :: :ok
   def start(module) when is_atom(module) do
-    start(module, module, [])
+    start(module, [])
   end
 
   @spec start(atom, list) :: :ok
   def start(module, opts) when is_atom(module) and is_list(opts) do
-    start(module, module, opts)
-  end
-
-  @spec start(atom, atom, list) :: :ok
-  def start(module, name, opts) when is_atom(module) and is_atom(name) and is_list(opts) do
     unless is_pipeline_module?(module) do
       raise "The #{module} doesn't implement any pipeline"
     end
@@ -57,13 +64,11 @@ defmodule ALF.Manager do
     wrong_options = Keyword.keys(opts) -- @available_options
 
     if Enum.any?(wrong_options) do
-      raise "Wrong options for the '#{name}' pipeline: #{inspect(wrong_options)}. " <>
+      raise "Wrong options for the '#{module}' pipeline: #{inspect(wrong_options)}. " <>
               "Available options are #{inspect(@available_options)}"
     end
 
     sup_pid = Process.whereis(ALF.DynamicSupervisor)
-
-    name = if name, do: name, else: module
 
     case DynamicSupervisor.start_child(
            sup_pid,
@@ -74,7 +79,6 @@ defmodule ALF.Manager do
                 [
                   %__MODULE__{
                     sup_pid: sup_pid,
-                    name: name,
                     pipeline_module: module,
                     telemetry_enabled:
                       Keyword.get(opts, :telemetry_enabled, nil) ||
@@ -95,8 +99,8 @@ defmodule ALF.Manager do
   end
 
   @spec started?(atom()) :: true | false
-  def started?(name) when is_atom(name) do
-    if Process.whereis(name), do: true, else: false
+  def started?(pipeline_module) when is_atom(pipeline_module) do
+    if Process.whereis(pipeline_module), do: true, else: false
   end
 
   @spec stop(atom) :: :ok | {:exit, {atom, any}}
@@ -110,18 +114,18 @@ defmodule ALF.Manager do
   end
 
   @spec call(any, atom, Keyword.t()) :: any | [any] | nil
-  def call(event, name, opts \\ [return_ip: false]) do
-    case check_if_ready(name) do
+  def call(event, pipeline_module, opts \\ [return_ip: false]) do
+    case check_if_ready(pipeline_module) do
       {:ok, producer_name} ->
-        do_call(name, producer_name, event, opts)
+        do_call(pipeline_module, producer_name, event, opts)
 
       {:sync, pipeline} ->
-        do_sync_call(name, pipeline, event, opts)
+        do_sync_call(pipeline_module, pipeline, event, opts)
     end
   end
 
-  defp do_call(name, producer_name, event, opts) do
-    ip = build_ip(event, name)
+  defp do_call(pipeline_module, producer_name, event, opts) do
+    ip = build_ip(event, pipeline_module)
     Producer.load_ip(producer_name, ip)
     timeout = opts[:timeout] || @default_timeout
 
@@ -137,8 +141,8 @@ defmodule ALF.Manager do
     end
   end
 
-  defp do_sync_call(name, pipeline, event, opts) do
-    ip = build_ip(event, name)
+  defp do_sync_call(pipeline_module, pipeline, event, opts) do
+    ip = build_ip(event, pipeline_module)
 
     case SyncRunner.run(pipeline, ip) do
       [] ->
@@ -153,24 +157,24 @@ defmodule ALF.Manager do
   end
 
   @spec cast(any, atom, Keyword.t()) :: reference
-  def cast(event, name, opts \\ [send_result: false]) do
-    case check_if_ready(name) do
+  def cast(event, pipeline_module, opts \\ [send_result: false]) do
+    case check_if_ready(pipeline_module) do
       {:ok, producer_name} ->
-        do_cast(name, producer_name, event, opts)
+        do_cast(pipeline_module, producer_name, event, opts)
 
       {:sync, _pipeline} ->
         raise "Not implemented"
     end
   end
 
-  defp do_cast(name, producer_name, event, opts) do
+  defp do_cast(pipeline_module, producer_name, event, opts) do
     ip =
       case opts[:send_result] do
         true ->
-          build_ip(event, name)
+          build_ip(event, pipeline_module)
 
         false ->
-          %{build_ip(event, name) | destination: false}
+          %{build_ip(event, pipeline_module) | destination: false}
       end
 
     Producer.load_ip(producer_name, ip)
@@ -178,17 +182,17 @@ defmodule ALF.Manager do
   end
 
   @spec stream(Enumerable.t(), atom, Keyword.t()) :: Enumerable.t()
-  def stream(stream, name, opts \\ [return_ip: false]) do
-    case check_if_ready(name) do
+  def stream(stream, pipeline_module, opts \\ [return_ip: false]) do
+    case check_if_ready(pipeline_module) do
       {:ok, producer_name} ->
-        do_stream(name, producer_name, stream, opts)
+        do_stream(pipeline_module, producer_name, stream, opts)
 
       {:sync, pipeline} ->
-        do_sync_stream(name, pipeline, stream, opts)
+        do_sync_stream(pipeline_module, pipeline, stream, opts)
     end
   end
 
-  defp do_stream(name, producer_name, stream, opts) do
+  defp do_stream(pipeline_module, producer_name, stream, opts) do
     stream_ref = make_ref()
     timeout = opts[:timeout] || @default_timeout
 
@@ -196,7 +200,7 @@ defmodule ALF.Manager do
     |> Stream.transform(
       nil,
       fn event, nil ->
-        ip = build_ip(event, name)
+        ip = build_ip(event, pipeline_module)
         ip = %{ip | stream_ref: stream_ref}
         Producer.load_ip(producer_name, ip)
 
@@ -212,12 +216,12 @@ defmodule ALF.Manager do
     )
   end
 
-  defp do_sync_stream(name, pipeline, stream, opts) do
+  defp do_sync_stream(pipeline_module, pipeline, stream, opts) do
     stream
     |> Stream.transform(
       nil,
       fn event, nil ->
-        ip = build_ip(event, name)
+        ip = build_ip(event, pipeline_module)
         ips = SyncRunner.run(pipeline, ip)
         ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ip]) end)
         {ips, nil}
@@ -250,19 +254,29 @@ defmodule ALF.Manager do
   end
 
   @spec components(atom) :: list(map())
-  def components(name) when is_atom(name) do
-    GenServer.call(name, :components)
+  def components(pipeline_module) when is_atom(pipeline_module) do
+    GenServer.call(pipeline_module, :components)
+  end
+
+  @spec component_added(atom, map) :: :ok
+  def component_added(pipeline_module, component) when is_atom(pipeline_module) do
+    GenServer.cast(pipeline_module, {:component_added, component})
+  end
+
+  @spec component_updated(atom, map) :: :ok
+  def component_updated(pipeline_module, component) when is_atom(pipeline_module) do
+    GenServer.cast(pipeline_module, {:component_updated, component})
   end
 
   @spec reload_components_states(atom()) :: list(map())
-  def reload_components_states(name) when is_atom(name) do
-    GenServer.call(name, :reload_components_states)
+  def reload_components_states(pipeline_module) when is_atom(pipeline_module) do
+    GenServer.call(pipeline_module, :reload_components_states)
   end
 
   @impl true
-  def terminate(:normal, state) do
+  def terminate(_reason, state) do
     unless state.sync do
-      Supervisor.stop(state.pipeline_sup_pid)
+      Process.alive?(state.pipeline_sup_pid) and Supervisor.stop(state.pipeline_sup_pid)
     end
   end
 
@@ -278,13 +292,13 @@ defmodule ALF.Manager do
     state
     |> start_pipeline_supervisor()
     |> build_pipeline()
-    |> save_stages_states()
-    |> prepare_gotos()
   end
 
   defp start_pipeline_supervisor(%__MODULE__{} = state) do
     pipeline_sup_pid =
-      case PipelineDynamicSupervisor.start_link(%{name: :"#{state.name}_DynamicSupervisor"}) do
+      case PipelineDynamicSupervisor.start_link(%{
+             pipeline_module: :"#{state.pipeline_module}_DynamicSupervisor"
+           }) do
         {:ok, pid} -> pid
         {:error, {:already_started, pid}} -> pid
       end
@@ -299,41 +313,24 @@ defmodule ALF.Manager do
       Builder.build(
         state.pipeline_module,
         state.pipeline_sup_pid,
-        state.name,
         state.telemetry_enabled
       )
 
     %{state | pipeline: pipeline, producer_pid: pipeline.producer.pid}
   end
 
-  defp save_stages_states(%__MODULE__{} = state) do
-    components =
-      [state.pipeline.producer | Pipeline.stages_to_list(state.pipeline.components)] ++
-        [state.pipeline.consumer]
+  defp prepare_gotos(state) do
+    state.stages
+    |> Enum.each(fn {_pid, component} ->
+      case component do
+        %Goto{} ->
+          goto = Goto.find_where_to_go(component.pid, Map.values(state.stages))
+          component_updated(state.pipeline_module, goto)
 
-    components =
-      components
-      |> Enum.map(fn stage ->
-        stage.__struct__.__state__(stage.pid)
-      end)
-
-    %{state | components: components}
-  end
-
-  defp prepare_gotos(%__MODULE__{} = state) do
-    components =
-      state.components
-      |> Enum.map(fn component ->
-        case component do
-          %Goto{} ->
-            Goto.find_where_to_go(component.pid, state.components)
-
-          stage ->
-            stage
-        end
-      end)
-
-    %{state | components: components}
+        _stage ->
+          :ok
+      end
+    end)
   end
 
   @impl true
@@ -348,37 +345,102 @@ defmodule ALF.Manager do
   end
 
   def handle_call(:components, _from, state) do
-    {:reply, state.components, state}
+    components = Map.values(state.stages)
+    {:reply, components, state}
+  end
+
+  def handle_call(:stages, _from, state) do
+    {:reply, state.stages, state}
   end
 
   def handle_call(:reload_components_states, _from, %__MODULE__{sync: false} = state) do
-    components =
-      state.components
-      |> Enum.map(fn stage ->
-        stage.__struct__.__state__(stage.pid)
+    stages =
+      Enum.reduce(state.stages, %{}, fn {pid, stage}, acc ->
+        Map.put(acc, pid, stage.__struct__.__state__(stage.pid))
       end)
 
-    {:reply, components, %{state | components: components}}
+    {:reply, Map.values(stages), %{state | stages: stages}}
   end
 
   def handle_call(:reload_components_states, _from, %__MODULE__{sync: true} = state) do
-    {:reply, state.components, state}
+    {:reply, Map.values(state.stages), state}
   end
 
   def handle_call(:sync_pipeline, _from, state) do
     if state.sync do
       {:reply, state.pipeline, state}
     else
-      raise "#{state.name} is not a sync pipeline"
+      raise "#{state.pipeline_module} is not a sync pipeline"
     end
   end
 
   @impl true
-  def handle_info({:DOWN, _ref, :process, _pid, :shutdown}, %__MODULE__{} = state) do
-    state = start_pipeline(state)
+  def handle_cast({:component_added, component}, state) do
+    stages = Map.put(state.stages, component.pid, component)
+
+    removed_stages =
+      maybe_resubscribe(state.removed_stages, component.stage_set_ref, component.pid)
+
+    Process.monitor(component.pid)
+    state = %{state | stages: stages, removed_stages: removed_stages}
+
+    maybe_prepare_gotos(component, state)
 
     {:noreply, state}
   end
+
+  @impl true
+  def handle_cast({:component_updated, component}, state) do
+    stages = Map.put(state.stages, component.pid, component)
+
+    {:noreply, %{state | stages: stages}}
+  end
+
+  @impl true
+  def handle_info({:DOWN, _ref, :process, pid, reason}, %__MODULE__{} = state) do
+    Logger.error(
+      "Component #{inspect(pid)} is :DOWN with reason: #{reason} in pipeline: #{state.pipeline_module}"
+    )
+
+    if pid == state.pipeline_sup_pid do
+      state = start_pipeline(state)
+      {:noreply, state}
+    else
+      case Map.get(state.stages, pid) do
+        nil ->
+          {:noreply, state}
+
+        component ->
+          removed_stages = Map.put(state.removed_stages, component.stage_set_ref, component)
+
+          stages = Map.delete(state.stages, pid)
+          {:noreply, %{state | stages: stages, removed_stages: removed_stages}}
+      end
+    end
+  end
+
+  defp maybe_resubscribe(removed_stages, stage_set_ref, component_pid) do
+    case Map.get(removed_stages, stage_set_ref) do
+      nil ->
+        removed_stages
+
+      %{subscribed_to: subscribed_to, subscribers: subscribers} ->
+        Enum.each(subscribed_to, fn {{pid, _ref}, opts} ->
+          GenStage.async_subscribe(component_pid, Keyword.put(opts, :to, pid))
+        end)
+
+        Enum.each(subscribers, fn {{pid, _ref}, opts} ->
+          GenStage.async_subscribe(pid, Keyword.put(opts, :to, component_pid))
+        end)
+
+        Map.delete(removed_stages, stage_set_ref)
+    end
+  end
+
+  defp maybe_prepare_gotos(%Consumer{}, state), do: prepare_gotos(state)
+  defp maybe_prepare_gotos(%GotoPoint{}, state), do: prepare_gotos(state)
+  defp maybe_prepare_gotos(%Goto{}, state), do: prepare_gotos(state)
+  defp maybe_prepare_gotos(_other_components, _state), do: :nothing
 
   defp is_pipeline_module?(module) when is_atom(module) do
     is_list(module.alf_components())
@@ -390,18 +452,18 @@ defmodule ALF.Manager do
     Application.get_env(:alf, :telemetry_enabled, false)
   end
 
-  defp check_if_ready(name) do
-    producer_name = :"#{name}.Producer"
+  defp check_if_ready(pipeline_module) do
+    producer_name = :"#{pipeline_module}.Producer"
 
     cond do
-      Process.whereis(producer_name) && Process.whereis(name) ->
+      Process.whereis(producer_name) && Process.whereis(pipeline_module) ->
         {:ok, producer_name}
 
-      is_nil(Process.whereis(producer_name)) && Process.whereis(name) ->
-        {:sync, GenServer.call(name, :sync_pipeline)}
+      is_nil(Process.whereis(producer_name)) && Process.whereis(pipeline_module) ->
+        {:sync, GenServer.call(pipeline_module, :sync_pipeline)}
 
       true ->
-        raise("Pipeline #{name} is not started")
+        raise("Pipeline #{pipeline_module} is not started")
     end
   end
 
@@ -410,13 +472,13 @@ defmodule ALF.Manager do
   defp format_ip(%IP{} = ip, nil), do: ip.event
   defp format_ip(%ErrorIP{} = ip, _return_ips), do: ip
 
-  defp build_ip(event, name) do
+  defp build_ip(event, pipeline_module) do
     %IP{
       ref: make_ref(),
       destination: self(),
       init_event: event,
       event: event,
-      manager_name: name
+      pipeline_module: pipeline_module
     }
   end
 end

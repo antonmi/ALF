@@ -29,8 +29,7 @@ defmodule ALF.DSL.SwitchTest do
     end
 
     test "build PipelineSwitch1", %{sup_pid: sup_pid} do
-      {:ok, pipeline} =
-        Builder.build(PipelineSwitch1, sup_pid, Helpers.random_atom("manager"), false)
+      {:ok, pipeline} = Builder.build(PipelineSwitch1, sup_pid, false)
 
       [switch] = pipeline.components
 
@@ -48,15 +47,9 @@ defmodule ALF.DSL.SwitchTest do
                pipeline_module: PipelineSwitch1
              } = switch
 
-      assert %Stage{
-               name: :a,
-               subscribe_to: [{^pid, [max_demand: 1, cancel: :transient, partition: :part1]}]
-             } = stage_a
-
-      assert %Stage{
-               name: :b,
-               subscribe_to: [{^pid, [max_demand: 1, cancel: :transient, partition: :part2]}]
-             } = stage_b
+      assert is_pid(pid)
+      assert %Stage{name: :a} = stage_a
+      assert %Stage{name: :b} = stage_b
     end
   end
 
@@ -82,8 +75,7 @@ defmodule ALF.DSL.SwitchTest do
     end
 
     test "build PipelineSwitch2", %{sup_pid: sup_pid} do
-      {:ok, pipeline} =
-        Builder.build(PipelineSwitch2, sup_pid, Helpers.random_atom("manager"), false)
+      {:ok, pipeline} = Builder.build(PipelineSwitch2, sup_pid, false)
 
       [switch] = pipeline.components
       switch = Switch.__state__(switch.pid)
@@ -116,8 +108,7 @@ defmodule ALF.DSL.SwitchTest do
     end
 
     test "build PipelineSwitch2", %{sup_pid: sup_pid} do
-      {:ok, pipeline} =
-        Builder.build(PipelineSwitch3, sup_pid, Helpers.random_atom("manager"), false)
+      {:ok, pipeline} = Builder.build(PipelineSwitch3, sup_pid, false)
 
       [switch] = pipeline.components
 

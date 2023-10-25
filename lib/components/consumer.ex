@@ -5,8 +5,7 @@ defmodule ALF.Components.Consumer do
 
   defstruct Basic.common_attributes() ++
               [
-                type: :consumer,
-                manager_name: nil
+                type: :consumer
               ]
 
   @spec start_link(t()) :: GenServer.on_start()
@@ -17,7 +16,8 @@ defmodule ALF.Components.Consumer do
   @impl true
   def init(state) do
     state = %{state | pid: self(), name: :consumer}
-    {:consumer, state, subscribe_to: state.subscribe_to}
+    component_added(state)
+    {:consumer, state}
   end
 
   def init_sync(state, telemetry_enabled) do

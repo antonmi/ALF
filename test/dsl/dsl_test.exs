@@ -92,18 +92,8 @@ defmodule ALF.DSLTest do
   end
 
   describe "PipelineA" do
-    test "build PipelineA", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineA, sup_pid, Helpers.random_atom("manager"), false)
-
-      [one, two, three, four] = pipeline.components
-      assert %Stage{name: ModuleA} = one
-      assert %Stage{name: :custom_name} = two
-      assert %Stage{name: :just_function} = three
-      assert %Stage{name: :custom_name} = four
-    end
-
-    test "build with telemetry_enabled", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineA, sup_pid, Helpers.random_atom("manager"), true)
+    test "build PipelineA with telemetry_enabled", %{sup_pid: sup_pid} do
+      {:ok, pipeline} = Builder.build(PipelineA, sup_pid, true)
 
       [one, two, three, four] = pipeline.components
       assert %Stage{name: ModuleA, telemetry_enabled: true} = one
@@ -115,7 +105,7 @@ defmodule ALF.DSLTest do
 
   describe "PipelineB" do
     test "build PipelineB", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineB, sup_pid, Helpers.random_atom("manager"), false)
+      {:ok, pipeline} = Builder.build(PipelineB, sup_pid, false)
 
       [goto_point, clone, switch, goto] = pipeline.components
 
@@ -144,7 +134,7 @@ defmodule ALF.DSLTest do
 
   describe "PipelineC" do
     test "build PipelineC", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineC, sup_pid, Helpers.random_atom("manager"), false)
+      {:ok, pipeline} = Builder.build(PipelineC, sup_pid, false)
 
       [stage, plug, stage_in_plug, unplug, another_plug, _, _, _, last_stage, another_unplug] =
         pipeline.components
@@ -154,41 +144,51 @@ defmodule ALF.DSLTest do
       assert %Plug{
                name: MyAdapterModule,
                pid: plug_pid,
-               subscribe_to: [{^stage_pid, max_demand: 1, cancel: :transient}]
-             } = plug
+               subscribed_to: [{{^stage_pid, _ref}, _opts1}],
+               subscribers: [{{stage_in_plug_pid, _ref2}, _opts2}]
+             } = ALF.Components.Basic.__state__(plug.pid)
 
       assert %Stage{
-               pid: stage_pid,
-               subscribe_to: [{^plug_pid, max_demand: 1, cancel: :transient}]
-             } = stage_in_plug
+               pid: ^stage_in_plug_pid,
+               subscribed_to: [{{^plug_pid, _ref}, _opts1}],
+               subscribers: [{{unplug_pid, _ref2}, _opts2}]
+             } = ALF.Components.Basic.__state__(stage_in_plug.pid)
 
       assert %Unplug{
                name: MyAdapterModule,
-               pid: unplug_pid,
-               subscribe_to: [{^stage_pid, max_demand: 1, cancel: :transient}]
-             } = unplug
+               pid: ^unplug_pid,
+               subscribed_to: [{{^stage_in_plug_pid, _ref}, _opts1}],
+               subscribers: [{{_pid, _ref2}, _opts2}]
+             } = ALF.Components.Basic.__state__(unplug.pid)
 
       assert %Plug{
                name: :another_plug,
                pid: _plug_pid,
-               subscribe_to: [{^unplug_pid, max_demand: 1, cancel: :transient}]
-             } = another_plug
+               subscribed_to: [{{^unplug_pid, _ref}, _opts1}],
+               subscribers: [{{_pid, _ref2}, _opts2}]
+             } = ALF.Components.Basic.__state__(another_plug.pid)
 
-      assert %Stage{pid: last_stage_pid, name: :custom_name} = last_stage
+      assert %Stage{
+               name: :custom_name,
+               pid: last_stage_pid,
+               subscribed_to: [{{_pid, _ref}, _opts1}],
+               subscribers: [{{another_unplug_pid, _ref2}, _opts2}]
+             } = ALF.Components.Basic.__state__(last_stage.pid)
 
       assert %Unplug{
                name: :another_plug,
-               pid: _plug_pid,
-               subscribe_to: [{^last_stage_pid, max_demand: 1, cancel: :transient}]
-             } = another_unplug
+               pid: ^another_unplug_pid,
+               subscribed_to: [{{^last_stage_pid, _ref}, _opts1}],
+               subscribers: [{{_consumer_pid, _ref2}, _opts2}]
+             } = ALF.Components.Basic.__state__(another_unplug.pid)
     end
   end
 
   describe "PipelineCompose" do
     test "build PipelineCompose", %{sup_pid: sup_pid} do
-      {:ok, pipeline} =
-        Builder.build(PipelineCompose, sup_pid, Helpers.random_atom("manager"), false)
+      {:ok, pipeline} = Builder.build(PipelineCompose, sup_pid, false)
 
+      Process.sleep(10)
       [decomposer, recomposer] = pipeline.components
 
       assert %Decomposer{
@@ -199,26 +199,27 @@ defmodule ALF.DSLTest do
                pid: decomposer_pid,
                pipe_module: ALF.DSLTest.PipelineCompose,
                pipeline_module: ALF.DSLTest.PipelineCompose,
-               subscribe_to: [{producer_pid, [max_demand: 1, cancel: :transient]}],
-               subscribers: []
-             } = decomposer
+               subscribed_to: [{{producer_pid, _ref1}, _opts1}],
+               subscribers: [{{recomposer_pid, _ref2}, _opts2}]
+             } = ALF.Components.Basic.__state__(decomposer.pid)
 
       assert is_pid(decomposer_pid)
       assert is_pid(producer_pid)
+      assert is_pid(recomposer_pid)
 
       assert %Recomposer{
                module: PipelineCompose,
                function: :recomposer_function,
                name: :recomposer_function,
                opts: [foo: :bar],
-               pid: recomposer_pid,
+               pid: ^recomposer_pid,
                pipe_module: ALF.DSLTest.PipelineCompose,
                pipeline_module: ALF.DSLTest.PipelineCompose,
-               subscribe_to: [{^decomposer_pid, [max_demand: 1, cancel: :transient]}],
-               subscribers: []
-             } = recomposer
+               subscribed_to: [{{^decomposer_pid, _ref1}, _opts1}],
+               subscribers: [{{consumer_pid, _ref2}, _opts2}]
+             } = ALF.Components.Basic.__state__(recomposer.pid)
 
-      assert is_pid(recomposer_pid)
+      assert is_pid(consumer_pid)
     end
   end
 end

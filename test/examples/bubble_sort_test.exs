@@ -7,8 +7,8 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
     stage(:build_struct),
     goto_point(:goto_point),
     stage(:find_max),
-    stage(:update_new_list, count: 10),
-    stage(:rebuild_list, count: 10),
+    stage(:update_new_list, count: 3),
+    stage(:rebuild_list, count: 3),
     clone(:logging, to: [stage(:report_step), dead_end(:after_report)]),
     goto(:goto_if, to: :goto_point),
     stage(:format_output)
@@ -56,6 +56,8 @@ defmodule ALF.Examples.BubbleSortTest do
   end
 
   test "sort a list" do
+    Process.sleep(10)
+
     result =
       1..5
       |> Enum.shuffle()

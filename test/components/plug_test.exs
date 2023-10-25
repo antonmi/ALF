@@ -21,30 +21,27 @@ defmodule ALF.Components.PlugTest do
     end
   end
 
-  def build_plug(producer_pid) do
+  def build_plug() do
     %Plug{
       name: PlugAdapter,
       opts: [foo: 1],
-      module: PlugAdapter,
-      subscribe_to: [{producer_pid, max_demand: 1}]
+      module: PlugAdapter
     }
   end
 
-  def build_unplug(stage_pid) do
+  def build_unplug do
     %Unplug{
       name: PlugAdapter,
       module: PlugAdapter,
-      opts: [bar: 1],
-      subscribe_to: [{stage_pid, max_demand: 1}]
+      opts: [bar: 1]
     }
   end
 
-  def build_stage(goto_point_pid) do
+  def build_stage do
     %Stage{
       name: :test_stage,
       module: __MODULE__,
-      function: :stage_function,
-      subscribe_to: [{goto_point_pid, max_demand: 1}]
+      function: :stage_function
     }
   end
 
@@ -58,9 +55,12 @@ defmodule ALF.Components.PlugTest do
   end
 
   def setup_pipeline(producer_pid) do
-    {:ok, plug_pid} = Plug.start_link(build_plug(producer_pid))
-    {:ok, stage_pid} = Stage.start_link(build_stage(plug_pid))
-    {:ok, unplug_pid} = Unplug.start_link(build_unplug(stage_pid))
+    {:ok, plug_pid} = Plug.start_link(build_plug())
+    GenStage.sync_subscribe(plug_pid, to: producer_pid, max_demand: 1, cancel: :temporary)
+    {:ok, stage_pid} = Stage.start_link(build_stage())
+    GenStage.sync_subscribe(stage_pid, to: plug_pid, max_demand: 1, cancel: :temporary)
+    {:ok, unplug_pid} = Unplug.start_link(build_unplug())
+    GenStage.sync_subscribe(unplug_pid, to: stage_pid, max_demand: 1, cancel: :temporary)
 
     {:ok, consumer_pid} =
       TestConsumer.start_link(%TestConsumer{subscribe_to: [{unplug_pid, max_demand: 1}]})

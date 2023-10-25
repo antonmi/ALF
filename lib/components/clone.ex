@@ -19,8 +19,10 @@ defmodule ALF.Components.Clone do
 
   @impl true
   def init(state) do
-    {:producer_consumer, %{state | pid: self()},
-     dispatcher: GenStage.BroadcastDispatcher, subscribe_to: state.subscribe_to}
+    state = %{state | pid: self()}
+    component_added(state)
+
+    {:producer_consumer, state, dispatcher: GenStage.BroadcastDispatcher}
   end
 
   def init_sync(state, telemetry_enabled) do

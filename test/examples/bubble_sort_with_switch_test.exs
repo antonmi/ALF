@@ -7,8 +7,8 @@ defmodule ALF.Examples.BubbleSortWithSwitch.Pipeline do
     stage(:build_struct),
     goto_point(:goto_point),
     stage(:find_max),
-    stage(:update_new_list, count: 10),
-    stage(:rebuild_list, count: 10),
+    stage(:update_new_list, count: 2),
+    stage(:rebuild_list, count: 2),
     clone(:logging, to: [stage(:report_step), dead_end(:after_report)]),
     switch(:ready_or_not,
       branches: %{

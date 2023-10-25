@@ -10,7 +10,7 @@ defmodule ALF.ErrorIP do
           stream_ref: reference() | nil,
           stacktrace: list(),
           component: map(),
-          manager_name: atom(),
+          pipeline_module: atom(),
           decomposed: boolean(),
           recomposed: boolean(),
           plugs: map()
@@ -24,7 +24,7 @@ defmodule ALF.ErrorIP do
             stream_ref: nil,
             stacktrace: nil,
             component: nil,
-            manager_name: nil,
+            pipeline_module: nil,
             decomposed: false,
             recomposed: false,
             plugs: %{}

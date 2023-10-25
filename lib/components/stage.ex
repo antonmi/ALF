@@ -8,7 +8,6 @@ defmodule ALF.Components.Stage do
                 function: nil,
                 count: 1,
                 number: 0,
-                stage_set_ref: nil,
                 opts: [],
                 source_code: nil
               ]
@@ -31,7 +30,8 @@ defmodule ALF.Components.Stage do
         subscribers: []
     }
 
-    {:producer_consumer, state, subscribe_to: state.subscribe_to}
+    component_added(state)
+    {:producer_consumer, state}
   end
 
   def init_sync(state, telemetry_enabled) do

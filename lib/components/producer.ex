@@ -5,26 +5,28 @@ defmodule ALF.Components.Producer do
               [
                 type: :producer,
                 demand: 0,
-                manager_name: nil,
                 source_code: nil,
                 ips: []
               ]
 
   @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
-    name = :"#{state.manager_name}.Producer"
+    name = :"#{state.pipeline_module}.Producer"
     GenStage.start_link(__MODULE__, state, name: name)
   end
 
   @impl true
   def init(state) do
-    {:producer,
-     %{
-       state
-       | pid: self(),
-         name: :producer,
-         source_code: state.source_code || read_source_code(state.pipeline_module)
-     }}
+    state = %{
+      state
+      | pid: self(),
+        name: :producer,
+        source_code: state.source_code || read_source_code(state.pipeline_module)
+    }
+
+    component_added(state)
+
+    {:producer, state}
   end
 
   def init_sync(state, telemetry_enabled) do

@@ -16,7 +16,8 @@ defmodule Alf.MixProject do
 
   def application do
     [
-      mod: {ALF.Application, []}
+      mod: {ALF.Application, []},
+      extra_applications: [:logger]
     ]
   end
 

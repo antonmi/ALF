@@ -16,8 +16,8 @@ defmodule ALF.Components.Tbd do
   @impl true
   def init(state) do
     state = %{state | pid: self()}
-
-    {:producer_consumer, state, subscribe_to: state.subscribe_to}
+    component_added(state)
+    {:producer_consumer, state}
   end
 
   def init_sync(state, _telemetry_enabled) do
