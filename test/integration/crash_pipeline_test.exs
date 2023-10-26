@@ -51,7 +51,7 @@ defmodule ALF.CrashPipelineTest do
 
         assert length(results) == 10
         errors = Enum.filter(results, fn event -> is_struct(event, ALF.ErrorIP) end)
-        assert Enum.uniq(Enum.map(errors, &(&1.error))) == [:timeout]
+        assert Enum.uniq(Enum.map(errors, & &1.error)) == [:timeout]
         Process.sleep(10)
       end)
 

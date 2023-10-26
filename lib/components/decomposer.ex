@@ -72,7 +72,7 @@ defmodule ALF.Components.Decomposer do
   defp process_ip(ip, state) do
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:ok, events} when is_list(events) ->
-        ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
+        ips = build_ips(events, ip, history(ip, state))
 
         Enum.each(ips, &send_result(&1, :created_decomposer))
         send_result(ip, :destroyed)
@@ -80,11 +80,11 @@ defmodule ALF.Components.Decomposer do
         {ips, state}
 
       {:ok, {events, event}} when is_list(events) ->
-        ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
+        ips = build_ips(events, ip, history(ip, state))
 
         Enum.each(ips, &send_result(&1, :created_decomposer))
 
-        ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
+        ip = %{ip | event: event, history: history(ip, state)}
         {ips ++ [ip], state}
 
       {:error, error, stacktrace} ->
@@ -111,12 +111,12 @@ defmodule ALF.Components.Decomposer do
   defp do_sync_process(ip, state) do
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:ok, events} when is_list(events) ->
-        build_ips(events, ip, [{state.name, ip.event} | ip.history])
+        build_ips(events, ip, history(ip, state))
 
       {:ok, {events, event}} when is_list(events) ->
-        ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
+        ips = build_ips(events, ip, history(ip, state))
 
-        ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
+        ip = %{ip | event: event, history: history(ip, state)}
         [ip | ips]
 
       {:error, error, stacktrace} ->
@@ -135,6 +135,7 @@ defmodule ALF.Components.Decomposer do
         event: event,
         pipeline_module: ip.pipeline_module,
         decomposed: true,
+        debug: ip.debug,
         history: history,
         sync_path: ip.sync_path
       }

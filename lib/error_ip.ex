@@ -13,6 +13,8 @@ defmodule ALF.ErrorIP do
           pipeline_module: atom(),
           decomposed: boolean(),
           recomposed: boolean(),
+          debug: boolean(),
+          history: list(),
           plugs: map()
         }
 
@@ -27,5 +29,7 @@ defmodule ALF.ErrorIP do
             pipeline_module: nil,
             decomposed: false,
             recomposed: false,
+            debug: false,
+            history: [],
             plugs: %{}
 end

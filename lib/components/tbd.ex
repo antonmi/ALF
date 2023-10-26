@@ -26,12 +26,12 @@ defmodule ALF.Components.Tbd do
 
   @impl true
   def handle_events([%IP{} = ip], _from, state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    ip = %{ip | history: history(ip, state)}
     {:noreply, [ip], state}
   end
 
   def sync_process(ip, state) do
-    %{ip | history: [{state.name, ip.event} | ip.history]}
+    %{ip | history: history(ip, state)}
   end
 
   def validate_name(atom) do

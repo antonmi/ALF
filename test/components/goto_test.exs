@@ -54,7 +54,7 @@ defmodule ALF.Components.GotoTest do
   end
 
   def do_run_test(producer_pid, consumer_pid) do
-    ip = %IP{event: 0}
+    ip = %IP{event: 0, debug: true}
     GenServer.cast(producer_pid, [ip])
     Process.sleep(10)
     [ip] = TestConsumer.ips(consumer_pid)

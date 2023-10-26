@@ -114,7 +114,12 @@ defmodule ALF.Manager do
   end
 
   @spec call(any, atom, Keyword.t()) :: any | [any] | nil
-  def call(event, pipeline_module, opts \\ [debug: false]) do
+  def call(event, pipeline_module, opts \\ []) do
+    opts = [
+      debug: Keyword.get(opts, :debug, false),
+      timeout: Keyword.get(opts, :timeout, @default_timeout)
+    ]
+
     case check_if_ready(pipeline_module) do
       {:ok, producer_name} ->
         do_call(pipeline_module, producer_name, event, opts)
@@ -125,39 +130,45 @@ defmodule ALF.Manager do
   end
 
   defp do_call(pipeline_module, producer_name, event, opts) do
-    ip = build_ip(event, pipeline_module)
+    ip = build_ip(event, pipeline_module, opts[:debug])
     Producer.load_ip(producer_name, ip)
-    timeout = opts[:timeout] || @default_timeout
+    timeout = opts[:timeout]
 
     case wait_result(ip.ref, [], {timeout, ip}) do
       [] ->
         nil
 
       [ip] ->
-        format_ip(ip, opts[:debug])
+        format_ip(ip)
 
       ips ->
-        Enum.map(ips, fn ip -> format_ip(ip, opts[:debug]) end)
+        Enum.map(ips, &format_ip/1)
     end
   end
 
   defp do_sync_call(pipeline_module, pipeline, event, opts) do
-    ip = build_ip(event, pipeline_module)
+    ip = build_ip(event, pipeline_module, opts[:debug])
 
     case SyncRunner.run(pipeline, ip) do
       [] ->
         nil
 
       [ip] ->
-        format_ip(ip, opts[:debug])
+        format_ip(ip)
 
       ips ->
-        Enum.map(ips, fn ip -> format_ip(ip, opts[:debug]) end)
+        Enum.map(ips, &format_ip/1)
     end
   end
 
   @spec cast(any, atom, Keyword.t()) :: reference
-  def cast(event, pipeline_module, opts \\ [send_result: false]) do
+  def cast(event, pipeline_module, opts \\ []) do
+    opts = [
+      debug: Keyword.get(opts, :debug, false),
+      timeout: Keyword.get(opts, :timeout, @default_timeout),
+      send_result: Keyword.get(opts, :send_result, false)
+    ]
+
     case check_if_ready(pipeline_module) do
       {:ok, producer_name} ->
         do_cast(pipeline_module, producer_name, event, opts)
@@ -171,10 +182,10 @@ defmodule ALF.Manager do
     ip =
       case opts[:send_result] do
         true ->
-          build_ip(event, pipeline_module)
+          build_ip(event, pipeline_module, opts[:debug])
 
         false ->
-          %{build_ip(event, pipeline_module) | destination: false}
+          %{build_ip(event, pipeline_module, opts[:debug]) | destination: false}
       end
 
     Producer.load_ip(producer_name, ip)
@@ -182,7 +193,12 @@ defmodule ALF.Manager do
   end
 
   @spec stream(Enumerable.t(), atom, Keyword.t()) :: Enumerable.t()
-  def stream(stream, pipeline_module, opts \\ [debug: false]) do
+  def stream(stream, pipeline_module, opts \\ []) do
+    opts = [
+      debug: Keyword.get(opts, :debug, false),
+      timeout: Keyword.get(opts, :timeout, @default_timeout)
+    ]
+
     case check_if_ready(pipeline_module) do
       {:ok, producer_name} ->
         do_stream(pipeline_module, producer_name, stream, opts)
@@ -194,13 +210,13 @@ defmodule ALF.Manager do
 
   defp do_stream(pipeline_module, producer_name, stream, opts) do
     stream_ref = make_ref()
-    timeout = opts[:timeout] || @default_timeout
+    timeout = opts[:timeout]
 
     stream
     |> Stream.transform(
       nil,
       fn event, nil ->
-        ip = build_ip(event, pipeline_module)
+        ip = build_ip(event, pipeline_module, opts[:debug])
         ip = %{ip | stream_ref: stream_ref}
         Producer.load_ip(producer_name, ip)
 
@@ -209,7 +225,7 @@ defmodule ALF.Manager do
             {[], nil}
 
           ips ->
-            ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:debug]) end)
+            ips = Enum.map(ips, &format_ip/1)
             {ips, nil}
         end
       end
@@ -221,9 +237,9 @@ defmodule ALF.Manager do
     |> Stream.transform(
       nil,
       fn event, nil ->
-        ip = build_ip(event, pipeline_module)
+        ip = build_ip(event, pipeline_module, opts[:debug])
         ips = SyncRunner.run(pipeline, ip)
-        ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:debug]) end)
+        ips = Enum.map(ips, &format_ip/1)
         {ips, nil}
       end
     )
@@ -467,18 +483,18 @@ defmodule ALF.Manager do
     end
   end
 
-  defp format_ip(%IP{} = ip, true), do: ip
-  defp format_ip(%IP{} = ip, false), do: ip.event
-  defp format_ip(%IP{} = ip, nil), do: ip.event
-  defp format_ip(%ErrorIP{} = ip, _debug), do: ip
+  defp format_ip(%IP{debug: true} = ip), do: ip
+  defp format_ip(%IP{debug: false} = ip), do: ip.event
+  defp format_ip(%ErrorIP{} = error_ip), do: error_ip
 
-  defp build_ip(event, pipeline_module) do
+  defp build_ip(event, pipeline_module, debug) do
     %IP{
       ref: make_ref(),
       destination: self(),
       init_event: event,
       event: event,
-      pipeline_module: pipeline_module
+      pipeline_module: pipeline_module,
+      debug: debug
     }
   end
 end

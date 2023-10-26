@@ -89,7 +89,7 @@ defmodule ALF.Components.Stage do
   end
 
   defp process_ip(ip, state) do
-    ip = %{ip | history: [{{state.name, state.number}, ip.event} | ip.history]}
+    ip = %{ip | history: history(ip, state, true)}
 
     case try_apply(ip.event, {state.module, state.function, state.opts}) do
       {:ok, new_event} ->
@@ -116,6 +116,8 @@ defmodule ALF.Components.Stage do
   end
 
   defp do_sync_process(ip, state) do
+    ip = %{ip | history: history(ip, state, true)}
+
     case try_apply(ip.event, {state.module, state.function, state.opts}) do
       {:ok, new_event} ->
         %{ip | event: new_event}

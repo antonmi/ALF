@@ -264,7 +264,7 @@ defmodule ALF.DSL do
       end
 
       @spec call(any, Keyword.t()) :: reference
-      def cast(event, opts \\ [send_result: false]) do
+      def cast(event, opts \\ [debug: false, send_result: false]) do
         ALF.Manager.cast(event, __MODULE__, opts)
       end
 

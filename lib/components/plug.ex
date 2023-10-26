@@ -65,7 +65,7 @@ defmodule ALF.Components.Plug do
   end
 
   defp process_ip(ip, state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    ip = %{ip | history: history(ip, state)}
     ip_plugs = Map.put(ip.plugs, state.name, ip.event)
     ip = %{ip | plugs: ip_plugs}
 
@@ -94,7 +94,7 @@ defmodule ALF.Components.Plug do
   end
 
   defp do_sync_process(ip, state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    ip = %{ip | history: history(ip, state)}
     ip_plugs = Map.put(ip.plugs, state.name, ip.event)
     ip = %{ip | plugs: ip_plugs}
 

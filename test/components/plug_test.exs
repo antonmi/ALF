@@ -76,7 +76,7 @@ defmodule ALF.Components.PlugTest do
     end
 
     test "test plug/unplug with map", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
-      ip = %IP{event: %{number: 1, other: :events}}
+      ip = %IP{event: %{number: 1, other: :events}, debug: true}
       GenServer.cast(producer_pid, [ip])
       Process.sleep(20)
       [ip] = TestConsumer.ips(consumer_pid)
@@ -90,7 +90,7 @@ defmodule ALF.Components.PlugTest do
     end
 
     test "test plug/unplug with struct", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
-      ip = %IP{event: %__MODULE__{number: 1, other: :events}}
+      ip = %IP{event: %__MODULE__{number: 1, other: :events}, debug: true}
       GenServer.cast(producer_pid, [ip])
       Process.sleep(20)
       [ip] = TestConsumer.ips(consumer_pid)

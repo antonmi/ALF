@@ -67,15 +67,15 @@ defmodule ALF.Components.Clone do
 
   defp do_sync_process(ip, state) do
     [
-      %{ip | history: [{state.name, ip.event} | ip.history]},
-      %{ip | history: [{state.name, ip.event} | ip.history]}
+      %{ip | history: history(ip, state)},
+      %{ip | history: history(ip, state)}
     ]
   end
 
   defp process_ip(ip, state) do
     send_result(ip, :cloned)
 
-    %{ip | history: [{state.name, ip.event} | ip.history]}
+    %{ip | history: history(ip, state)}
   end
 
   def validate_options(name, options) do

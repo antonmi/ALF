@@ -103,7 +103,7 @@ defmodule ALF.Components.Goto do
   end
 
   defp process_ip(ip, state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    ip = %{ip | history: history(ip, state)}
 
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:error, error, stacktrace} ->
@@ -139,7 +139,7 @@ defmodule ALF.Components.Goto do
   end
 
   def do_sync_process(ip, state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    ip = %{ip | history: history(ip, state)}
 
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:error, error, stacktrace} ->

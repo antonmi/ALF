@@ -31,7 +31,7 @@ defmodule ALF.ComponentThrowTest do
     test "returns error immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> ThrowInStagePipeline.stream()
+        |> ThrowInStagePipeline.stream(debug: true)
         |> Enum.to_list()
 
       assert [
@@ -41,8 +41,8 @@ defmodule ALF.ComponentThrowTest do
                  error: :throw,
                  stacktrace: "throw in :add_one"
                },
-               6,
-               8
+               %IP{event: 6},
+               %IP{event: 8}
              ] = results
 
       assert [{{:add_one, 0}, _event}] = ip.history
@@ -77,7 +77,7 @@ defmodule ALF.ComponentThrowTest do
     test "returns error immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> ExitInStagePipeline.stream()
+        |> ExitInStagePipeline.stream(debug: true)
         |> Enum.to_list()
 
       assert [
@@ -87,8 +87,8 @@ defmodule ALF.ComponentThrowTest do
                  error: :exit,
                  stacktrace: "exit in :add_one"
                },
-               6,
-               8
+               %IP{event: 6},
+               %IP{event: 8}
              ] = results
 
       assert [{{:add_one, 0}, _event}] = ip.history
@@ -174,7 +174,7 @@ defmodule ALF.ComponentThrowTest do
     test "error results" do
       results =
         [1, 2, 3]
-        |> ThrowInGotoPipeline.stream()
+        |> ThrowInGotoPipeline.stream(debug: true)
         |> Enum.to_list()
 
       assert [

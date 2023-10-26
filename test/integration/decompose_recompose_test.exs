@@ -43,6 +43,7 @@ defmodule ALF.DecomposeRecomposeTest do
 
       assert ip1.event == "foo foo bar"
       assert ip2.event == "bar baz baz"
+      assert ip1.history == [recomposer_function: "bar", decomposer_function: "bar bar"]
     end
 
     test "several streams returns strings" do

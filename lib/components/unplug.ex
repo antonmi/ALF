@@ -65,7 +65,7 @@ defmodule ALF.Components.Unplug do
   end
 
   defp process_ip(ip, state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    ip = %{ip | history: history(ip, state)}
 
     prev_event = Map.fetch!(ip.plugs, state.name)
     ip_plugs = Map.delete(ip.plugs, state.name)
@@ -96,7 +96,7 @@ defmodule ALF.Components.Unplug do
   end
 
   defp do_sync_process(ip, state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    ip = %{ip | history: history(ip, state)}
 
     prev_event = Map.fetch!(ip.plugs, state.name)
     ip_plugs = Map.delete(ip.plugs, state.name)

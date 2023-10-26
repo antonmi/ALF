@@ -26,7 +26,7 @@ defmodule ALF.Components.Switch do
     branches = Map.keys(state.branches)
 
     hash = fn ip ->
-      ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+      ip = %{ip | history: history(ip, state)}
 
       case call_function(state.module, state.function, ip.event, state.opts) do
         {:error, error, stacktrace} ->
