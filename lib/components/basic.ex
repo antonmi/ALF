@@ -8,7 +8,7 @@ defmodule ALF.Components.Basic do
     subscribed_to: [],
     subscribers: [],
     stage_set_ref: nil,
-    telemetry_enabled: false
+    telemetry: false
   ]
 
   def common_attributes, do: @common_attributes
@@ -43,6 +43,8 @@ defmodule ALF.Components.Basic do
       ref: ip.ref,
       stream_ref: ip.stream_ref,
       error: error,
+      debug: ip.debug,
+      history: ip.history,
       stacktrace: stacktrace,
       component: state,
       plugs: ip.plugs
@@ -179,6 +181,16 @@ defmodule ALF.Components.Basic do
 
       def component_added(component) do
         Manager.component_added(component.pipeline_module, component)
+      end
+
+      def history(ip, state, include_number \\ false) do
+        name = if include_number, do: {state.name, state.number}, else: state.name
+
+        if ip.debug do
+          [{name, ip.event} | ip.history]
+        else
+          []
+        end
       end
 
       defp do_read_source_code(module, function) do

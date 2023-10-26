@@ -18,17 +18,17 @@ defmodule ALF.Components.GotoPoint do
     {:producer_consumer, state}
   end
 
-  def init_sync(state, telemetry_enabled) do
+  def init_sync(state, telemetry) do
     %{
       state
       | pid: make_ref(),
-        telemetry_enabled: telemetry_enabled
+        telemetry: telemetry
     }
   end
 
   @impl true
-  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry: true} = state) do
+    ip = %{ip | history: history(ip, state)}
 
     :telemetry.span(
       [:alf, :component],
@@ -40,26 +40,26 @@ defmodule ALF.Components.GotoPoint do
     )
   end
 
-  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry: false} = state) do
+    ip = %{ip | history: history(ip, state)}
     {:noreply, [ip], state}
   end
 
   def handle_call({:goto, %ALF.IP{} = ip}, _from, %__MODULE__{} = state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    ip = %{ip | history: history(ip, state)}
     {:reply, :ok, [ip], state}
   end
 
-  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
-    %{ip | history: [{state.name, ip.event} | ip.history]}
+  def sync_process(ip, %__MODULE__{telemetry: false} = state) do
+    %{ip | history: history(ip, state)}
   end
 
-  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+  def sync_process(ip, %__MODULE__{telemetry: true} = state) do
     :telemetry.span(
       [:alf, :component],
       telemetry_data(ip, state),
       fn ->
-        ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+        ip = %{ip | history: history(ip, state)}
         {ip, telemetry_data(ip, state)}
       end
     )

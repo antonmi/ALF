@@ -46,10 +46,10 @@ defmodule ALF.SyncRun.SimplePipelineTest do
     assert result3 == Enum.map(20..29, fn n -> (n + 1) * 2 - 3 end)
   end
 
-  test "return_ip" do
+  test "debug true" do
     results =
       [1, 2, 3]
-      |> Pipeline.stream(return_ip: true)
+      |> Pipeline.stream(debug: true)
       |> Enum.to_list()
 
     assert [%IP{event: 1}, %IP{event: 3}, %IP{event: 5}] = results

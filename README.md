@@ -110,7 +110,7 @@ There are `call/2`, `cast/2` and `stream/2` functions.
 
 ```elixir
 ThePipeline.call(1) # returns 1
-ThePipeline.call(2, return_ip: true) # it returns %ALP.IP{} struct
+ThePipeline.call(2, debug: true) # it returns %ALP.IP{} struct
 ```
 
 `cast/2` sends event to the pipeline and returns the IP reference immediately.
@@ -137,7 +137,7 @@ inputs = [1,2,3]
 output_stream = ThePipeline.stream(inputs)
 Enum.to_list(output_stream) # it returns [1, 3, 5]
 ```
-The `return_ip: true` option also works for streams
+The `debug: true` option also works for streams
 
 ### Parallel processing of several streams
 

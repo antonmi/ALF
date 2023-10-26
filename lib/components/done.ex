@@ -32,18 +32,18 @@ defmodule ALF.Components.Done do
     {:producer_consumer, state}
   end
 
-  def init_sync(state, telemetry_enabled) do
+  def init_sync(state, telemetry) do
     %{
       state
       | pid: make_ref(),
         opts: init_opts(state.module, state.opts),
         source_code: state.source_code || read_source_code(state.module, state.function),
-        telemetry_enabled: telemetry_enabled
+        telemetry: telemetry
     }
   end
 
   @impl true
-  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
+  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry: true} = state) do
     :telemetry.span(
       [:alf, :component],
       telemetry_data(ip, state),
@@ -62,7 +62,7 @@ defmodule ALF.Components.Done do
     )
   end
 
-  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
+  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry: false} = state) do
     case process_ip(ip, state) do
       %IP{} = ip ->
         {:noreply, [ip], state}
@@ -76,7 +76,14 @@ defmodule ALF.Components.Done do
   end
 
   defp process_ip(ip, state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    history =
+      if ip.debug do
+        [{state.name, ip.event} | ip.history]
+      else
+        []
+      end
+
+    ip = %{ip | history: history}
 
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:error, error, stacktrace} ->
@@ -91,11 +98,11 @@ defmodule ALF.Components.Done do
     end
   end
 
-  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+  def sync_process(ip, %__MODULE__{telemetry: false} = state) do
     do_sync_process(ip, state)
   end
 
-  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+  def sync_process(ip, %__MODULE__{telemetry: true} = state) do
     :telemetry.span(
       [:alf, :component],
       telemetry_data(ip, state),
@@ -107,7 +114,7 @@ defmodule ALF.Components.Done do
   end
 
   def do_sync_process(ip, state) do
-    ip = %{ip | history: [{state.name, ip.event} | ip.history]}
+    ip = %{ip | history: history(ip, state)}
 
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:error, error, stacktrace} ->

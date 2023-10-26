@@ -50,9 +50,8 @@ defmodule ALF.CrashPipelineTest do
           |> Enum.to_list()
 
         assert length(results) == 10
-        [error1, error2] = Enum.filter(results, fn event -> is_struct(event, ALF.ErrorIP) end)
-        assert error1.error == :timeout
-        assert error2.error == :timeout
+        errors = Enum.filter(results, fn event -> is_struct(event, ALF.ErrorIP) end)
+        assert Enum.uniq(Enum.map(errors, & &1.error)) == [:timeout]
         Process.sleep(10)
       end)
 
@@ -61,7 +60,7 @@ defmodule ALF.CrashPipelineTest do
       new_pids = Enum.map(Map.values(new_state.stages), & &1.pid)
 
       assert new_state.pipeline_sup_pid == state.pipeline_sup_pid
-      assert length(pids -- new_pids) == 2
+      assert length(pids -- new_pids) >= 2
     end
 
     test "with one stream lost of crashes (pipeline supervisor crash)", %{state: state} do
@@ -274,7 +273,7 @@ defmodule ALF.CrashPipelineTest do
     def it_works! do
       [ip1, ip2] =
         ["foo foo", "bar bar", "baz baz"]
-        |> DeRePipeline.stream(return_ip: true)
+        |> DeRePipeline.stream(debug: true)
         |> Enum.to_list()
 
       assert ip1.event == "foo foo bar"

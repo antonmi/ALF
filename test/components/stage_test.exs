@@ -46,7 +46,7 @@ defmodule ALF.Components.StageTest do
   end
 
   test "call component", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
-    ip = %IP{event: "baz"}
+    ip = %IP{event: "baz", debug: true}
     GenServer.cast(producer_pid, [ip])
     Process.sleep(10)
     [ip] = TestConsumer.ips(consumer_pid)

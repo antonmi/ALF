@@ -38,11 +38,12 @@ defmodule ALF.DecomposeRecomposeTest do
     test "returns strings" do
       [ip1, ip2] =
         ["foo foo", "bar bar", "baz baz"]
-        |> Pipeline.stream(return_ip: true)
+        |> Pipeline.stream(debug: true)
         |> Enum.to_list()
 
       assert ip1.event == "foo foo bar"
       assert ip2.event == "bar baz baz"
+      assert ip1.history == [recomposer_function: "bar", decomposer_function: "bar bar"]
     end
 
     test "several streams returns strings" do

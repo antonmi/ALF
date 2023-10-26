@@ -27,7 +27,7 @@ defmodule ALF.Components.TbdTest do
   end
 
   test "call component", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
-    ip = %IP{event: "foo"}
+    ip = %IP{event: "foo", debug: true}
     GenServer.cast(producer_pid, [ip])
     Process.sleep(10)
     [ip] = TestConsumer.ips(consumer_pid)

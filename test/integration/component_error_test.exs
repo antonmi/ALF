@@ -31,7 +31,7 @@ defmodule ALF.ComponentErrorTest do
     test "returns error immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> ErrorInStagePipeline.stream()
+        |> ErrorInStagePipeline.stream(debug: true)
         |> Enum.to_list()
 
       assert [
@@ -40,8 +40,8 @@ defmodule ALF.ComponentErrorTest do
                  ip: %IP{} = ip,
                  error: %RuntimeError{message: "Error in :add_one"}
                },
-               6,
-               8
+               %IP{event: 6},
+               %IP{event: 8}
              ] = results
 
       assert [{{:add_one, 0}, _event}] = ip.history
@@ -76,7 +76,7 @@ defmodule ALF.ComponentErrorTest do
     test "returns error immediately (skips mult_two)" do
       results =
         [1, 2, 3]
-        |> ThrowInStagePipeline.stream()
+        |> ThrowInStagePipeline.stream(debug: true)
         |> Enum.to_list()
 
       assert [
@@ -86,8 +86,8 @@ defmodule ALF.ComponentErrorTest do
                  error: :throw,
                  stacktrace: "throw in :add_one"
                },
-               6,
-               8
+               %IP{event: 6},
+               %IP{event: 8}
              ] = results
 
       assert [{{:add_one, 0}, _event}] = ip.history
@@ -121,7 +121,7 @@ defmodule ALF.ComponentErrorTest do
     test "returns error" do
       results =
         [1, 2, 3]
-        |> ErrorInStageMultTwoPipeline.stream(return_ip: true)
+        |> ErrorInStageMultTwoPipeline.stream(debug: true)
         |> Enum.to_list()
 
       assert [
@@ -175,7 +175,7 @@ defmodule ALF.ComponentErrorTest do
     test "error results" do
       results =
         [1, 2]
-        |> ErrorInSwitchPipeline.stream(return_ip: true)
+        |> ErrorInSwitchPipeline.stream(debug: true)
         |> Enum.to_list()
 
       assert [

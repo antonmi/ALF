@@ -17,7 +17,7 @@ defmodule ALF.PerformanceStatsTest do
 
   describe "stats" do
     setup do
-      Manager.start(SimplePipeline, telemetry_enabled: true)
+      Manager.start(SimplePipeline, telemetry: true)
     end
 
     test "stats for the pipeline" do

@@ -31,7 +31,7 @@ defmodule ALF.Telemetry.ComponentTelemetryTest do
 
   describe "telemetry events" do
     setup %{agent: agent} do
-      Pipeline.start(telemetry_enabled: true)
+      Pipeline.start(telemetry: true)
 
       :ok =
         :telemetry.attach_many(
@@ -162,7 +162,7 @@ defmodule ALF.Telemetry.ComponentTelemetryTest do
 
   describe "telemetry events for sync case" do
     setup %{agent: agent} do
-      Pipeline.start(telemetry_enabled: true, sync: true)
+      Pipeline.start(telemetry: true, sync: true)
 
       :ok =
         :telemetry.attach_many(

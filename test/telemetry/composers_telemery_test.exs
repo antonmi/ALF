@@ -36,7 +36,7 @@ defmodule ALF.Telemetry.ComposersTelemetryTest do
     end
 
     setup %{agent: agent} do
-      Pipeline.start(telemetry_enabled: true)
+      Pipeline.start(telemetry: true)
 
       :ok =
         :telemetry.attach_many(

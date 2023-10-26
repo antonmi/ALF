@@ -21,7 +21,7 @@ defmodule ALF.ManagerTest do
       %Manager{
         pipeline_module: ExtremelySimplePipeline,
         pipeline: %ALF.Pipeline{},
-        telemetry_enabled: false
+        telemetry: false
       } = state
     end
 
@@ -29,35 +29,35 @@ defmodule ALF.ManagerTest do
       Manager.start(ExtremelySimplePipeline)
       state = Manager.__state__(ExtremelySimplePipeline)
 
-      %Manager{telemetry_enabled: false} = state
+      %Manager{telemetry: false} = state
     end
 
     test "telemetry default when it's enabled in configs" do
-      before = Application.get_env(:alf, :telemetry_enabled)
-      Application.put_env(:alf, :telemetry_enabled, true)
-      on_exit(fn -> Application.put_env(:alf, :telemetry_enabled, before) end)
+      before = Application.get_env(:alf, :telemetry)
+      Application.put_env(:alf, :telemetry, true)
+      on_exit(fn -> Application.put_env(:alf, :telemetry, before) end)
 
       Manager.start(ExtremelySimplePipeline)
       state = Manager.__state__(ExtremelySimplePipeline)
 
-      %Manager{telemetry_enabled: true} = state
+      %Manager{telemetry: true} = state
     end
 
     test "with opts" do
-      Manager.start(ExtremelySimplePipeline, telemetry_enabled: true)
+      Manager.start(ExtremelySimplePipeline, telemetry: true)
       state = Manager.__state__(ExtremelySimplePipeline)
 
       %Manager{
         pipeline_module: ExtremelySimplePipeline,
         pipeline: %ALF.Pipeline{},
-        telemetry_enabled: true
+        telemetry: true
       } = state
     end
 
     test "with invalid opts" do
       assert_raise RuntimeError,
                    "Wrong options for the 'Elixir.ALF.ManagerTest.ExtremelySimplePipeline' pipeline: [:a]. " <>
-                     "Available options are [:telemetry_enabled, :sync]",
+                     "Available options are [:telemetry, :sync]",
                    fn ->
                      Manager.start(ExtremelySimplePipeline, a: :b)
                    end
@@ -275,7 +275,7 @@ defmodule ALF.ManagerTest do
     end
 
     test "with return ip option" do
-      assert %ALF.IP{event: 4} = SimplePipelineToCall.call(1, return_ip: true)
+      assert %ALF.IP{event: 4} = SimplePipelineToCall.call(1, debug: true)
     end
 
     test "call from many Tasks" do
@@ -312,7 +312,7 @@ defmodule ALF.ManagerTest do
 
     test "call and check event" do
       assert SimplePipelineToSyncCall.call(1) == 4
-      assert %ALF.IP{event: 4} = SimplePipelineToSyncCall.call(1, return_ip: true)
+      assert %ALF.IP{event: 4} = SimplePipelineToSyncCall.call(1, debug: true)
     end
   end
 
@@ -360,10 +360,10 @@ defmodule ALF.ManagerTest do
       assert Enum.sort(result3) == Enum.map(201..300, &((&1 + 1) * 2))
     end
 
-    test "run with return_ip: true option" do
+    test "run with debug: true option" do
       results =
         sample_stream()
-        |> Manager.stream(SimplePipelineToStream, return_ip: true)
+        |> Manager.stream(SimplePipelineToStream, debug: true)
         |> Enum.to_list()
 
       assert [
@@ -405,10 +405,10 @@ defmodule ALF.ManagerTest do
       assert results == [4, 6, 8]
     end
 
-    test "stream with return_ip option" do
+    test "stream with debug option" do
       assert [%ALF.IP{event: 4}, %ALF.IP{event: 6}, %ALF.IP{event: 8}] =
                @sample_stream
-               |> SimplePipelineToSyncStream.stream(return_ip: true)
+               |> SimplePipelineToSyncStream.stream(debug: true)
                |> Enum.to_list()
     end
   end

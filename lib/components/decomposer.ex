@@ -32,18 +32,18 @@ defmodule ALF.Components.Decomposer do
   end
 
   @spec init_sync(t(), boolean) :: t()
-  def init_sync(state, telemetry_enabled) do
+  def init_sync(state, telemetry) do
     %{
       state
       | pid: make_ref(),
         opts: init_opts(state.module, state.opts),
         source_code: state.source_code || read_source_code(state.module, state.function),
-        telemetry_enabled: telemetry_enabled
+        telemetry: telemetry
     }
   end
 
   @impl true
-  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: true} = state) do
+  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry: true} = state) do
     :telemetry.span(
       [:alf, :component],
       telemetry_data(ip, state),
@@ -59,7 +59,7 @@ defmodule ALF.Components.Decomposer do
     )
   end
 
-  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry_enabled: false} = state) do
+  def handle_events([%ALF.IP{} = ip], _from, %__MODULE__{telemetry: false} = state) do
     case process_ip(ip, state) do
       {[], state} ->
         {:noreply, [], state}
@@ -72,7 +72,7 @@ defmodule ALF.Components.Decomposer do
   defp process_ip(ip, state) do
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:ok, events} when is_list(events) ->
-        ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
+        ips = build_ips(events, ip, history(ip, state))
 
         Enum.each(ips, &send_result(&1, :created_decomposer))
         send_result(ip, :destroyed)
@@ -80,11 +80,11 @@ defmodule ALF.Components.Decomposer do
         {ips, state}
 
       {:ok, {events, event}} when is_list(events) ->
-        ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
+        ips = build_ips(events, ip, history(ip, state))
 
         Enum.each(ips, &send_result(&1, :created_decomposer))
 
-        ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
+        ip = %{ip | event: event, history: history(ip, state)}
         {ips ++ [ip], state}
 
       {:error, error, stacktrace} ->
@@ -93,11 +93,11 @@ defmodule ALF.Components.Decomposer do
     end
   end
 
-  def sync_process(ip, %__MODULE__{telemetry_enabled: false} = state) do
+  def sync_process(ip, %__MODULE__{telemetry: false} = state) do
     do_sync_process(ip, state)
   end
 
-  def sync_process(ip, %__MODULE__{telemetry_enabled: true} = state) do
+  def sync_process(ip, %__MODULE__{telemetry: true} = state) do
     :telemetry.span(
       [:alf, :component],
       telemetry_data(ip, state),
@@ -111,12 +111,12 @@ defmodule ALF.Components.Decomposer do
   defp do_sync_process(ip, state) do
     case call_function(state.module, state.function, ip.event, state.opts) do
       {:ok, events} when is_list(events) ->
-        build_ips(events, ip, [{state.name, ip.event} | ip.history])
+        build_ips(events, ip, history(ip, state))
 
       {:ok, {events, event}} when is_list(events) ->
-        ips = build_ips(events, ip, [{state.name, ip.event} | ip.history])
+        ips = build_ips(events, ip, history(ip, state))
 
-        ip = %{ip | event: event, history: [{state.name, ip.event} | ip.history]}
+        ip = %{ip | event: event, history: history(ip, state)}
         [ip | ips]
 
       {:error, error, stacktrace} ->
@@ -135,6 +135,7 @@ defmodule ALF.Components.Decomposer do
         event: event,
         pipeline_module: ip.pipeline_module,
         decomposed: true,
+        debug: ip.debug,
         history: history,
         sync_path: ip.sync_path
       }
