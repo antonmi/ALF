@@ -259,7 +259,7 @@ defmodule ALF.DSL do
       end
 
       @spec call(any, Keyword.t()) :: any | [any] | nil
-      def call(event, opts \\ [return_ip: false]) do
+      def call(event, opts \\ [debug: false]) do
         ALF.Manager.call(event, __MODULE__, opts)
       end
 
@@ -269,7 +269,7 @@ defmodule ALF.DSL do
       end
 
       @spec stream(Enumerable.t(), Keyword.t()) :: Enumerable.t()
-      def stream(stream, opts \\ [return_ip: false]) do
+      def stream(stream, opts \\ [debug: false]) do
         ALF.Manager.stream(stream, __MODULE__, opts)
       end
 

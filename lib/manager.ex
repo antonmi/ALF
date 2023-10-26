@@ -114,7 +114,7 @@ defmodule ALF.Manager do
   end
 
   @spec call(any, atom, Keyword.t()) :: any | [any] | nil
-  def call(event, pipeline_module, opts \\ [return_ip: false]) do
+  def call(event, pipeline_module, opts \\ [debug: false]) do
     case check_if_ready(pipeline_module) do
       {:ok, producer_name} ->
         do_call(pipeline_module, producer_name, event, opts)
@@ -134,10 +134,10 @@ defmodule ALF.Manager do
         nil
 
       [ip] ->
-        format_ip(ip, opts[:return_ip])
+        format_ip(ip, opts[:debug])
 
       ips ->
-        Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ip]) end)
+        Enum.map(ips, fn ip -> format_ip(ip, opts[:debug]) end)
     end
   end
 
@@ -149,10 +149,10 @@ defmodule ALF.Manager do
         nil
 
       [ip] ->
-        format_ip(ip, opts[:return_ip])
+        format_ip(ip, opts[:debug])
 
       ips ->
-        Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ip]) end)
+        Enum.map(ips, fn ip -> format_ip(ip, opts[:debug]) end)
     end
   end
 
@@ -182,7 +182,7 @@ defmodule ALF.Manager do
   end
 
   @spec stream(Enumerable.t(), atom, Keyword.t()) :: Enumerable.t()
-  def stream(stream, pipeline_module, opts \\ [return_ip: false]) do
+  def stream(stream, pipeline_module, opts \\ [debug: false]) do
     case check_if_ready(pipeline_module) do
       {:ok, producer_name} ->
         do_stream(pipeline_module, producer_name, stream, opts)
@@ -209,7 +209,7 @@ defmodule ALF.Manager do
             {[], nil}
 
           ips ->
-            ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ip]) end)
+            ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:debug]) end)
             {ips, nil}
         end
       end
@@ -223,7 +223,7 @@ defmodule ALF.Manager do
       fn event, nil ->
         ip = build_ip(event, pipeline_module)
         ips = SyncRunner.run(pipeline, ip)
-        ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:return_ip]) end)
+        ips = Enum.map(ips, fn ip -> format_ip(ip, opts[:debug]) end)
         {ips, nil}
       end
     )
@@ -470,7 +470,7 @@ defmodule ALF.Manager do
   defp format_ip(%IP{} = ip, true), do: ip
   defp format_ip(%IP{} = ip, false), do: ip.event
   defp format_ip(%IP{} = ip, nil), do: ip.event
-  defp format_ip(%ErrorIP{} = ip, _return_ips), do: ip
+  defp format_ip(%ErrorIP{} = ip, _debug), do: ip
 
   defp build_ip(event, pipeline_module) do
     %IP{
