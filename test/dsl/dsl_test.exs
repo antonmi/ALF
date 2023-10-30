@@ -135,7 +135,7 @@ defmodule ALF.DSLTest do
   describe "PipelineC" do
     test "build PipelineC", %{sup_pid: sup_pid} do
       {:ok, pipeline} = Builder.build(PipelineC, sup_pid, false)
-
+      Process.sleep(10)
       [stage, plug, stage_in_plug, unplug, another_plug, _, _, _, last_stage, another_unplug] =
         pipeline.components
 

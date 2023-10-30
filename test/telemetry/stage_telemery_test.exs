@@ -151,7 +151,7 @@ defmodule ALF.Telemetry.ComponentTelemetryTest do
         |> Enum.to_list()
 
       assert %ALF.ErrorIP{} = result
-
+      Process.sleep(10)
       [stage_stop, _, _, _] = Agent.get(agent, & &1)
       {:stop, _, %{ip: ip}} = stage_stop
       assert ip[:error] == %RuntimeError{message: "Ooops!"}

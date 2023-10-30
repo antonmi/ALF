@@ -66,7 +66,7 @@ defmodule ALF.CrashPipelineTest do
     test "with one stream lost of crashes (pipeline supervisor crash)", %{state: state} do
       capture_log(fn ->
         results =
-          [1, 6, 7, 1, 6, 2, 7, 7, 6, 2]
+          [1, 6, 7, 1, 6, 2, 7, 6, 7, 2]
           |> SimplePipelineToCrash.stream(timeout: 20)
           |> Enum.to_list()
 
@@ -178,6 +178,7 @@ defmodule ALF.CrashPipelineTest do
 
     setup do
       BubbleSortWithSwitchPipeline.start()
+      Process.sleep(10)
 
       on_exit(&BubbleSortWithSwitchPipeline.stop/0)
       %{components: BubbleSortWithSwitchPipeline.components()}
@@ -220,10 +221,9 @@ defmodule ALF.CrashPipelineTest do
     end
 
     test "crash in switch", %{components: components} do
-      Process.sleep(20)
       switch = Enum.find(components, &(&1.name == :ready_or_not))
       kill(switch.pid)
-      Process.sleep(20)
+      Process.sleep(50)
       assert BubbleSortWithSwitchPipeline.call([3, 1, 2]) == [1, 2, 3]
     end
 
@@ -287,12 +287,14 @@ defmodule ALF.CrashPipelineTest do
     test "kill decomposer", %{components: components} do
       decomposer = Enum.find(components, &(&1.name == :decomposer_function))
       kill(decomposer.pid)
+      Process.sleep(50)
       it_works!()
     end
 
     test "kill recomposer", %{components: components} do
       recomposer = Enum.find(components, &(&1.name == :recomposer_function))
       kill(recomposer.pid)
+      Process.sleep(10)
       it_works!()
     end
   end

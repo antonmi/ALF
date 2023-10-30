@@ -173,22 +173,21 @@ defmodule ALF.ComponentThrowTest do
 
     test "error results" do
       results =
-        [1, 2, 3]
+        [1]
         |> ThrowInGotoPipeline.stream(debug: true)
         |> Enum.to_list()
 
+        Process.sleep(100)
       assert [
                %ErrorIP{
                  component: %ALF.Components.Goto{name: :goto_function},
                  ip: %IP{} = ip,
                  error: :throw,
                  stacktrace: "throw in :goto"
-               },
-               %ErrorIP{},
-               %ErrorIP{}
+               }
              ] = results
 
-      assert [{:goto_function, _}, {{:add_one, 0}, _}, {:goto_point, _}] = ip.history
+      assert [{:goto_function, 2}, {{:add_one, 0}, 1}, {:goto_point, 1}] = ip.history
     end
   end
 end

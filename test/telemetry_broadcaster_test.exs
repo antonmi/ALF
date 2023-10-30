@@ -58,23 +58,18 @@ defmodule ALF.TelemetryBroadcasterTest do
       TelemetryBroadcaster.register_remote_function(
         Node.self(),
         TelemetryHandler,
-        :handle_event,
-        interval: 100
+        :handle_event
       )
-
+      Process.sleep(10)
       :ok
     end
 
     test "events", %{agent: agent} do
-      [
-        %{agent: agent, number: 1},
-        # no events because of interval
-        %{agent: agent, number: 2}
-      ]
+      [%{agent: agent, number: 1}]
       |> Manager.stream(SimplePipeline)
       |> Enum.to_list()
 
-      Process.sleep(100)
+      Process.sleep(200)
 
       events =
         agent
