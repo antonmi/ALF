@@ -177,7 +177,8 @@ defmodule ALF.ComponentThrowTest do
         |> ThrowInGotoPipeline.stream(debug: true)
         |> Enum.to_list()
 
-        Process.sleep(100)
+      Process.sleep(100)
+
       assert [
                %ErrorIP{
                  component: %ALF.Components.Goto{name: :goto_function},

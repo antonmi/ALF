@@ -60,6 +60,7 @@ defmodule ALF.TelemetryBroadcasterTest do
         TelemetryHandler,
         :handle_event
       )
+
       Process.sleep(10)
       :ok
     end
