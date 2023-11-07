@@ -221,8 +221,13 @@ defmodule ALF.DSL do
 
   def set_options(stages, opts, count) do
     Enum.map(stages, fn stage ->
-      opts = merge_opts(stage.opts, opts)
-      %{stage | opts: opts, count: count || 1}
+      case stage do
+        %Stage{} ->
+          %{stage | opts: merge_opts(stage.opts, opts), count: count || 1}
+
+        stage ->
+          %{stage | opts: merge_opts(stage.opts, opts)}
+      end
     end)
   end
 

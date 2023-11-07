@@ -6,7 +6,6 @@ defmodule ALF.Components.Done do
                 type: :done,
                 module: nil,
                 function: true,
-                opts: [],
                 source_code: nil
               ]
 

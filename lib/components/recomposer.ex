@@ -6,7 +6,6 @@ defmodule ALF.Components.Recomposer do
                 type: :recomposer,
                 module: nil,
                 function: nil,
-                opts: [],
                 source_code: nil,
                 collected_ips: [],
                 new_collected_ips: %{}

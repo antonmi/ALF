@@ -6,7 +6,6 @@ defmodule ALF.Components.Switch do
                 type: :switch,
                 module: nil,
                 function: nil,
-                opts: [],
                 source_code: nil,
                 branches: %{}
               ]

@@ -5,9 +5,10 @@ defmodule ALF.Components.Basic do
     name: nil,
     pid: nil,
     pipeline_module: nil,
+    stage_set_ref: nil,
+    opts: [],
     subscribed_to: [],
     subscribers: [],
-    stage_set_ref: nil,
     telemetry: false
   ]
 

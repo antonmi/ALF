@@ -5,7 +5,6 @@ defmodule ALF.Components.Unplug do
               [
                 type: :unplug,
                 module: nil,
-                opts: [],
                 source_code: nil
               ]
 

@@ -74,3 +74,39 @@ defmodule ALF.ExamplesBubbleSortWithSwitchTest do
     assert result == Enum.to_list(@range)
   end
 end
+
+defmodule ALF.ExamplesBubbleSortWithSwitchAndPlugTest do
+  use ExUnit.Case, async: true
+
+  defmodule PluggedPipeline do
+    use ALF.DSL
+
+    alias ALF.Examples.BubbleSortWithSwitch.Pipeline
+
+    defmodule MyPlug do
+      def plug(event, _), do: event
+      def unplug(event, _prev_event, _), do: event
+    end
+
+    @components [
+      plug_with(MyPlug, do: [stages_from(Pipeline)])
+    ]
+  end
+
+  @range 1..5
+
+  setup do
+    PluggedPipeline.start()
+    Process.sleep(10)
+    on_exit(&PluggedPipeline.stop/0)
+  end
+
+  test "sort" do
+    [result] =
+      [Enum.shuffle(@range)]
+      |> PluggedPipeline.stream()
+      |> Enum.to_list()
+
+    assert result == Enum.to_list(@range)
+  end
+end

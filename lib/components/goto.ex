@@ -8,7 +8,6 @@ defmodule ALF.Components.Goto do
                 to_pid: nil,
                 module: nil,
                 function: true,
-                opts: [],
                 source_code: nil
               ]
 

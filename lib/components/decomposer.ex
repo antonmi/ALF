@@ -6,7 +6,6 @@ defmodule ALF.Components.Decomposer do
                 type: :decomposer,
                 module: nil,
                 function: nil,
-                opts: [],
                 source_code: nil
               ]
 

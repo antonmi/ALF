@@ -5,7 +5,6 @@ defmodule ALF.Components.Plug do
               [
                 type: :plug,
                 module: nil,
-                opts: [],
                 source_code: nil
               ]
 

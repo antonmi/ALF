@@ -8,7 +8,6 @@ defmodule ALF.Components.Stage do
                 function: nil,
                 count: 1,
                 number: 0,
-                opts: [],
                 source_code: nil
               ]
 
