@@ -19,8 +19,8 @@ jobs:
         env:
           ImageOS: ubuntu20
         with:
-          elixir-version: '1.14.0' # Define the elixir version [required]
-          otp-version: '25.1' # Define the OTP version [required]
+          elixir-version: '1.15.7-otp-26' # Define the elixir version [required]
+          otp-version: '26.1.2' # Define the OTP version [required]
       - name: Restore dependencies cache
         uses: actions/cache@v2
         with:
