@@ -182,7 +182,7 @@ defmodule ALF.Builder do
         %Plug{} = plug ->
           plug =
             plug
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry: telemetry})
+            |> Map.merge(%{stage_set_ref: make_ref(), pipeline_module: pipeline_module, telemetry: telemetry})
             |> start_stage(supervisor_pid, prev_stages)
 
           {[plug], stages ++ [plug]}
@@ -190,7 +190,7 @@ defmodule ALF.Builder do
         %Unplug{} = unplug ->
           unplug =
             unplug
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry: telemetry})
+            |> Map.merge(%{stage_set_ref: make_ref(), pipeline_module: pipeline_module, telemetry: telemetry})
             |> start_stage(supervisor_pid, prev_stages)
 
           {[unplug], stages ++ [unplug]}
