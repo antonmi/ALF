@@ -50,4 +50,10 @@ defmodule ALF.TestConsumer do
     state = %{state | ips: state.ips ++ [ip]}
     {:noreply, [], state}
   end
+
+  # for using consumer as the ip destination
+  def handle_info({_ref, ip}, state) do
+    state = %{state | ips: state.ips ++ [ip]}
+    {:noreply, [], state}
+  end
 end

@@ -250,7 +250,7 @@ defmodule ALF.Manager do
       {^ref, :created_recomposer} ->
         wait_result(ref, acc, {timeout, initial_ip})
 
-      {^ref, reason} when reason in [:created_decomposer, :cloned] ->
+      {^ref, reason} when reason in [:created_decomposer, :cloned, :composed] ->
         wait_result(
           ref,
           acc ++ wait_result(ref, [], {timeout, initial_ip}),

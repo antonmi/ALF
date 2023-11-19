@@ -12,6 +12,7 @@ defmodule ALF.DSL do
     Unplug,
     Decomposer,
     Recomposer,
+    Composer,
     Tbd
   }
 
@@ -149,6 +150,27 @@ defmodule ALF.DSL do
         unquote(opts),
         __MODULE__
       )
+    end
+  end
+
+  defmacro composer(atom, options \\ [opts: []]) do
+    opts = options[:opts]
+    name = options[:name]
+    acc = options[:acc]
+
+    quote do
+      Composer.validate_options(unquote(atom), unquote(options))
+
+      composer =
+        Basic.build_component(
+          Composer,
+          unquote(atom),
+          unquote(name),
+          unquote(opts),
+          __MODULE__
+        )
+
+      %{composer | acc: unquote(acc)}
     end
   end
 
