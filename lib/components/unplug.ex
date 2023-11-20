@@ -65,7 +65,6 @@ defmodule ALF.Components.Unplug do
 
   defp process_ip(ip, state) do
     ip = %{ip | history: history(ip, state)}
-
     prev_event = Map.fetch!(ip.plugs, state.name)
     ip_plugs = Map.delete(ip.plugs, state.name)
     ip = %{ip | plugs: ip_plugs}

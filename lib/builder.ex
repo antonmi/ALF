@@ -15,6 +15,7 @@ defmodule ALF.Builder do
     Unplug,
     Decomposer,
     Recomposer,
+    Composer,
     Tbd
   }
 
@@ -182,7 +183,11 @@ defmodule ALF.Builder do
         %Plug{} = plug ->
           plug =
             plug
-            |> Map.merge(%{stage_set_ref: make_ref(), pipeline_module: pipeline_module, telemetry: telemetry})
+            |> Map.merge(%{
+              stage_set_ref: make_ref(),
+              pipeline_module: pipeline_module,
+              telemetry: telemetry
+            })
             |> start_stage(supervisor_pid, prev_stages)
 
           {[plug], stages ++ [plug]}
@@ -190,7 +195,11 @@ defmodule ALF.Builder do
         %Unplug{} = unplug ->
           unplug =
             unplug
-            |> Map.merge(%{stage_set_ref: make_ref(), pipeline_module: pipeline_module, telemetry: telemetry})
+            |> Map.merge(%{
+              stage_set_ref: make_ref(),
+              pipeline_module: pipeline_module,
+              telemetry: telemetry
+            })
             |> start_stage(supervisor_pid, prev_stages)
 
           {[unplug], stages ++ [unplug]}
@@ -210,6 +219,14 @@ defmodule ALF.Builder do
             |> start_stage(supervisor_pid, prev_stages)
 
           {[recomposer], stages ++ [recomposer]}
+
+        %Composer{} = composer ->
+          composer =
+            composer
+            |> Map.merge(%{stage_set_ref: make_ref(), telemetry: telemetry})
+            |> start_stage(supervisor_pid, prev_stages)
+
+          {[composer], stages ++ [composer]}
 
         %Tbd{} = tbd ->
           tbd =

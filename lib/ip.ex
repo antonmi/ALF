@@ -13,6 +13,7 @@ defmodule ALF.IP do
           history: list(),
           decomposed: boolean(),
           recomposed: boolean(),
+          composed: boolean(),
           plugs: map(),
           sync_path: nil | list()
         }
@@ -28,6 +29,7 @@ defmodule ALF.IP do
             history: [],
             decomposed: false,
             recomposed: false,
+            composed: false,
             plugs: %{},
             sync_path: nil
 end
