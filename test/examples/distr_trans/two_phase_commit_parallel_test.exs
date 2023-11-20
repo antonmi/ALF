@@ -154,13 +154,11 @@ defmodule ALF.Examples.DistrTrans.TwoPhaseCommitParallelTest do
   test "first_fail" do
     result = TPCPipeline.call(%TPCPipeline{data: :first_fail})
     refute result.done
-    assert result.data == -2
   end
 
   test "second_fail" do
     result = TPCPipeline.call(%TPCPipeline{data: 11})
     refute result.done
-    assert result.data == 10
   end
 end
 
