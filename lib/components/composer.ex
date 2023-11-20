@@ -67,8 +67,6 @@ defmodule ALF.Components.Composer do
 
     case call_function(state.module, state.function, current_ip.event, state.acc, state.opts) do
       {:ok, {events, acc}} ->
-        send_result(current_ip, :destroyed)
-
         ips =
           Enum.map(events, fn event ->
             ip = build_ip(event, current_ip, history)
@@ -76,6 +74,7 @@ defmodule ALF.Components.Composer do
             ip
           end)
 
+        send_result(current_ip, :destroyed)
         {ips, %{state | acc: acc}}
 
       {:error, error, stacktrace} ->
@@ -141,7 +140,8 @@ defmodule ALF.Components.Composer do
       composed: true,
       debug: ip.debug,
       history: history,
-      sync_path: ip.sync_path
+      sync_path: ip.sync_path,
+      plugs: ip.plugs
     }
   end
 
