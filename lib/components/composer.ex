@@ -81,6 +81,13 @@ defmodule ALF.Components.Composer do
       {:error, error, stacktrace} ->
         send_error_result(current_ip, error, stacktrace, state)
         {[], state}
+
+      {:ok, other} ->
+        error =
+          "Composer \"#{state.name}\" must return the {[event], acc} tuple. Got #{inspect(other)}"
+
+        send_error_result(current_ip, error, [], state)
+        {[], state}
     end
   end
 
@@ -114,6 +121,12 @@ defmodule ALF.Components.Composer do
 
       {:error, error, stacktrace} ->
         send_error_result(ip, error, stacktrace, state)
+
+      {:ok, other} ->
+        error =
+          "Composer \"#{state.name}\" must return the {[event], acc} tuple. Got #{inspect(other)}"
+
+        send_error_result(ip, error, [], state)
     end
   end
 

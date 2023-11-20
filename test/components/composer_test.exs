@@ -23,6 +23,9 @@ defmodule ALF.Components.ComposerTest do
         "inc" ->
           {[event <> "-#{acc}"], acc + 1}
 
+        "wrong_return" ->
+          event
+
         "error" ->
           raise "error"
       end
@@ -106,6 +109,16 @@ defmodule ALF.Components.ComposerTest do
 
       assert [%ALF.ErrorIP{error: %RuntimeError{message: "error"}}] =
                TestConsumer.ips(consumer_pid)
+    end
+
+    test "call with wrong_return", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do
+      ip = %IP{event: "wrong_return", debug: true, destination: consumer_pid}
+      GenServer.cast(producer_pid, [ip])
+      Process.sleep(10)
+      [error_ip] = TestConsumer.ips(consumer_pid)
+
+      assert error_ip.error ==
+               "Composer \"test_composer1\" must return the {[event], acc} tuple. Got \"wrong_return\""
     end
   end
 
