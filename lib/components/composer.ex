@@ -66,7 +66,7 @@ defmodule ALF.Components.Composer do
       if current_ip.debug, do: [{state.name, current_ip.event} | current_ip.history], else: []
 
     case call_function(state.module, state.function, current_ip.event, state.acc, state.opts) do
-      {:ok, {events, acc}} ->
+      {:ok, {events, acc}} when is_list(events) ->
         ips =
           Enum.map(events, fn event ->
             ip = build_ip(event, current_ip, history)

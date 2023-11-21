@@ -17,7 +17,10 @@ defmodule ALF.Examples.AddMultMinusTest do
 
   alias ALF.Examples.AddMultMinus.Pipeline
 
-  setup do: Pipeline.start()
+  setup do
+    Pipeline.start()
+    on_exit(&Pipeline.stop/0)
+  end
 
   test "single stream" do
     results =
