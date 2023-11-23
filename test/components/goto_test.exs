@@ -61,12 +61,12 @@ defmodule ALF.Components.GotoTest do
     assert ip.event == 2
 
     assert ip.history == [
-             {:goto, 2},
+             {{:goto, 0}, 2},
              {{:test_stage, 0}, 1},
-             {:goto_point, 1},
-             {:goto, 1},
+             {{:goto_point, 0}, 1},
+             {{:goto, 0}, 1},
              {{:test_stage, 0}, 0},
-             {:goto_point, 0}
+             {{:goto_point, 0}, 0}
            ]
   end
 

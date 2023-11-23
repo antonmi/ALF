@@ -52,7 +52,7 @@ defmodule ALF.DSL.ValidationsTest do
     test "invalid options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Wrong options for the switch switch: [:foo]. " <>
-                     "Available options are [:branches, :opts, :name]",
+                     "Available options are [:branches, :opts, :name, :count]",
                    fn ->
                      defmodule SwitchWithWrongOpts do
                        use ALF.DSL
@@ -108,7 +108,7 @@ defmodule ALF.DSL.ValidationsTest do
     test "invalid options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
                    "Wrong options for the goto goto: [:foo]. " <>
-                     "Available options are [:to, :opts, :name]",
+                     "Available options are [:to, :opts, :name, :count]",
                    fn ->
                      defmodule GotoWithWrongRequiredOpts do
                        use ALF.DSL
@@ -150,7 +150,7 @@ defmodule ALF.DSL.ValidationsTest do
     test "invalid options" do
       assert_raise DSLError,
                    "Wrong options are given for the plug_with macro: [:foo]. " <>
-                     "Available options are [:module, :name, :opts]",
+                     "Available options are [:module, :name, :opts, :count]",
                    fn ->
                      defmodule PlugWithNonExistingModule do
                        use ALF.DSL

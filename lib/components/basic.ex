@@ -6,6 +6,8 @@ defmodule ALF.Components.Basic do
     pid: nil,
     pipeline_module: nil,
     stage_set_ref: nil,
+    count: 1,
+    number: 0,
     opts: [],
     subscribed_to: [],
     subscribers: [],
@@ -184,11 +186,9 @@ defmodule ALF.Components.Basic do
         Manager.component_added(component.pipeline_module, component)
       end
 
-      def history(ip, state, include_number \\ false) do
-        name = if include_number, do: {state.name, state.number}, else: state.name
-
+      def history(ip, state) do
         if ip.debug do
-          [{name, ip.event} | ip.history]
+          [{{state.name, state.number}, ip.event} | ip.history]
         else
           []
         end

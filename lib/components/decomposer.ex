@@ -10,7 +10,7 @@ defmodule ALF.Components.Decomposer do
               ]
 
   alias ALF.DSLError
-  @dsl_options [:opts, :name]
+  @dsl_options [:opts, :name, :count]
 
   @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do

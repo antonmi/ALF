@@ -74,7 +74,7 @@ defmodule ALF.Components.ComposerTest do
       [ip] = TestConsumer.ips(consumer_pid)
       assert ip.composed
       assert ip.event == "foofoobar"
-      assert ip.history == [{:test_composer1, "foo"}]
+      assert ip.history == [{{:test_composer1, 0}, "foo"}]
     end
 
     test "call with foofoo", %{producer_pid: producer_pid, consumer_pid: consumer_pid} do

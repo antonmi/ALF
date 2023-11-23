@@ -12,7 +12,7 @@ defmodule ALF.Components.Switch do
 
   alias ALF.{DSLError}
 
-  @dsl_options [:branches, :opts, :name]
+  @dsl_options [:branches, :opts, :name, :count]
   @dsl_requited_options [:branches]
 
   @spec start_link(t()) :: GenServer.on_start()

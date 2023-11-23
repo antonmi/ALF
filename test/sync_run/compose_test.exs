@@ -38,7 +38,11 @@ defmodule ALF.SyncRun.ComposeTest do
 
       assert ip1.event == "foo foo bar"
       assert ip2.event == "bar baz baz"
-      assert ip1.history == [recomposer_function: "bar", decomposer_function: "bar bar"]
+
+      assert ip1.history == [
+               {{:recomposer_function, 0}, "bar"},
+               {{:decomposer_function, 0}, "bar bar"}
+             ]
     end
 
     test "several streams returns strings" do

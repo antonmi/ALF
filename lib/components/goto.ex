@@ -14,7 +14,7 @@ defmodule ALF.Components.Goto do
   alias ALF.Components.GotoPoint
   alias ALF.DSLError
 
-  @dsl_options [:to, :opts, :name]
+  @dsl_options [:to, :opts, :name, :count]
   @dsl_requited_options [:to]
 
   @spec start_link(t()) :: GenServer.on_start()
@@ -51,20 +51,12 @@ defmodule ALF.Components.Goto do
 
   @impl true
   def handle_call({:find_where_to_go, components}, _from, state) do
-    pid =
-      case Enum.filter(components, &(&1.name == state.to and &1.__struct__ == GotoPoint)) do
-        [component] ->
-          component.pid
+    goto_point =
+      components
+      |> Enum.filter(&(&1.name == state.to and &1.__struct__ == GotoPoint))
+      |> Enum.random()
 
-        [_component | _other] = components ->
-          raise "Goto component error: found #{Enum.count(components)} components with name #{state.to}"
-
-        [] ->
-          #          raise "Goto component error: no component with name #{state.to}"
-          nil
-      end
-
-    state = %{state | to_pid: pid}
+    state = %{state | to_pid: goto_point.pid}
     {:reply, state, [], state}
   end
 
@@ -113,7 +105,7 @@ defmodule ALF.Components.Goto do
 
       _truthy ->
         if state.to_pid do
-          :ok = GenStage.call(state.to_pid, {:goto, ip})
+          :ok = GenStage.cast(state.to_pid, {:goto, ip})
         else
           raise "Goto component error: no component with name #{state.to}"
         end

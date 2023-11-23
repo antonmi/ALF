@@ -187,7 +187,7 @@ defmodule ALF.ComponentErrorTest do
                %ErrorIP{}
              ] = results
 
-      assert [switch_cond: _event] = ip.history
+      assert [{{:switch_cond, 0}, _event}] = ip.history
     end
   end
 
