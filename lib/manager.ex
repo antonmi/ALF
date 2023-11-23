@@ -280,14 +280,14 @@ defmodule ALF.Manager do
     GenServer.call(pipeline_module, :components)
   end
 
-  @spec component_added(atom, map) :: :ok
-  def component_added(pipeline_module, component) when is_atom(pipeline_module) do
-    GenServer.cast(pipeline_module, {:component_added, component})
+  @spec component_added(map) :: :ok
+  def component_added(component) do
+    GenServer.cast(component.pipeline_module, {:component_added, component})
   end
 
-  @spec component_updated(atom, map) :: :ok
-  def component_updated(pipeline_module, component) when is_atom(pipeline_module) do
-    GenServer.cast(pipeline_module, {:component_updated, component})
+  @spec component_updated(map) :: :ok
+  def component_updated(component) do
+    GenServer.cast(component.pipeline_module, {:component_updated, component})
   end
 
   @spec reload_components_states(atom()) :: list(map())
@@ -347,7 +347,7 @@ defmodule ALF.Manager do
       case component do
         %Goto{} ->
           goto = Goto.find_where_to_go(pid, Map.values(state.stages))
-          component_updated(state.pipeline_module, goto)
+          component_updated(goto)
 
         _stage ->
           :ok
