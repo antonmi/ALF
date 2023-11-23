@@ -14,7 +14,7 @@ defmodule ALF.Components.Composer do
 
   alias ALF.{DSLError, IP}
 
-  @dsl_options [:name, :opts, :acc]
+  @dsl_options [:name, :count, :opts, :acc]
 
   @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
@@ -62,8 +62,7 @@ defmodule ALF.Components.Composer do
   end
 
   defp process_ip(current_ip, state) do
-    history =
-      if current_ip.debug, do: [{state.name, current_ip.event} | current_ip.history], else: []
+    history = history(current_ip, state)
 
     case call_function(state.module, state.function, current_ip.event, state.acc, state.opts) do
       {:ok, {events, acc}} when is_list(events) ->

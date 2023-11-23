@@ -6,6 +6,8 @@ defmodule ALF.Components.Basic do
     pid: nil,
     pipeline_module: nil,
     stage_set_ref: nil,
+    count: 1,
+    number: 0,
     opts: [],
     subscribed_to: [],
     subscribers: [],
@@ -14,24 +16,24 @@ defmodule ALF.Components.Basic do
 
   def common_attributes, do: @common_attributes
 
-  def build_component(component_module, atom, name, opts, current_module) do
-    name = if name, do: name, else: atom
-
+  def build_component(component_module, atom, count, opts, current_module) do
     if module_exist?(atom) do
       struct(component_module, %{
         pipeline_module: current_module,
-        name: name,
+        name: atom,
         module: atom,
         function: :call,
-        opts: opts || []
+        opts: opts || [],
+        count: count
       })
     else
       struct(component_module, %{
         pipeline_module: current_module,
-        name: name,
+        name: atom,
         module: current_module,
         function: atom,
-        opts: opts || []
+        opts: opts || [],
+        count: count
       })
     end
   end
@@ -137,14 +139,14 @@ defmodule ALF.Components.Basic do
       def handle_subscribe(:consumer, subscription_options, from, state) do
         subscribers = [{from, subscription_options} | state.subscribers]
         new_state = %{state | subscribers: subscribers}
-        Manager.component_updated(state.pipeline_module, new_state)
+        Manager.component_updated(new_state)
         {:automatic, new_state}
       end
 
       def handle_subscribe(:producer, subscription_options, from, state) do
         subscribed_to = [{from, subscription_options} | state.subscribed_to]
         new_state = %{state | subscribed_to: subscribed_to}
-        Manager.component_updated(state.pipeline_module, new_state)
+        Manager.component_updated(new_state)
         {:automatic, new_state}
       end
 
@@ -153,7 +155,7 @@ defmodule ALF.Components.Basic do
         subscribed_to = Enum.filter(state.subscribed_to, &(&1 != from))
         subscribers = Enum.filter(state.subscribers, &(&1 != from))
         state = %{state | subscribed_to: subscribed_to, subscribers: subscribers}
-        Manager.component_updated(state.pipeline_module, state)
+        Manager.component_updated(state)
         {:noreply, [], state}
       end
 
@@ -181,14 +183,12 @@ defmodule ALF.Components.Basic do
       end
 
       def component_added(component) do
-        Manager.component_added(component.pipeline_module, component)
+        Manager.component_added(component)
       end
 
-      def history(ip, state, include_number \\ false) do
-        name = if include_number, do: {state.name, state.number}, else: state.name
-
+      def history(ip, state) do
         if ip.debug do
-          [{name, ip.event} | ip.history]
+          [{{state.name, state.number}, ip.event} | ip.history]
         else
           []
         end

@@ -72,7 +72,7 @@ defmodule ALF.DSL.RecomposerTest do
       use ALF.DSL
 
       @components [
-        recomposer(:the_recomposer, opts: [foo: :bar], name: :custom_name)
+        recomposer(:the_recomposer, opts: [foo: :bar])
       ]
     end
 
@@ -82,7 +82,7 @@ defmodule ALF.DSL.RecomposerTest do
       [recomposer] = pipeline.components
 
       assert %Recomposer{
-               name: :custom_name,
+               name: :the_recomposer,
                module: PipelineRecomposer3,
                function: :the_recomposer,
                opts: [foo: :bar],

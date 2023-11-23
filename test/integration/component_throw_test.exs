@@ -145,7 +145,7 @@ defmodule ALF.ComponentThrowTest do
                %ErrorIP{}
              ] = results
 
-      assert [switch_cond: _event] = ip.history
+      assert [{{:switch_cond, 0}, _event}] = ip.history
     end
   end
 
@@ -188,7 +188,7 @@ defmodule ALF.ComponentThrowTest do
                }
              ] = results
 
-      assert [{:goto_function, 2}, {{:add_one, 0}, 1}, {:goto_point, 1}] = ip.history
+      assert [{{:goto_function, 0}, 2}, {{:add_one, 0}, 1}, {{:goto_point, 0}, 1}] = ip.history
     end
   end
 end

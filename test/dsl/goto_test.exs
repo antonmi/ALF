@@ -86,7 +86,7 @@ defmodule ALF.DSL.GotoTest do
 
       @components [
         goto_point(:goto_point),
-        goto(:goto, to: :goto_point, opts: [foo: :bar], name: :custom_name)
+        goto(:goto, to: :goto_point, opts: [foo: :bar])
       ]
     end
 
@@ -96,7 +96,7 @@ defmodule ALF.DSL.GotoTest do
       [_point, goto] = pipeline.components
 
       assert %Goto{
-               name: :custom_name,
+               name: :goto,
                module: PipelineGoto3,
                function: :goto,
                to: :goto_point,

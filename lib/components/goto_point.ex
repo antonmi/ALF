@@ -44,9 +44,10 @@ defmodule ALF.Components.GotoPoint do
     {:noreply, [ip], state}
   end
 
-  def handle_call({:goto, %ALF.IP{} = ip}, _from, %__MODULE__{} = state) do
+  @impl true
+  def handle_cast({:goto, %ALF.IP{} = ip}, %__MODULE__{} = state) do
     ip = %{ip | history: history(ip, state)}
-    {:reply, :ok, [ip], state}
+    {:noreply, [ip], state}
   end
 
   def sync_process(ip, %__MODULE__{telemetry: false} = state) do

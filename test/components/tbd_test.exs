@@ -32,6 +32,6 @@ defmodule ALF.Components.TbdTest do
     Process.sleep(10)
     [ip] = TestConsumer.ips(consumer_pid)
     assert ip.event == "foo"
-    assert ip.history == [{:tbd, "foo"}]
+    assert ip.history == [{{:tbd, 0}, "foo"}]
   end
 end

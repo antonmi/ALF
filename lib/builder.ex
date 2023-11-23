@@ -3,20 +3,10 @@ defmodule ALF.Builder do
 
   alias ALF.Components.{
     Producer,
-    Stage,
-    Goto,
     DeadEnd,
-    GotoPoint,
     Switch,
     Clone,
-    Done,
-    Consumer,
-    Plug,
-    Unplug,
-    Decomposer,
-    Recomposer,
-    Composer,
-    Tbd
+    Consumer
   }
 
   @spec build(atom, pid, boolean) :: {:ok, Pipeline.t()}
@@ -61,88 +51,42 @@ defmodule ALF.Builder do
     pipe_spec
     |> Enum.reduce({producers, final_stages}, fn stage_spec, {prev_stages, stages} ->
       case stage_spec do
-        %Stage{count: count} = stage ->
+        %Switch{branches: branches, count: count} = switch ->
           stage_set_ref = make_ref()
 
-          new_stages =
-            Enum.map(0..(count - 1), fn number ->
-              stage
-              |> Map.merge(%{
-                pipeline_module: pipeline_module,
-                stage_set_ref: stage_set_ref,
-                number: number,
-                telemetry: telemetry
-              })
-              |> start_stage(supervisor_pid, prev_stages)
+          {all_last_stages, switches} =
+            Enum.reduce(0..(count - 1), {[], []}, fn number, {acc_last_stages, acc_switches} ->
+              switch =
+                switch
+                |> Map.merge(%{
+                  pipeline_module: pipeline_module,
+                  number: number,
+                  stage_set_ref: stage_set_ref,
+                  telemetry: telemetry
+                })
+                |> start_stage(supervisor_pid, prev_stages)
+
+              {last_stages, branches} =
+                Enum.reduce(branches, {[], %{}}, fn {key, inner_pipe_spec},
+                                                    {all_last_stages, branches} ->
+                  {last_stages, final_stages} =
+                    do_build_pipeline(
+                      pipeline_module,
+                      inner_pipe_spec,
+                      [{switch, partition: key}],
+                      supervisor_pid,
+                      [],
+                      telemetry
+                    )
+
+                  {all_last_stages ++ last_stages, Map.put(branches, key, final_stages)}
+                end)
+
+              switch = %{switch | branches: branches}
+              {acc_last_stages ++ last_stages, acc_switches ++ [switch]}
             end)
 
-          {new_stages, stages ++ new_stages}
-
-        %Goto{} = goto ->
-          goto =
-            goto
-            |> Map.merge(%{
-              pipeline_module: pipeline_module,
-              stage_set_ref: make_ref(),
-              telemetry: telemetry
-            })
-            |> start_stage(supervisor_pid, prev_stages)
-
-          {[goto], stages ++ [goto]}
-
-        %DeadEnd{} = dead_end ->
-          dead_end =
-            dead_end
-            |> Map.merge(%{
-              pipeline_module: pipeline_module,
-              stage_set_ref: make_ref(),
-              telemetry: telemetry
-            })
-            |> start_stage(supervisor_pid, prev_stages)
-
-          {[], stages ++ [dead_end]}
-
-        %GotoPoint{} = goto_point ->
-          goto_point =
-            goto_point
-            |> Map.merge(%{
-              pipeline_module: pipeline_module,
-              stage_set_ref: make_ref(),
-              telemetry: telemetry
-            })
-            |> start_stage(supervisor_pid, prev_stages)
-
-          {[goto_point], stages ++ [goto_point]}
-
-        %Switch{branches: branches} = switch ->
-          switch =
-            switch
-            |> Map.merge(%{
-              pipeline_module: pipeline_module,
-              stage_set_ref: make_ref(),
-              telemetry: telemetry
-            })
-            |> start_stage(supervisor_pid, prev_stages)
-
-          {last_stages, branches} =
-            Enum.reduce(branches, {[], %{}}, fn {key, inner_pipe_spec},
-                                                {all_last_stages, branches} ->
-              {last_stages, final_stages} =
-                do_build_pipeline(
-                  pipeline_module,
-                  inner_pipe_spec,
-                  [{switch, partition: key}],
-                  supervisor_pid,
-                  [],
-                  telemetry
-                )
-
-              {all_last_stages ++ last_stages, Map.put(branches, key, final_stages)}
-            end)
-
-          switch = %{switch | branches: branches}
-
-          {last_stages, stages ++ [switch]}
+          {all_last_stages, stages ++ switches}
 
         %Clone{to: pipe_stages} = clone ->
           clone =
@@ -168,74 +112,39 @@ defmodule ALF.Builder do
 
           {last_stages ++ [clone], stages ++ [clone]}
 
-        %Done{} = done ->
-          done =
-            done
-            |> Map.merge(%{
-              pipeline_module: pipeline_module,
-              stage_set_ref: make_ref(),
-              telemetry: telemetry
-            })
-            |> start_stage(supervisor_pid, prev_stages)
+        %DeadEnd{} = dead_end ->
+          dead_ends =
+            build_component_set(dead_end, supervisor_pid, prev_stages, pipeline_module, telemetry)
 
-          {[done], stages ++ [done]}
+          {[], stages ++ dead_ends}
 
-        %Plug{} = plug ->
-          plug =
-            plug
-            |> Map.merge(%{
-              stage_set_ref: make_ref(),
-              pipeline_module: pipeline_module,
-              telemetry: telemetry
-            })
-            |> start_stage(supervisor_pid, prev_stages)
+        component ->
+          new_components =
+            build_component_set(
+              component,
+              supervisor_pid,
+              prev_stages,
+              pipeline_module,
+              telemetry
+            )
 
-          {[plug], stages ++ [plug]}
-
-        %Unplug{} = unplug ->
-          unplug =
-            unplug
-            |> Map.merge(%{
-              stage_set_ref: make_ref(),
-              pipeline_module: pipeline_module,
-              telemetry: telemetry
-            })
-            |> start_stage(supervisor_pid, prev_stages)
-
-          {[unplug], stages ++ [unplug]}
-
-        %Decomposer{} = decomposer ->
-          decomposer =
-            decomposer
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry: telemetry})
-            |> start_stage(supervisor_pid, prev_stages)
-
-          {[decomposer], stages ++ [decomposer]}
-
-        %Recomposer{} = recomposer ->
-          recomposer =
-            recomposer
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry: telemetry})
-            |> start_stage(supervisor_pid, prev_stages)
-
-          {[recomposer], stages ++ [recomposer]}
-
-        %Composer{} = composer ->
-          composer =
-            composer
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry: telemetry})
-            |> start_stage(supervisor_pid, prev_stages)
-
-          {[composer], stages ++ [composer]}
-
-        %Tbd{} = tbd ->
-          tbd =
-            tbd
-            |> Map.merge(%{stage_set_ref: make_ref(), telemetry: telemetry})
-            |> start_stage(supervisor_pid, prev_stages)
-
-          {[tbd], stages ++ [tbd]}
+          {new_components, stages ++ new_components}
       end
+    end)
+  end
+
+  defp build_component_set(component, supervisor_pid, prev_stages, pipeline_module, telemetry) do
+    stage_set_ref = make_ref()
+
+    Enum.map(0..(component.count - 1), fn number ->
+      component
+      |> Map.merge(%{
+        pipeline_module: pipeline_module,
+        stage_set_ref: stage_set_ref,
+        number: number,
+        telemetry: telemetry
+      })
+      |> start_stage(supervisor_pid, prev_stages)
     end)
   end
 

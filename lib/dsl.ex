@@ -18,165 +18,119 @@ defmodule ALF.DSL do
 
   alias ALF.DSLError
 
-  defmacro stage(atom, options \\ [opts: [], count: 1, name: nil]) do
-    count = options[:count]
+  defmacro stage(atom, options \\ [opts: []]) do
+    count = options[:count] || 1
     opts = options[:opts]
-    name = options[:name]
 
     quote do
       Stage.validate_options(unquote(atom), unquote(options))
-
-      stage =
-        Basic.build_component(
-          Stage,
-          unquote(atom),
-          unquote(name),
-          unquote(opts),
-          __MODULE__
-        )
-
-      %{stage | count: unquote(count) || 1}
+      Basic.build_component(Stage, unquote(atom), unquote(count), unquote(opts), __MODULE__)
     end
   end
 
-  defmacro switch(atom, options \\ [opts: [], name: nil]) do
-    opts = options[:opts]
-    name = options[:name]
+  defmacro switch(atom, options \\ [opts: []]) do
+    opts = options[:opts] || []
+    count = options[:count] || 1
 
     quote do
       Switch.validate_options(unquote(atom), unquote(options))
       branches = build_branches(unquote(options)[:branches])
 
       switch =
-        Basic.build_component(
-          Switch,
-          unquote(atom),
-          unquote(name),
-          unquote(opts),
-          __MODULE__
-        )
+        Basic.build_component(Switch, unquote(atom), unquote(count), unquote(opts), __MODULE__)
 
       %{switch | branches: branches}
     end
   end
 
   defmacro clone(name, options) do
+    count = options[:count] || 1
+    stages = options[:to]
+
     quote do
       Clone.validate_options(unquote(name), unquote(options))
-      stages = unquote(options)[:to]
-
-      %Clone{name: unquote(name), to: stages}
+      clone = Basic.build_component(Clone, unquote(name), unquote(count), %{}, __MODULE__)
+      %{clone | to: unquote(stages)}
     end
   end
 
-  defmacro goto(atom, options \\ [name: nil, opts: []]) do
+  defmacro goto(name, options \\ [opts: []]) do
     to = options[:to]
-    opts = options[:opts]
-    name = options[:name]
+    opts = options[:opts] || []
+    count = options[:count] || 1
 
     quote do
-      Goto.validate_options(unquote(atom), unquote(options))
-
-      goto =
-        Basic.build_component(
-          Goto,
-          unquote(atom),
-          unquote(name),
-          unquote(opts),
-          __MODULE__
-        )
-
+      Goto.validate_options(unquote(name), unquote(options))
+      goto = Basic.build_component(Goto, unquote(name), unquote(count), unquote(opts), __MODULE__)
       %{goto | to: unquote(to)}
     end
   end
 
-  defmacro goto_point(name) do
+  defmacro goto_point(name, options \\ [count: 1]) do
+    count = options[:count] || 1
+
     quote do
-      %GotoPoint{name: unquote(name)}
+      Basic.build_component(GotoPoint, unquote(name), unquote(count), %{}, __MODULE__)
     end
   end
 
-  defmacro dead_end(name) do
+  defmacro dead_end(name, options \\ [count: 1]) do
+    count = options[:count] || 1
+
     quote do
-      %DeadEnd{name: unquote(name)}
+      Basic.build_component(DeadEnd, unquote(name), unquote(count), %{}, __MODULE__)
     end
   end
 
-  defmacro done(atom, options \\ [name: nil, opts: []]) do
-    opts = options[:opts]
-    name = options[:name]
+  defmacro done(name, options \\ [opts: []]) do
+    count = options[:count] || 1
+    opts = options[:opts] || []
 
     quote do
-      Done.validate_options(unquote(atom), unquote(options))
+      Done.validate_options(unquote(name), unquote(options))
 
-      Basic.build_component(
-        Done,
-        unquote(atom),
-        unquote(name),
-        unquote(opts),
-        __MODULE__
-      )
+      Basic.build_component(Done, unquote(name), unquote(count), unquote(opts), __MODULE__)
     end
   end
 
-  defmacro decomposer(atom, options \\ [opts: [], name: nil]) do
-    opts = options[:opts]
-    name = options[:name]
+  defmacro decomposer(name, options \\ [opts: []]) do
+    opts = options[:opts] || []
+    count = options[:count] || 1
 
     quote do
-      Decomposer.validate_options(unquote(atom), unquote(options))
-
-      Basic.build_component(
-        Decomposer,
-        unquote(atom),
-        unquote(name),
-        unquote(opts),
-        __MODULE__
-      )
+      Decomposer.validate_options(unquote(name), unquote(options))
+      Basic.build_component(Decomposer, unquote(name), unquote(count), unquote(opts), __MODULE__)
     end
   end
 
-  defmacro recomposer(atom, options \\ [opts: [], name: nil]) do
-    opts = options[:opts]
-    name = options[:name]
+  defmacro recomposer(name, options \\ [opts: []]) do
+    opts = options[:opts] || []
+    count = options[:count] || 1
 
     quote do
-      Recomposer.validate_options(unquote(atom), unquote(options))
-
-      Basic.build_component(
-        Recomposer,
-        unquote(atom),
-        unquote(name),
-        unquote(opts),
-        __MODULE__
-      )
+      Recomposer.validate_options(unquote(name), unquote(options))
+      Basic.build_component(Recomposer, unquote(name), unquote(count), unquote(opts), __MODULE__)
     end
   end
 
-  defmacro composer(atom, options \\ [opts: []]) do
-    opts = options[:opts]
-    name = options[:name]
+  defmacro composer(name, options \\ [opts: []]) do
+    opts = options[:opts] || []
     acc = options[:acc]
+    count = options[:count] || 1
 
     quote do
-      Composer.validate_options(unquote(atom), unquote(options))
+      Composer.validate_options(unquote(name), unquote(options))
 
       composer =
-        Basic.build_component(
-          Composer,
-          unquote(atom),
-          unquote(name),
-          unquote(opts),
-          __MODULE__
-        )
+        Basic.build_component(Composer, unquote(name), unquote(count), unquote(opts), __MODULE__)
 
       %{composer | acc: unquote(acc)}
     end
   end
 
-  defmacro stages_from(module, options \\ [opts: [], count: 1]) do
-    count = options[:count]
-    opts = options[:opts]
+  defmacro stages_from(module, options \\ [opts: []]) do
+    count = options[:count] || 1
+    opts = options[:opts] || []
 
     quote do
       validate_stages_from_options(unquote(options))
@@ -185,30 +139,32 @@ defmodule ALF.DSL do
     end
   end
 
-  defmacro plug_with(module, options \\ [opts: [], name: nil], do: block) do
-    name = options[:name]
+  defmacro plug_with(module, options \\ [count: 1], do: block) do
+    count = options[:count] || 1
 
     quote do
       validate_plug_with_options(unquote(options))
-      name = if unquote(name), do: unquote(name), else: unquote(module)
-      plug = %Plug{name: name, module: unquote(module)}
-      unplug = %Unplug{name: name, module: unquote(module)}
+      plug = Basic.build_component(Plug, unquote(module), unquote(count), %{}, __MODULE__)
+
+      unplug = Basic.build_component(Unplug, unquote(module), unquote(count), %{}, __MODULE__)
 
       [plug] ++ unquote(block) ++ [unplug]
     end
   end
 
-  defmacro tbd(atom \\ :tbd) do
+  defmacro tbd() do
     quote do
-      Tbd.validate_name(unquote(atom))
+      Basic.build_component(Tbd, unquote(:tbd), 1, %{}, __MODULE__)
+    end
+  end
 
-      Basic.build_component(
-        Tbd,
-        unquote(atom),
-        unquote(atom),
-        %{},
-        __MODULE__
-      )
+  defmacro tbd(name, opts \\ []) do
+    count = opts[:count] || 1
+
+    quote do
+      Tbd.validate_name(unquote(name))
+      tbd = Basic.build_component(Tbd, unquote(name), unquote(count), %{}, __MODULE__)
+      %{tbd | count: unquote(count)}
     end
   end
 
@@ -224,7 +180,7 @@ defmodule ALF.DSL do
   end
 
   def validate_plug_with_options(options) do
-    dsl_options = [:module, :name, :opts]
+    dsl_options = [:module, :name, :opts, :count]
     wrong_options = Keyword.keys(options) -- dsl_options
 
     if Enum.any?(wrong_options) do
@@ -241,16 +197,8 @@ defmodule ALF.DSL do
     end)
   end
 
-  def set_options(stages, opts, count) do
-    Enum.map(stages, fn stage ->
-      case stage do
-        %Stage{} ->
-          %{stage | opts: merge_opts(stage.opts, opts), count: count || 1}
-
-        stage ->
-          %{stage | opts: merge_opts(stage.opts, opts)}
-      end
-    end)
+  def set_options(components, opts, count) do
+    Enum.map(components, &%{&1 | opts: merge_opts(&1.opts, opts), count: count})
   end
 
   defp merge_opts(opts, new_opts) do

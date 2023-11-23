@@ -99,8 +99,7 @@ defmodule ALF.DSL.SwitchTest do
             part1: [stage(:a)],
             part2: [stage(:b)]
           },
-          opts: [foo: :bar],
-          name: :custom_name
+          opts: [foo: :bar]
         )
       ]
     end
@@ -111,7 +110,7 @@ defmodule ALF.DSL.SwitchTest do
       [switch] = pipeline.components
 
       assert %Switch{
-               name: :custom_name,
+               name: :do_switch,
                module: PipelineSwitch3,
                function: :do_switch,
                opts: [foo: :bar],

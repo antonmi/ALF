@@ -13,7 +13,7 @@ defmodule ALF.Components.Recomposer do
 
   alias ALF.{DSLError, IP, ErrorIP}
 
-  @dsl_options [:name, :opts]
+  @dsl_options [:name, :opts, :count]
 
   @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
@@ -80,8 +80,7 @@ defmodule ALF.Components.Recomposer do
     collected_data =
       Enum.map(Map.get(state.new_collected_ips, current_ip.stream_ref, []), & &1.event)
 
-    history =
-      if current_ip.debug, do: [{state.name, current_ip.event} | current_ip.history], else: []
+    history = history(current_ip, state)
 
     case call_function(
            state.module,

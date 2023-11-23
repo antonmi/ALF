@@ -433,7 +433,7 @@ defmodule ALF.ManagerTest do
 
     test "call" do
       assert DecomposerPipeline.call("aaa") == "aaa"
-      assert DecomposerPipeline.call("aaa bbb ccc") == ["bbb", "aaa", "ccc"]
+      assert DecomposerPipeline.call("aaa bbb ccc") == ["aaa", "bbb", "ccc"]
     end
 
     test "stream" do

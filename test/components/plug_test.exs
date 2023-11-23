@@ -83,9 +83,9 @@ defmodule ALF.Components.PlugTest do
       assert ip.event == %{number: 102, other: :events}
 
       assert ip.history == [
-               {ALF.Components.PlugTest.PlugAdapter, 102},
+               {{ALF.Components.PlugTest.PlugAdapter, 0}, 102},
                {{:test_stage, 0}, 2},
-               {ALF.Components.PlugTest.PlugAdapter, %{number: 1, other: :events}}
+               {{ALF.Components.PlugTest.PlugAdapter, 0}, %{number: 1, other: :events}}
              ]
     end
 
@@ -97,9 +97,9 @@ defmodule ALF.Components.PlugTest do
       assert ip.event == %__MODULE__{number: 102, other: :events}
 
       assert ip.history == [
-               {ALF.Components.PlugTest.PlugAdapter, 102},
+               {{ALF.Components.PlugTest.PlugAdapter, 0}, 102},
                {{:test_stage, 0}, 2},
-               {ALF.Components.PlugTest.PlugAdapter, %__MODULE__{number: 1, other: :events}}
+               {{ALF.Components.PlugTest.PlugAdapter, 0}, %__MODULE__{number: 1, other: :events}}
              ]
     end
 

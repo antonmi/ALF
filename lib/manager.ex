@@ -142,7 +142,9 @@ defmodule ALF.Manager do
         format_ip(ip)
 
       ips ->
-        Enum.map(ips, &format_ip/1)
+        ips
+        |> Enum.reverse()
+        |> Enum.map(&format_ip/1)
     end
   end
 
@@ -225,7 +227,11 @@ defmodule ALF.Manager do
             {[], nil}
 
           ips ->
-            ips = Enum.map(ips, &format_ip/1)
+            ips =
+              ips
+              |> Enum.reverse()
+              |> Enum.map(&format_ip/1)
+
             {ips, nil}
         end
       end
@@ -245,15 +251,15 @@ defmodule ALF.Manager do
     )
   end
 
-  defp wait_result(ref, acc, {timeout, initial_ip}) do
+  defp wait_result(ref, acc, {timeout, initial_ip}, count \\ 0) do
     receive do
       {^ref, :created_recomposer} ->
-        wait_result(ref, acc, {timeout, initial_ip})
+        wait_result(ref, acc, {timeout, initial_ip}, count + 1)
 
       {^ref, reason} when reason in [:created_decomposer, :cloned, :composed] ->
         wait_result(
           ref,
-          acc ++ wait_result(ref, [], {timeout, initial_ip}),
+          acc ++ wait_result(ref, [], {timeout, initial_ip}, count + 1),
           {timeout, initial_ip}
         )
 
@@ -261,7 +267,7 @@ defmodule ALF.Manager do
         acc
 
       {^ref, ip} ->
-        Enum.reverse([ip | acc])
+        [ip | acc]
     after
       timeout ->
         error_ip = ALF.Components.Basic.build_error_ip(initial_ip, :timeout, [], :no_info)
@@ -274,14 +280,14 @@ defmodule ALF.Manager do
     GenServer.call(pipeline_module, :components)
   end
 
-  @spec component_added(atom, map) :: :ok
-  def component_added(pipeline_module, component) when is_atom(pipeline_module) do
-    GenServer.cast(pipeline_module, {:component_added, component})
+  @spec component_added(map) :: :ok
+  def component_added(component) do
+    GenServer.cast(component.pipeline_module, {:component_added, component})
   end
 
-  @spec component_updated(atom, map) :: :ok
-  def component_updated(pipeline_module, component) when is_atom(pipeline_module) do
-    GenServer.cast(pipeline_module, {:component_updated, component})
+  @spec component_updated(map) :: :ok
+  def component_updated(component) do
+    GenServer.cast(component.pipeline_module, {:component_updated, component})
   end
 
   @spec reload_components_states(atom()) :: list(map())
@@ -341,7 +347,7 @@ defmodule ALF.Manager do
       case component do
         %Goto{} ->
           goto = Goto.find_where_to_go(pid, Map.values(state.stages))
-          component_updated(state.pipeline_module, goto)
+          component_updated(goto)
 
         _stage ->
           :ok
