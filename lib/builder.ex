@@ -4,10 +4,9 @@ defmodule ALF.Builder do
   alias ALF.Components.{
     Producer,
     DeadEnd,
-    GotoPoint,
     Switch,
     Clone,
-    Consumer,
+    Consumer
   }
 
   @spec build(atom, pid, boolean) :: {:ok, Pipeline.t()}
@@ -114,11 +113,21 @@ defmodule ALF.Builder do
           {last_stages ++ [clone], stages ++ [clone]}
 
         %DeadEnd{} = dead_end ->
-          dead_ends = build_component_set(dead_end, supervisor_pid, prev_stages, pipeline_module, telemetry)
+          dead_ends =
+            build_component_set(dead_end, supervisor_pid, prev_stages, pipeline_module, telemetry)
+
           {[], stages ++ dead_ends}
 
         component ->
-          new_components = build_component_set(component, supervisor_pid, prev_stages, pipeline_module, telemetry)
+          new_components =
+            build_component_set(
+              component,
+              supervisor_pid,
+              prev_stages,
+              pipeline_module,
+              telemetry
+            )
+
           {new_components, stages ++ new_components}
       end
     end)
@@ -126,6 +135,7 @@ defmodule ALF.Builder do
 
   defp build_component_set(component, supervisor_pid, prev_stages, pipeline_module, telemetry) do
     stage_set_ref = make_ref()
+
     Enum.map(0..(component.count - 1), fn number ->
       component
       |> Map.merge(%{

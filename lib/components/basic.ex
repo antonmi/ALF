@@ -16,24 +16,24 @@ defmodule ALF.Components.Basic do
 
   def common_attributes, do: @common_attributes
 
-  def build_component(component_module, atom, name, opts, current_module) do
-    name = if name, do: name, else: atom
-
+  def build_component(component_module, atom, count, opts, current_module) do
     if module_exist?(atom) do
       struct(component_module, %{
         pipeline_module: current_module,
-        name: name,
+        name: atom,
         module: atom,
         function: :call,
-        opts: opts || []
+        opts: opts || [],
+        count: count
       })
     else
       struct(component_module, %{
         pipeline_module: current_module,
-        name: name,
+        name: atom,
         module: current_module,
         function: atom,
-        opts: opts || []
+        opts: opts || [],
+        count: count
       })
     end
   end

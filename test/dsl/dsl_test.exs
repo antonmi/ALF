@@ -21,9 +21,9 @@ defmodule ALF.DSLTest do
 
     @components [
       stage(ModuleA),
-      stage(StageA1, name: :custom_name),
+      stage(StageA1),
       stage(:just_function),
-      stage(:just_function, name: :custom_name)
+      stage(:just_another_function)
     ]
   end
 
@@ -55,9 +55,9 @@ defmodule ALF.DSLTest do
     @components [
       stage(ModuleA),
       plug_with(MyAdapterModule) do
-        [stage(StageA1, name: :custom_name)]
+        [stage(StageA1)]
       end,
-      plug_with(MyAdapterModule, opts: [a: :b], name: :another_plug) do
+      plug_with(MyAdapterModule, opts: [a: :b]) do
         stages_from(PipelineA)
       end
     ]
@@ -97,9 +97,9 @@ defmodule ALF.DSLTest do
 
       [one, two, three, four] = pipeline.components
       assert %Stage{name: ModuleA, telemetry: true} = one
-      assert %Stage{name: :custom_name, telemetry: true} = two
+      assert %Stage{name: StageA1, telemetry: true} = two
       assert %Stage{name: :just_function, telemetry: true} = three
-      assert %Stage{name: :custom_name, telemetry: true} = four
+      assert %Stage{name: :just_another_function, telemetry: true} = four
     end
   end
 
@@ -125,9 +125,9 @@ defmodule ALF.DSLTest do
 
       assert [
                %Stage{name: ModuleA, opts: [foo: :bar]},
-               %Stage{name: :custom_name, opts: [foo: :bar]},
+               %Stage{name: StageA1, opts: [foo: :bar]},
                %Stage{name: :just_function, opts: [foo: :bar]},
-               %Stage{name: :custom_name, opts: [foo: :bar]}
+               %Stage{name: :just_another_function, opts: [foo: :bar]}
              ] = [one, two, three, four]
     end
   end
@@ -163,21 +163,21 @@ defmodule ALF.DSLTest do
              } = ALF.Components.Basic.__state__(unplug.pid)
 
       assert %Plug{
-               name: :another_plug,
+               name: ALF.DSLTest.MyAdapterModule,
                pid: _plug_pid,
                subscribed_to: [{{^unplug_pid, _ref}, _opts1}],
                subscribers: [{{_pid, _ref2}, _opts2}]
              } = ALF.Components.Basic.__state__(another_plug.pid)
 
       assert %Stage{
-               name: :custom_name,
+               name: :just_another_function,
                pid: last_stage_pid,
                subscribed_to: [{{_pid, _ref}, _opts1}],
                subscribers: [{{another_unplug_pid, _ref2}, _opts2}]
              } = ALF.Components.Basic.__state__(last_stage.pid)
 
       assert %Unplug{
-               name: :another_plug,
+               name: ALF.DSLTest.MyAdapterModule,
                pid: ^another_unplug_pid,
                subscribed_to: [{{^last_stage_pid, _ref}, _opts1}],
                subscribers: [{{_consumer_pid, _ref2}, _opts2}]

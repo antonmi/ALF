@@ -21,27 +21,15 @@ defmodule ALF.DSL do
   defmacro stage(atom, options \\ [opts: []]) do
     count = options[:count] || 1
     opts = options[:opts]
-    name = options[:name]
 
     quote do
       Stage.validate_options(unquote(atom), unquote(options))
-
-      stage =
-        Basic.build_component(
-          Stage,
-          unquote(atom),
-          unquote(name),
-          unquote(opts),
-          __MODULE__
-        )
-
-      %{stage | count: unquote(count)}
+      Basic.build_component(Stage, unquote(atom), unquote(count), unquote(opts), __MODULE__)
     end
   end
 
   defmacro switch(atom, options \\ [opts: []]) do
     opts = options[:opts] || []
-    name = options[:name]
     count = options[:count] || 1
 
     quote do
@@ -49,15 +37,9 @@ defmodule ALF.DSL do
       branches = build_branches(unquote(options)[:branches])
 
       switch =
-        Basic.build_component(
-          Switch,
-          unquote(atom),
-          unquote(name),
-          unquote(opts),
-          __MODULE__
-        )
+        Basic.build_component(Switch, unquote(atom), unquote(count), unquote(opts), __MODULE__)
 
-      %{switch | branches: branches, count: unquote(count)}
+      %{switch | branches: branches}
     end
   end
 
@@ -67,23 +49,20 @@ defmodule ALF.DSL do
 
     quote do
       Clone.validate_options(unquote(name), unquote(options))
-
-      %Clone{name: unquote(name), to: unquote(stages), count: unquote(count)}
+      clone = Basic.build_component(Clone, unquote(name), unquote(count), %{}, __MODULE__)
+      %{clone | to: unquote(stages)}
     end
   end
 
-  defmacro goto(atom, options \\ [opts: []]) do
+  defmacro goto(name, options \\ [opts: []]) do
     to = options[:to]
     opts = options[:opts] || []
-    name = options[:name]
     count = options[:count] || 1
 
     quote do
-      Goto.validate_options(unquote(atom), unquote(options))
-
-      goto = Basic.build_component(Goto, unquote(atom), unquote(name), unquote(opts), __MODULE__)
-
-      %{goto | to: unquote(to), count: unquote(count)}
+      Goto.validate_options(unquote(name), unquote(options))
+      goto = Basic.build_component(Goto, unquote(name), unquote(count), unquote(opts), __MODULE__)
+      %{goto | to: unquote(to)}
     end
   end
 
@@ -91,7 +70,7 @@ defmodule ALF.DSL do
     count = options[:count] || 1
 
     quote do
-      %GotoPoint{name: unquote(name), count: unquote(count)}
+      Basic.build_component(GotoPoint, unquote(name), unquote(count), %{}, __MODULE__)
     end
   end
 
@@ -99,92 +78,53 @@ defmodule ALF.DSL do
     count = options[:count] || 1
 
     quote do
-      %DeadEnd{name: unquote(name), count: unquote(count)}
+      Basic.build_component(DeadEnd, unquote(name), unquote(count), %{}, __MODULE__)
     end
   end
 
-  defmacro done(atom, options \\ [opts: []]) do
+  defmacro done(name, options \\ [opts: []]) do
     count = options[:count] || 1
     opts = options[:opts] || []
-    name = options[:name]
 
     quote do
-      Done.validate_options(unquote(atom), unquote(options))
+      Done.validate_options(unquote(name), unquote(options))
 
-      done =
-        Basic.build_component(
-          Done,
-          unquote(atom),
-          unquote(name),
-          unquote(opts),
-          __MODULE__
-        )
-
-      %{done | count: unquote(count)}
+      Basic.build_component(Done, unquote(name), unquote(count), unquote(opts), __MODULE__)
     end
   end
 
-  defmacro decomposer(atom, options \\ [opts: []]) do
+  defmacro decomposer(name, options \\ [opts: []]) do
     opts = options[:opts] || []
-    name = options[:name]
     count = options[:count] || 1
 
     quote do
-      Decomposer.validate_options(unquote(atom), unquote(options))
-
-      decomposer =
-        Basic.build_component(
-          Decomposer,
-          unquote(atom),
-          unquote(name),
-          unquote(opts),
-          __MODULE__
-        )
-
-      %{decomposer | count: unquote(count)}
+      Decomposer.validate_options(unquote(name), unquote(options))
+      Basic.build_component(Decomposer, unquote(name), unquote(count), unquote(opts), __MODULE__)
     end
   end
 
-  defmacro recomposer(atom, options \\ [opts: []]) do
+  defmacro recomposer(name, options \\ [opts: []]) do
     opts = options[:opts] || []
-    name = options[:name]
     count = options[:count] || 1
 
     quote do
-      Recomposer.validate_options(unquote(atom), unquote(options))
-
-      recomposer =
-        Basic.build_component(
-          Recomposer,
-          unquote(atom),
-          unquote(name),
-          unquote(opts),
-          __MODULE__
-        )
-
-      %{recomposer | count: unquote(count)}
+      Recomposer.validate_options(unquote(name), unquote(options))
+      Basic.build_component(Recomposer, unquote(name), unquote(count), unquote(opts), __MODULE__)
     end
   end
 
-  defmacro composer(atom, options \\ [opts: []]) do
+  defmacro composer(name, options \\ [opts: []]) do
     opts = options[:opts] || []
-    name = options[:name]
     acc = options[:acc]
     count = options[:count] || 1
 
     quote do
-      Composer.validate_options(unquote(atom), unquote(options))
+      Composer.validate_options(unquote(name), unquote(options))
 
       composer =
-        Basic.build_component(
-          Composer,
-          unquote(atom),
-          unquote(name),
-          unquote(opts),
-          __MODULE__
-        )
+        Basic.build_component(Composer, unquote(name), unquote(count), unquote(opts), __MODULE__)
 
-      %{composer | acc: unquote(acc), count: unquote(count)}
+      %{composer | acc: unquote(acc)}
     end
   end
 
@@ -200,14 +140,13 @@ defmodule ALF.DSL do
   end
 
   defmacro plug_with(module, options \\ [count: 1], do: block) do
-    name = options[:name]
     count = options[:count] || 1
 
     quote do
       validate_plug_with_options(unquote(options))
-      name = if unquote(name), do: unquote(name), else: unquote(module)
-      plug = %Plug{name: name, module: unquote(module), count: unquote(count)}
-      unplug = %Unplug{name: name, module: unquote(module), count: unquote(count)}
+      plug = Basic.build_component(Plug, unquote(module), unquote(count), %{}, __MODULE__)
+
+      unplug = Basic.build_component(Unplug, unquote(module), unquote(count), %{}, __MODULE__)
 
       [plug] ++ unquote(block) ++ [unplug]
     end
@@ -215,16 +154,16 @@ defmodule ALF.DSL do
 
   defmacro tbd() do
     quote do
-      Basic.build_component(Tbd, unquote(:tbd), unquote(:tbd), %{}, __MODULE__)
+      Basic.build_component(Tbd, unquote(:tbd), 1, %{}, __MODULE__)
     end
   end
 
-  defmacro tbd(atom, opts \\ []) do
+  defmacro tbd(name, opts \\ []) do
     count = opts[:count] || 1
 
     quote do
-      Tbd.validate_name(unquote(atom))
-      tbd = Basic.build_component(Tbd, unquote(atom), unquote(atom), %{}, __MODULE__)
+      Tbd.validate_name(unquote(name))
+      tbd = Basic.build_component(Tbd, unquote(name), unquote(count), %{}, __MODULE__)
       %{tbd | count: unquote(count)}
     end
   end

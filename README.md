@@ -202,12 +202,6 @@ defmodule MyComponent do
 end
 ```
 
-One can specify a custom name:
-
-```elixir
-  stage(:my_fun, name: :my_custom_name)
-```
-
 Most of the components accept the `opts` argument, the options will be passed as a second argument to the corresponding function.
 
 ```elixir

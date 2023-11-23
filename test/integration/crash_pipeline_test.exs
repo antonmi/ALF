@@ -137,7 +137,7 @@ defmodule ALF.CrashPipelineTest do
         switch(:ready_or_not,
           branches: %{
             ready: [stage(:format_output)],
-            not_ready: [goto(true, to: :goto_point, name: :just_go)]
+            not_ready: [goto(true, to: :goto_point)]
           }
         )
       ]
@@ -203,7 +203,7 @@ defmodule ALF.CrashPipelineTest do
     end
 
     test "crash in goto", %{components: components} do
-      goto = Enum.find(components, &(&1.name == :just_go))
+      goto = Enum.find(components, &(&1.name == true))
       kill(goto.pid)
       assert BubbleSortWithSwitchPipeline.call([3, 1, 2]) == [1, 2, 3]
     end

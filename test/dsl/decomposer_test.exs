@@ -72,7 +72,7 @@ defmodule ALF.DSL.DecomposerTest do
       use ALF.DSL
 
       @components [
-        decomposer(:the_decomposer, opts: [foo: :bar], name: :custom_name)
+        decomposer(:the_decomposer, opts: [foo: :bar])
       ]
     end
 
@@ -82,7 +82,7 @@ defmodule ALF.DSL.DecomposerTest do
       [decomposer] = pipeline.components
 
       assert %Decomposer{
-               name: :custom_name,
+               name: :the_decomposer,
                module: PipelineDecomposer3,
                function: :the_decomposer,
                opts: [foo: :bar],
