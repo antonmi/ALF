@@ -145,10 +145,12 @@ defmodule ALF.Examples.Parcels.Pipeline do
   end
 
   def latest_occurred_at(occurred_at, last_occurred_at) do
-    if DateTime.compare(occurred_at, last_occurred_at) == :gt do
-      occurred_at
-    else
-      last_occurred_at
+    case DateTime.compare(occurred_at, last_occurred_at) do
+      :gt ->
+        occurred_at
+
+      _ ->
+        last_occurred_at
     end
   end
 end
