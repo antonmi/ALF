@@ -227,12 +227,7 @@ defmodule ALF.Manager do
             {[], nil}
 
           ips ->
-            ips =
-              ips
-              |> Enum.reverse()
-              |> Enum.map(&format_ip/1)
-
-            {ips, nil}
+            {Enum.reverse(Enum.map(ips, &format_ip/1)), nil}
         end
       end
     )

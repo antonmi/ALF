@@ -1,3 +1,72 @@
+defmodule ALF.Examples.Parcels.BuildPipeline do
+  use ALF.DSL
+
+  @components [
+    stage(:build_event)
+  ]
+
+  def build_event(event, _) do
+    list = String.split(event, ",")
+    type = Enum.at(list, 0)
+    {:ok, occurred_at, _} = DateTime.from_iso8601(Enum.at(list, 1))
+    order_number = String.to_integer(Enum.at(list, 2))
+
+    case type do
+      "ORDER_CREATED" ->
+        %{
+          type: type,
+          occurred_at: occurred_at,
+          order_number: order_number,
+          to_ship: String.to_integer(Enum.at(list, 3))
+        }
+
+      "PARCEL_SHIPPED" ->
+        %{type: type, occurred_at: occurred_at, order_number: order_number}
+    end
+  end
+end
+
+defmodule ALF.Examples.Parcels.OrderingPipeline do
+  use ALF.DSL
+
+  @components [
+    composer(:check_ordering, acc: MapSet.new()),
+    composer(:accumulate_waiting, acc: %{})
+  ]
+
+  def check_ordering(event, order_numbers, _) do
+    order_number = event[:order_number]
+
+    case event[:type] do
+      "ORDER_CREATED" ->
+        {[event], MapSet.put(order_numbers, order_number)}
+
+      "PARCEL_SHIPPED" ->
+        if MapSet.member?(order_numbers, order_number) do
+          {[event], order_numbers}
+        else
+          {[Map.put(event, :wait, order_number)], order_numbers}
+        end
+    end
+  end
+
+  def accumulate_waiting(event, waiting, _) do
+    case event[:type] do
+      "ORDER_CREATED" ->
+        order_number = event[:order_number]
+        {[event | Map.get(waiting, order_number, [])], Map.delete(waiting, order_number)}
+
+      "PARCEL_SHIPPED" ->
+        if event[:wait] do
+          other_waiting = Map.get(waiting, event[:wait], [])
+          {[], Map.put(waiting, event[:wait], [event | other_waiting])}
+        else
+          {[event], waiting}
+        end
+    end
+  end
+end
+
 defmodule ALF.Examples.Parcels.Pipeline do
   use ALF.DSL
 
@@ -9,25 +78,22 @@ defmodule ALF.Examples.Parcels.Pipeline do
   @seconds_in_week 3600 * 24 * 7
 
   def check_expired(event, acc, _) do
-    order_number = event["order_number"]
+    order_number = event[:order_number]
 
-    case event["type"] do
+    case event[:type] do
       "ORDER_CREATED" ->
-        {:ok, time, _} = DateTime.from_iso8601(event["occurred_at"])
-        acc = [{order_number, time} | acc]
+        acc = [{order_number, event[:occurred_at]} | acc]
         {[event], acc}
 
       "PARCEL_SHIPPED" ->
-        {:ok, parcel_time, _} = DateTime.from_iso8601(event["occurred_at"])
-
         {expired, still_valid} =
           Enum.split_while(Enum.reverse(acc), fn {_, order_time} ->
-            DateTime.diff(parcel_time, order_time, :second) > @seconds_in_week
+            DateTime.diff(event[:occurred_at], order_time, :second) > @seconds_in_week
           end)
 
         expired_events =
-          Enum.map(expired, fn {order_number, _time} ->
-            %{"type" => "THRESHOLD_EXCEEDED", "order_number" => order_number}
+          Enum.map(expired, fn {order_number, time} ->
+            %{type: "THRESHOLD_EXCEEDED", order_number: order_number, occurred_at: time}
           end)
 
         {expired_events ++ [event], still_valid}
@@ -35,31 +101,35 @@ defmodule ALF.Examples.Parcels.Pipeline do
   end
 
   def check_parcels_count(event, acc, _) do
-    order_number = event["order_number"]
+    order_number = event[:order_number]
 
-    case event["type"] do
+    case event[:type] do
       "ORDER_CREATED" ->
-        amount = String.to_integer(event["parcels_to_ship"])
-        acc = Map.put(acc, order_number, amount)
+        # putting order time here, it's always less than parcels time
+        acc = Map.put(acc, order_number, {event[:to_ship], event[:occurred_at]})
         {[], acc}
 
       "PARCEL_SHIPPED" ->
         case Map.get(acc, order_number) do
+          # was deleted in THRESHOLD_EXCEEDED
           nil ->
             {[], acc}
 
-          1 ->
+          {1, last_occurred_at} ->
+            last_occurred_at = latest_occurred_at(event[:occurred_at], last_occurred_at)
+
             ok_event = %{
-              "type" => "ALL_PARCELS_SHIPPED",
-              "order_number" => order_number,
-              "occurred_at" => event["occurred_at"]
+              type: "ALL_PARCELS_SHIPPED",
+              order_number: order_number,
+              occurred_at: last_occurred_at
             }
 
             acc = Map.put(acc, order_number, :all_parcels_shipped)
             {[ok_event], acc}
 
-          amount when amount > 1 ->
-            acc = Map.put(acc, order_number, amount - 1)
+          {amount, last_occurred_at} when amount > 1 ->
+            last_occurred_at = latest_occurred_at(event[:occurred_at], last_occurred_at)
+            acc = Map.put(acc, order_number, {amount - 1, last_occurred_at})
             {[], acc}
         end
 
@@ -73,60 +143,150 @@ defmodule ALF.Examples.Parcels.Pipeline do
         end
     end
   end
+
+  def latest_occurred_at(occurred_at, last_occurred_at) do
+    if DateTime.compare(occurred_at, last_occurred_at) == :gt do
+      occurred_at
+    else
+      last_occurred_at
+    end
+  end
 end
 
 defmodule ALF.Examples.Parcels.ParcelsTest do
   use ExUnit.Case, async: true
 
+  alias ALF.Examples.Parcels.BuildPipeline
+  alias ALF.Examples.Parcels.OrderingPipeline
   alias ALF.Examples.Parcels.Pipeline
+  alias ALF.Source.FileSource
+  alias ALF.Mixer
+
+  def expected_results do
+    [
+      %{
+        order_number: 111,
+        type: "ALL_PARCELS_SHIPPED",
+        occurred_at: ~U[2017-04-21T08:00:00.000Z]
+      },
+      %{
+        order_number: 222,
+        type: "THRESHOLD_EXCEEDED",
+        occurred_at: ~U[2017-04-20 09:00:00.000Z]
+      },
+      %{
+        order_number: 333,
+        type: "THRESHOLD_EXCEEDED",
+        occurred_at: ~U[2017-04-21 09:00:00.000Z]
+      }
+    ]
+  end
 
   setup do
-    Pipeline.start()
-    on_exit(&Pipeline.stop/0)
+    source1 = FileSource.open("test/examples/parcels/parcels.csv", chunk_size: 10)
+    source2 = FileSource.open("test/examples/parcels/orders.csv", chunk_size: 10)
+
+    stream1 = FileSource.stream(source1)
+    stream2 = FileSource.stream(source2)
+
+    %{stream1: stream1, stream2: stream2}
   end
 
-  def events_stream do
-    Stream.resource(
-      fn -> {File.open!("test/examples/parcels/events.csv"), false} end,
-      fn {file, headers} ->
-        case IO.read(file, :line) do
-          line when is_binary(line) ->
-            if headers do
-              values = String.split(String.trim(line), ",")
+  describe "with several pipelines" do
+    setup do
+      BuildPipeline.start()
+      OrderingPipeline.start()
+      Pipeline.start()
 
-              event =
-                headers
-                |> Enum.zip(values)
-                |> Enum.into(%{})
+      on_exit(fn ->
+        BuildPipeline.stop()
+        OrderingPipeline.stop()
+        Pipeline.stop()
+      end)
+    end
 
-              {[event], {file, headers}}
-            else
-              headers = String.split(String.trim(line), ",")
-              {[], {file, headers}}
-            end
+    test "with several pipelines", %{stream1: stream1, stream2: stream2} do
+      results =
+        [stream1, stream2]
+        |> Mixer.new()
+        |> Mixer.stream()
+        |> BuildPipeline.stream()
+        |> OrderingPipeline.stream()
+        |> Pipeline.stream()
+        |> Enum.to_list()
 
-          _ ->
-            {:halt, {file, headers}}
-        end
-      end,
-      fn {file, _headers} -> File.close(file) end
-    )
+      assert results == expected_results()
+    end
   end
 
-  test "test" do
-    results =
-      events_stream()
-      |> Pipeline.stream()
-      |> Enum.to_list()
+  describe "with several sync pipelines" do
+    setup do
+      BuildPipeline.start(sync: true)
+      OrderingPipeline.start(sync: true)
+      Pipeline.start(sync: true)
 
-    assert results == [
-             %{
-               "order_number" => "111",
-               "type" => "ALL_PARCELS_SHIPPED",
-               "occurred_at" => "2017-04-21T08:00:00.000Z"
-             },
-             %{"order_number" => "222", "type" => "THRESHOLD_EXCEEDED"},
-             %{"order_number" => "333", "type" => "THRESHOLD_EXCEEDED"}
-           ]
+      on_exit(fn ->
+        BuildPipeline.stop()
+        OrderingPipeline.stop()
+        Pipeline.stop()
+      end)
+    end
+
+    test "with several sync pipelines", %{stream1: stream1, stream2: stream2} do
+      results =
+        [stream1, stream2]
+        |> Mixer.new()
+        |> Mixer.stream()
+        |> BuildPipeline.stream()
+        |> OrderingPipeline.stream()
+        |> Pipeline.stream()
+        |> Enum.to_list()
+
+      assert results == expected_results()
+    end
+  end
+
+  defmodule ComposedPipeline do
+    use ALF.DSL
+
+    @components stages_from(BuildPipeline) ++
+                  stages_from(OrderingPipeline) ++
+                  stages_from(Pipeline)
+  end
+
+  describe "with ComposedPipeline" do
+    setup do
+      ComposedPipeline.start()
+      on_exit(&ComposedPipeline.stop/0)
+    end
+
+    test "with composed pipeline", %{stream1: stream1, stream2: stream2} do
+      results =
+        [stream1, stream2]
+        |> Mixer.new()
+        |> Mixer.stream()
+        |> ComposedPipeline.stream()
+        |> Enum.to_list()
+
+      assert results == expected_results()
+    end
+  end
+
+  describe "with ComposedPipeline sync" do
+    setup do
+      ComposedPipeline.start(sync: true)
+      on_exit(&ComposedPipeline.stop/0)
+    end
+
+    test "with composed sync pipeline", %{stream1: stream1, stream2: stream2} do
+      results =
+        [stream1, stream2]
+        |> Mixer.new()
+        |> Mixer.stream()
+        |> ComposedPipeline.stream()
+        |> Enum.to_list()
+
+      assert results == expected_results()
+    end
   end
 end

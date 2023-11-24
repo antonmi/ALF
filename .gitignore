@@ -24,3 +24,4 @@ alf-*.tar
 
 .idea
 *.iml
+/test_data
