@@ -400,7 +400,7 @@ The components can not be used directly and are generated automatically when one
 
 ## Components / Pipeline reusing
 
-### `stages_from` macro
+### `from` macro
 
 One can easily include components from another pipeline:
 
@@ -415,7 +415,7 @@ end
 
 defmodule ThePipeline do
   use ALF.DSL
-  @components stages_from(ReusablePipeline) ++ [stage(:baz)]
+  @components from(ReusablePipeline) ++ [stage(:baz)]
 end
 ```
 
@@ -431,7 +431,7 @@ defmodule ThePipeline do
                 plug_with(AdapterModuleBaz, do: [stage(:foo), stage(:bar)])
               ] ++
                 plug_with(AdapterModuleForReusablePipeline) do
-                  stages_from(ReusablePipeline)
+                  from(ReusablePipeline)
                 end
 
 end

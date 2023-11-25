@@ -198,7 +198,7 @@ defmodule ALF.DSLCountTest do
     end
 
     @components (plug_with(Adapter, count: 2) do
-                   stages_from(ManyTbds, count: 2)
+                   from(ManyTbds, count: 2)
                  end)
   end
 

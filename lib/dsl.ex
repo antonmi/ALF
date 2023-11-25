@@ -128,7 +128,7 @@ defmodule ALF.DSL do
     end
   end
 
-  defmacro stages_from(module, options \\ [opts: []]) do
+  defmacro from(module, options \\ [opts: []]) do
     count = options[:count] || 1
     opts = options[:opts] || []
 
@@ -174,7 +174,7 @@ defmodule ALF.DSL do
 
     if Enum.any?(wrong_options) do
       raise DSLError,
-            "Wrong options are given for the stages_from macro: #{inspect(wrong_options)}. " <>
+            "Wrong options are given for the 'from' macro: #{inspect(wrong_options)}. " <>
               "Available options are #{inspect(dsl_options)}"
     end
   end

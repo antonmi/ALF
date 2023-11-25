@@ -47,7 +47,7 @@ defmodule ALF.SyncRun.OptsInStageTest do
     end
   end
 
-  describe "overrides in stages_from" do
+  describe "overrides in from" do
     defmodule PipelineA do
       use ALF.DSL
 
@@ -63,7 +63,7 @@ defmodule ALF.SyncRun.OptsInStageTest do
     defmodule PipelineB do
       use ALF.DSL
 
-      @components stages_from(PipelineA, opts: [module: __MODULE__, aaa: :bbb]) ++
+      @components from(PipelineA, opts: [module: __MODULE__, aaa: :bbb]) ++
                     [stage(:bar, opts: %{module: __MODULE__})]
 
       def bar(event, _) do

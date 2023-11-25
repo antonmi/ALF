@@ -89,7 +89,7 @@ defmodule ALF.ExamplesBubbleSortWithSwitchAndPlugTest do
     end
 
     @components [
-      plug_with(MyPlug, do: [stages_from(Pipeline)])
+      plug_with(MyPlug, do: [from(Pipeline)])
     ]
   end
 

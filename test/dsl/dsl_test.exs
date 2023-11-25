@@ -35,7 +35,7 @@ defmodule ALF.DSLTest do
       clone(:clone, to: [stage(Mod1), dead_end(:dead_end)]),
       switch(:cond_function,
         branches: %{
-          part1: stages_from(PipelineA, opts: %{foo: :bar}),
+          part1: from(PipelineA, opts: %{foo: :bar}),
           part2: [stage(ModInPart2)]
         }
       ),
@@ -58,7 +58,7 @@ defmodule ALF.DSLTest do
         [stage(StageA1)]
       end,
       plug_with(MyAdapterModule, opts: [a: :b]) do
-        stages_from(PipelineA)
+        from(PipelineA)
       end
     ]
   end

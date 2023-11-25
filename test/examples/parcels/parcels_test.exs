@@ -255,9 +255,9 @@ defmodule ALF.Examples.Parcels.ParcelsTest do
 
     @partitions_count 3
 
-    main_stages = stages_from(OrderingPipeline) ++ stages_from(Pipeline)
+    main_stages = from(OrderingPipeline) ++ from(Pipeline)
 
-    @components stages_from(BuildPipeline) ++
+    @components from(BuildPipeline) ++
                   [
                     switch(:route_event,
                       branches:

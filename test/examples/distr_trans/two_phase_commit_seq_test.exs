@@ -81,7 +81,7 @@ defmodule ALF.Examples.DistrTrans.TwoPhaseCommitSeq.TPCPipelineWithPlug do
   @components [
     stage(:do_nothing),
     plug_with(Adapter) do
-      stages_from(TPCPipeline)
+      from(TPCPipeline)
     end,
     done(:if_error),
     stage(:number_to_string)

@@ -119,7 +119,7 @@ defmodule ALF.DSL.ValidationsTest do
     end
   end
 
-  describe "stages_from" do
+  describe "from" do
     defmodule PipelineToReuse do
       use ALF.DSL
 
@@ -128,13 +128,13 @@ defmodule ALF.DSL.ValidationsTest do
 
     test "invalid options", %{sup_pid: sup_pid} do
       assert_raise DSLError,
-                   "Wrong options are given for the stages_from macro: [:foo]. " <>
+                   "Wrong options are given for the 'from' macro: [:foo]. " <>
                      "Available options are [:count, :opts]",
                    fn ->
                      defmodule GotoWithWrongRequiredOpts do
                        use ALF.DSL
 
-                       @components stages_from(PipelineToReuse, foo: :bar)
+                       @components from(PipelineToReuse, foo: :bar)
                      end
                    end
     end
@@ -156,7 +156,7 @@ defmodule ALF.DSL.ValidationsTest do
                        use ALF.DSL
 
                        @components (plug_with(MyAdapterModule, foo: :bar) do
-                                      stages_from(PipelineToReuse, foo: :bar)
+                                      from(PipelineToReuse, foo: :bar)
                                     end)
                      end
                    end
