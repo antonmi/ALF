@@ -3,7 +3,6 @@ defmodule ALF.SyncRunner do
     Goto,
     GotoPoint,
     Switch,
-    Clone,
     Done
   }
 
@@ -55,13 +54,6 @@ defmodule ALF.SyncRunner do
 
   def run_component(component, ip, pipeline) do
     case component do
-      %Clone{} = clone ->
-        [ip, cloned_ip] = clone.__struct__.sync_process(ip, component)
-        [first | _] = clone.to
-        {sync_path, true} = path(pipeline, first.pid)
-        cloned_ip = %{cloned_ip | sync_path: sync_path}
-        [ip, cloned_ip]
-
       %Switch{} = switch ->
         case switch.__struct__.sync_process(ip, switch) do
           %ErrorIP{} = error_ip ->
@@ -119,19 +111,6 @@ defmodule ALF.SyncRunner do
                     {ref_list, found_in_branch}
                 end
               end)
-
-            if found_inside do
-              {ref_list ++ inner_path, true}
-            else
-              {ref_list, false}
-            end
-          end
-
-        %Clone{to: to_components} = clone ->
-          if found or pid == clone.pid do
-            {ref_list ++ [clone.pid], true}
-          else
-            {inner_path, found_inside} = path(to_components, pid)
 
             if found_inside do
               {ref_list ++ inner_path, true}

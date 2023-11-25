@@ -3,7 +3,6 @@ defmodule ALF.DSL do
     Basic,
     Stage,
     Switch,
-    Clone,
     DeadEnd,
     GotoPoint,
     Goto,
@@ -38,17 +37,6 @@ defmodule ALF.DSL do
         Basic.build_component(Switch, unquote(atom), unquote(count), unquote(opts), __MODULE__)
 
       %{switch | branches: branches}
-    end
-  end
-
-  defmacro clone(name, options) do
-    count = options[:count] || 1
-    stages = options[:to]
-
-    quote do
-      Clone.validate_options(unquote(name), unquote(options))
-      clone = Basic.build_component(Clone, unquote(name), unquote(count), %{}, __MODULE__)
-      %{clone | to: unquote(stages)}
     end
   end
 

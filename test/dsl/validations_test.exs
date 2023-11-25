@@ -63,34 +63,6 @@ defmodule ALF.DSL.ValidationsTest do
     end
   end
 
-  describe "Clone" do
-    test "required options", %{sup_pid: sup_pid} do
-      assert_raise DSLError,
-                   "Not all the required options are given for the clone clone. " <>
-                     "You forgot specifying [:to]",
-                   fn ->
-                     defmodule CloneWithoutRequiredOpts do
-                       use ALF.DSL
-
-                       @components [clone(:clone, a: :b)]
-                     end
-                   end
-    end
-
-    test "invalid options", %{sup_pid: sup_pid} do
-      assert_raise DSLError,
-                   "Wrong options for the clone clone: [:foo]. " <>
-                     "Available options are [:to]",
-                   fn ->
-                     defmodule CloneWithWrongRequiredOpts do
-                       use ALF.DSL
-
-                       @components [clone(:clone, to: :b, foo: :bar)]
-                     end
-                   end
-    end
-  end
-
   describe "Goto" do
     test "required options", %{sup_pid: sup_pid} do
       assert_raise DSLError,

@@ -133,7 +133,6 @@ defmodule ALF.CrashPipelineTest do
         tbd(:tbd),
         stage(:update_new_list, count: 2),
         stage(:rebuild_list, count: 2),
-        clone(:logging, to: [stage(:report_step), dead_end(:after_report)]),
         switch(:ready_or_not,
           branches: %{
             ready: [stage(:format_output)],
@@ -156,11 +155,6 @@ defmodule ALF.CrashPipelineTest do
 
       def rebuild_list(struct, _) do
         %{struct | list: struct.list -- [struct.max]}
-      end
-
-      def report_step(struct, _) do
-        # IO.inspect("Step: #{inspect struct}", charlists: :as_lists)
-        struct
       end
 
       def format_output(struct, _) do
@@ -205,18 +199,6 @@ defmodule ALF.CrashPipelineTest do
     test "crash in goto", %{components: components} do
       goto = Enum.find(components, &(&1.name == true))
       kill(goto.pid)
-      assert BubbleSortWithSwitchPipeline.call([3, 1, 2]) == [1, 2, 3]
-    end
-
-    test "crash in dead_end", %{components: components} do
-      dead_end = Enum.find(components, &(&1.name == :after_report))
-      kill(dead_end.pid)
-      assert BubbleSortWithSwitchPipeline.call([3, 1, 2]) == [1, 2, 3]
-    end
-
-    test "crash in clone", %{components: components} do
-      clone = Enum.find(components, &(&1.name == :logging))
-      kill(clone.pid)
       assert BubbleSortWithSwitchPipeline.call([3, 1, 2]) == [1, 2, 3]
     end
 

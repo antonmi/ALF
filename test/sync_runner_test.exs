@@ -2,7 +2,7 @@ defmodule ALF.SyncRunnerTest do
   use ExUnit.Case, async: true
 
   alias ALF.{Builder, SyncRunner}
-  alias ALF.Components.{Producer, Stage, Switch, Clone, DeadEnd, Consumer}
+  alias ALF.Components.{Producer, Stage, Switch, Consumer}
 
   defmodule Pipeline1 do
     def alf_components do
@@ -14,10 +14,6 @@ defmodule ALF.SyncRunnerTest do
             part1: [%Stage{name: :stage_in_part1}],
             part2: [
               %Stage{name: :stage_in_part2},
-              %Clone{
-                name: :clone,
-                to: [%Stage{name: :stage_in_clone}, %DeadEnd{name: :dead_end}]
-              },
               %Stage{name: :another_stage_in_part2}
             ]
           },
@@ -41,14 +37,6 @@ defmodule ALF.SyncRunnerTest do
           part1: [%Stage{name: :stage_in_part1, pid: stage_in_part1_pid}],
           part2: [
             %Stage{name: :stage_in_part2, pid: stage_in_part2_pid},
-            %Clone{
-              name: :clone,
-              pid: clone_pid,
-              to: [
-                %Stage{name: :stage_in_clone, pid: stage_in_clone_pid},
-                %DeadEnd{name: :dead_end, pid: dead_end_pid}
-              ]
-            },
             %Stage{name: :another_stage_in_part2, pid: another_stage_in_part2_pid}
           ]
         },
@@ -65,9 +53,6 @@ defmodule ALF.SyncRunnerTest do
       switch_stage1_pid: switch_stage1_pid,
       stage_in_part1_pid: stage_in_part1_pid,
       stage_in_part2_pid: stage_in_part2_pid,
-      clone_pid: clone_pid,
-      stage_in_clone_pid: stage_in_clone_pid,
-      dead_end_pid: dead_end_pid,
       another_stage_in_part2_pid: another_stage_in_part2_pid,
       last_stage_pid: last_stage_pid,
       consumer_pid: consumer_pid
@@ -124,7 +109,6 @@ defmodule ALF.SyncRunnerTest do
     test "for stage_in_part2_pid", %{
       pipeline: pipeline,
       stage_in_part2_pid: stage_in_part2_pid,
-      clone_pid: clone_pid,
       another_stage_in_part2_pid: another_stage_in_part2_pid,
       last_stage_pid: last_stage_pid,
       consumer_pid: consumer_pid
@@ -133,26 +117,6 @@ defmodule ALF.SyncRunnerTest do
 
       assert path == [
                stage_in_part2_pid,
-               clone_pid,
-               another_stage_in_part2_pid,
-               last_stage_pid,
-               consumer_pid
-             ]
-    end
-
-    test "for stage_in_clone_pid", %{
-      pipeline: pipeline,
-      stage_in_clone_pid: stage_in_clone_pid,
-      dead_end_pid: dead_end_pid,
-      another_stage_in_part2_pid: another_stage_in_part2_pid,
-      last_stage_pid: last_stage_pid,
-      consumer_pid: consumer_pid
-    } do
-      {path, true} = SyncRunner.path(pipeline, stage_in_clone_pid)
-
-      assert path == [
-               stage_in_clone_pid,
-               dead_end_pid,
                another_stage_in_part2_pid,
                last_stage_pid,
                consumer_pid
@@ -168,14 +132,6 @@ defmodule ALF.SyncRunnerTest do
   describe "find_component/2" do
     test "find switch", %{pipeline: pipeline, switch_stage1_pid: switch_stage1_pid} do
       assert %Switch{name: :switch} = SyncRunner.find_component(pipeline, switch_stage1_pid)
-    end
-
-    test "find clone", %{pipeline: pipeline, clone_pid: clone_pid} do
-      assert %Clone{name: :clone} = SyncRunner.find_component(pipeline, clone_pid)
-    end
-
-    test "find dead_end", %{pipeline: pipeline, dead_end_pid: dead_end_pid} do
-      assert %DeadEnd{name: :dead_end} = SyncRunner.find_component(pipeline, dead_end_pid)
     end
   end
 end

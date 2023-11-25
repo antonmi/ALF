@@ -248,7 +248,7 @@ defmodule ALF.Manager do
 
   defp wait_result(ref, acc, {timeout, initial_ip}, count \\ 0) do
     receive do
-      {^ref, reason} when reason in [:cloned, :composed] ->
+      {^ref, :composed} ->
         wait_result(
           ref,
           acc ++ wait_result(ref, [], {timeout, initial_ip}, count + 1),
