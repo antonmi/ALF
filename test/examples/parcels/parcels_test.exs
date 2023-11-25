@@ -30,8 +30,8 @@ defmodule ALF.Examples.Parcels.OrderingPipeline do
   use ALF.DSL
 
   @components [
-    composer(:check_ordering, acc: MapSet.new()),
-    composer(:accumulate_waiting, acc: %{})
+    composer(:check_ordering, memo: MapSet.new()),
+    composer(:accumulate_waiting, memo: %{})
   ]
 
   def check_ordering(event, order_numbers, _) do
@@ -71,23 +71,23 @@ defmodule ALF.Examples.Parcels.Pipeline do
   use ALF.DSL
 
   @components [
-    composer(:check_expired, acc: []),
-    composer(:check_parcels_count, acc: %{})
+    composer(:check_expired, memo: []),
+    composer(:check_parcels_count, memo: %{})
   ]
 
   @seconds_in_week 3600 * 24 * 7
 
-  def check_expired(event, acc, _) do
+  def check_expired(event, memo, _) do
     order_number = event[:order_number]
 
     case event[:type] do
       "ORDER_CREATED" ->
-        acc = [{order_number, event[:occurred_at]} | acc]
-        {[event], acc}
+        memo = [{order_number, event[:occurred_at]} | memo]
+        {[event], memo}
 
       "PARCEL_SHIPPED" ->
         {expired, still_valid} =
-          Enum.split_while(Enum.reverse(acc), fn {_, order_time} ->
+          Enum.split_while(Enum.reverse(memo), fn {_, order_time} ->
             DateTime.diff(event[:occurred_at], order_time, :second) > @seconds_in_week
           end)
 
@@ -100,20 +100,20 @@ defmodule ALF.Examples.Parcels.Pipeline do
     end
   end
 
-  def check_parcels_count(event, acc, _) do
+  def check_parcels_count(event, memo, _) do
     order_number = event[:order_number]
 
     case event[:type] do
       "ORDER_CREATED" ->
         # putting order time here, it's always less than parcels time
-        acc = Map.put(acc, order_number, {event[:to_ship], event[:occurred_at]})
-        {[], acc}
+        memo = Map.put(memo, order_number, {event[:to_ship], event[:occurred_at]})
+        {[], memo}
 
       "PARCEL_SHIPPED" ->
-        case Map.get(acc, order_number) do
+        case Map.get(memo, order_number) do
           # was deleted in THRESHOLD_EXCEEDED
           nil ->
-            {[], acc}
+            {[], memo}
 
           {1, last_occurred_at} ->
             last_occurred_at = latest_occurred_at(event[:occurred_at], last_occurred_at)
@@ -124,22 +124,22 @@ defmodule ALF.Examples.Parcels.Pipeline do
               occurred_at: last_occurred_at
             }
 
-            acc = Map.put(acc, order_number, :all_parcels_shipped)
-            {[ok_event], acc}
+            memo = Map.put(memo, order_number, :all_parcels_shipped)
+            {[ok_event], memo}
 
           {amount, last_occurred_at} when amount > 1 ->
             last_occurred_at = latest_occurred_at(event[:occurred_at], last_occurred_at)
-            acc = Map.put(acc, order_number, {amount - 1, last_occurred_at})
-            {[], acc}
+            memo = Map.put(memo, order_number, {amount - 1, last_occurred_at})
+            {[], memo}
         end
 
       "THRESHOLD_EXCEEDED" ->
-        case Map.get(acc, order_number) do
+        case Map.get(memo, order_number) do
           :all_parcels_shipped ->
-            {[], Map.delete(acc, order_number)}
+            {[], Map.delete(memo, order_number)}
 
           _count ->
-            {[event], Map.delete(acc, order_number)}
+            {[event], Map.delete(memo, order_number)}
         end
     end
   end
@@ -261,8 +261,8 @@ defmodule ALF.Examples.Parcels.ParcelsTest do
                   [
                     switch(:route_event,
                       branches:
-                        Enum.reduce(0..(@partitions_count - 1), %{}, fn i, acc ->
-                          Map.put(acc, i, main_stages)
+                        Enum.reduce(0..(@partitions_count - 1), %{}, fn i, memo ->
+                          Map.put(memo, i, main_stages)
                         end)
                     )
                   ]

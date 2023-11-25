@@ -42,7 +42,7 @@ defmodule ALF.Examples.DistrTrans.TwoPhaseCommitParallel.TPCPipeline do
     )
   ]
 
-  def decompose(event, _acc, _) do
+  def decompose(event, _memo, _) do
     {[%{event | route_to: :first}, %{event | route_to: :second}], nil}
   end
 

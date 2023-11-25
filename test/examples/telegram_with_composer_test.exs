@@ -3,7 +3,7 @@ defmodule ALF.Examples.TelegramWithComposer.Pipeline do
 
   @components [
     composer(:split_to_words),
-    composer(:create_lines, acc: [])
+    composer(:create_lines, memo: [])
   ]
 
   @length_limit 50

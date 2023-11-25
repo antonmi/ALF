@@ -7,7 +7,7 @@ defmodule ALF.SyncRun.ComposeTest do
 
       @components [
         composer(:decomposer_function),
-        composer(:recomposer_function, acc: [])
+        composer(:recomposer_function, memo: [])
       ]
 
       def decomposer_function(event, nil, _) do
@@ -65,7 +65,7 @@ defmodule ALF.SyncRun.ComposeTest do
 
       @components [
         composer(:split_to_words),
-        composer(:create_lines, acc: [])
+        composer(:create_lines, memo: [])
       ]
 
       @length_limit 10

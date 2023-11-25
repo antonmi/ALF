@@ -2,18 +2,18 @@ defmodule ALF.Examples.Stream.ChunkEveryPipeline do
   use ALF.DSL
 
   @components [
-    composer(:chunk_every, acc: [], opts: %{count: 2})
+    composer(:chunk_every, memo: [], opts: %{count: 2})
   ]
 
-  def chunk_every(:end, acc, _), do: {[Enum.reverse(acc)], []}
+  def chunk_every(:end, memo, _), do: {[Enum.reverse(memo)], []}
 
-  def chunk_every(event, acc, opts) do
-    acc = [event | acc]
+  def chunk_every(event, memo, opts) do
+    memo = [event | memo]
 
-    if length(acc) >= opts[:count] do
-      {[Enum.reverse(acc)], []}
+    if length(memo) >= opts[:count] do
+      {[Enum.reverse(memo)], []}
     else
-      {[], acc}
+      {[], memo}
     end
   end
 end

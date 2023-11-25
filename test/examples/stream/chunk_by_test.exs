@@ -8,7 +8,7 @@ defmodule ALF.Examples.Stream.ChunkByPipeline do
   end
 
   @components [
-    composer(:chunk_by, acc: {nil, []}, opts: %{fun: &ChunkBy.call/1})
+    composer(:chunk_by, memo: {nil, []}, opts: %{fun: &ChunkBy.call/1})
   ]
 
   def chunk_by(:end, acc, _opts) do

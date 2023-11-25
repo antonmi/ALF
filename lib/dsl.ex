@@ -115,7 +115,7 @@ defmodule ALF.DSL do
 
   defmacro composer(name, options \\ [opts: []]) do
     opts = options[:opts] || []
-    acc = options[:acc]
+    memo = options[:memo]
     count = options[:count] || 1
 
     quote do
@@ -124,7 +124,7 @@ defmodule ALF.DSL do
       composer =
         Basic.build_component(Composer, unquote(name), unquote(count), unquote(opts), __MODULE__)
 
-      %{composer | acc: unquote(acc)}
+      %{composer | memo: unquote(memo)}
     end
   end
 

@@ -7,15 +7,15 @@ defmodule ALF.Components.Composer do
                 module: nil,
                 function: nil,
                 source_code: nil,
-                acc: nil,
-                stream_accs: %{},
+                memo: nil,
+                stream_memos: %{},
                 collected_ips: [],
                 new_collected_ips: %{}
               ]
 
   alias ALF.{DSLError, IP}
 
-  @dsl_options [:name, :count, :opts, :acc]
+  @dsl_options [:name, :count, :opts, :memo]
 
   @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
@@ -64,10 +64,10 @@ defmodule ALF.Components.Composer do
 
   defp process_ip(current_ip, state) do
     history = history(current_ip, state)
-    acc = Map.get(state.stream_accs, current_ip.stream_ref, state.acc)
+    memo = Map.get(state.stream_memos, current_ip.stream_ref, state.memo)
 
-    case call_function(state.module, state.function, current_ip.event, acc, state.opts) do
-      {:ok, {events, acc}} when is_list(events) ->
+    case call_function(state.module, state.function, current_ip.event, memo, state.opts) do
+      {:ok, {events, memo}} when is_list(events) ->
         ips =
           Enum.map(events, fn event ->
             ip = build_ip(event, current_ip, history)
@@ -76,8 +76,8 @@ defmodule ALF.Components.Composer do
           end)
 
         send_result(current_ip, :destroyed)
-        stream_accs = Map.put(state.stream_accs, current_ip.stream_ref, acc)
-        {ips, %{state | stream_accs: stream_accs}}
+        stream_memos = Map.put(state.stream_memos, current_ip.stream_ref, memo)
+        {ips, %{state | stream_memos: stream_memos}}
 
       {:error, error, stacktrace} ->
         send_error_result(current_ip, error, stacktrace, state)
@@ -85,7 +85,7 @@ defmodule ALF.Components.Composer do
 
       {:ok, other} ->
         error =
-          "Composer \"#{state.name}\" must return the {[event], acc} tuple. Got #{inspect(other)}"
+          "Composer \"#{state.name}\" must return the {[event], memo} tuple. Got #{inspect(other)}"
 
         send_error_result(current_ip, error, [], state)
         {[], state}
@@ -108,12 +108,12 @@ defmodule ALF.Components.Composer do
   end
 
   defp do_sync_process(ip, state) do
-    acc = get_from_process_dict({state.pid, ip.stream_ref}) || state.acc
+    memo = get_from_process_dict({state.pid, ip.stream_ref}) || state.memo
     history = history(ip, state)
 
-    case call_function(state.module, state.function, ip.event, acc, state.opts) do
-      {:ok, {events, acc}} when is_list(events) ->
-        put_to_process_dict({state.pid, ip.stream_ref}, acc)
+    case call_function(state.module, state.function, ip.event, memo, state.opts) do
+      {:ok, {events, memo}} when is_list(events) ->
+        put_to_process_dict({state.pid, ip.stream_ref}, memo)
 
         case Enum.map(events, &build_ip(&1, ip, history)) do
           [] -> nil
@@ -125,7 +125,7 @@ defmodule ALF.Components.Composer do
 
       {:ok, other} ->
         error =
-          "Composer \"#{state.name}\" must return the {[event], acc} tuple. Got #{inspect(other)}"
+          "Composer \"#{state.name}\" must return the {[event], memo} tuple. Got #{inspect(other)}"
 
         send_error_result(ip, error, [], state)
     end
@@ -161,9 +161,9 @@ defmodule ALF.Components.Composer do
     end
   end
 
-  defp call_function(module, function, event, acc, opts)
+  defp call_function(module, function, event, memo, opts)
        when is_atom(module) and is_atom(function) do
-    {:ok, apply(module, function, [event, acc, opts])}
+    {:ok, apply(module, function, [event, memo, opts])}
   rescue
     error ->
       {:error, error, __STACKTRACE__}
@@ -174,5 +174,5 @@ defmodule ALF.Components.Composer do
 
   defp get_from_process_dict(key), do: Process.get(key, nil)
 
-  defp put_to_process_dict(key, acc), do: Process.put(key, acc)
+  defp put_to_process_dict(key, memo), do: Process.put(key, memo)
 end

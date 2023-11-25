@@ -118,7 +118,7 @@ defmodule ALF.Components.ComposerTest do
       [error_ip] = TestConsumer.ips(consumer_pid)
 
       assert error_ip.error ==
-               "Composer \"test_composer1\" must return the {[event], acc} tuple. Got \"wrong_return\""
+               "Composer \"test_composer1\" must return the {[event], memo} tuple. Got \"wrong_return\""
     end
   end
 
