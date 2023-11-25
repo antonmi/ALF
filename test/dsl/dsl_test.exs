@@ -11,9 +11,7 @@ defmodule ALF.DSLTest do
     GotoPoint,
     Goto,
     Plug,
-    Unplug,
-    Decomposer,
-    Recomposer
+    Unplug
   }
 
   defmodule PipelineA do
@@ -61,29 +59,6 @@ defmodule ALF.DSLTest do
         from(PipelineA)
       end
     ]
-  end
-
-  defmodule PipelineCompose do
-    use ALF.DSL
-
-    @components [
-      decomposer(:decomposer_function, opts: [foo: :bar]),
-      recomposer(:recomposer_function, opts: [foo: :bar])
-    ]
-
-    def decomposer_function(event, _) do
-      [event + 1, event + 2, event + 3]
-    end
-
-    def recomposer_function(event, prev_events, _) do
-      sum = Enum.reduce(prev_events, 0, &(&1 + &2)) + event
-
-      if sum > 5 do
-        sum
-      else
-        :continue
-      end
-    end
   end
 
   setup do
@@ -182,43 +157,6 @@ defmodule ALF.DSLTest do
                subscribed_to: [{{^last_stage_pid, _ref}, _opts1}],
                subscribers: [{{_consumer_pid, _ref2}, _opts2}]
              } = ALF.Components.Basic.__state__(another_unplug.pid)
-    end
-  end
-
-  describe "PipelineCompose" do
-    test "build PipelineCompose", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineCompose, sup_pid, false)
-
-      Process.sleep(10)
-      [decomposer, recomposer] = pipeline.components
-
-      assert %Decomposer{
-               module: PipelineCompose,
-               function: :decomposer_function,
-               name: :decomposer_function,
-               opts: [foo: :bar],
-               pid: decomposer_pid,
-               pipeline_module: ALF.DSLTest.PipelineCompose,
-               subscribed_to: [{{producer_pid, _ref1}, _opts1}],
-               subscribers: [{{recomposer_pid, _ref2}, _opts2}]
-             } = ALF.Components.Basic.__state__(decomposer.pid)
-
-      assert is_pid(decomposer_pid)
-      assert is_pid(producer_pid)
-      assert is_pid(recomposer_pid)
-
-      assert %Recomposer{
-               module: PipelineCompose,
-               function: :recomposer_function,
-               name: :recomposer_function,
-               opts: [foo: :bar],
-               pid: ^recomposer_pid,
-               pipeline_module: ALF.DSLTest.PipelineCompose,
-               subscribed_to: [{{^decomposer_pid, _ref1}, _opts1}],
-               subscribers: [{{consumer_pid, _ref2}, _opts2}]
-             } = ALF.Components.Basic.__state__(recomposer.pid)
-
-      assert is_pid(consumer_pid)
     end
   end
 end

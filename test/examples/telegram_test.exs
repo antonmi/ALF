@@ -1,17 +1,20 @@
-defmodule ALF.Examples.Telegram.Pipeline do
+defmodule ALF.Examples.TelegramWithComposer.Pipeline do
   use ALF.DSL
 
   @components [
-    decomposer(:split_to_words),
-    recomposer(:create_lines)
+    composer(:split_to_words),
+    composer(:create_lines, memo: [])
   ]
 
   @length_limit 50
 
-  def split_to_words(line, _) do
-    line
-    |> String.trim()
-    |> String.split()
+  def split_to_words(line, nil, _) do
+    words =
+      line
+      |> String.trim()
+      |> String.split()
+
+    {words, nil}
   end
 
   def create_lines(word, words, _) do
@@ -20,21 +23,21 @@ defmodule ALF.Examples.Telegram.Pipeline do
 
     cond do
       String.length(string_after) == @length_limit ->
-        string_after
+        {[string_after], []}
 
       String.length(string_after) > @length_limit ->
-        {string_before, [word]}
+        {[string_before], [word]}
 
       true ->
-        :continue
+        {[], words ++ [word]}
     end
   end
 end
 
-defmodule ALF.Examples.TelegramTest do
+defmodule ALF.Examples.TelegramWithComposerTest do
   use ExUnit.Case, async: true
 
-  alias ALF.Examples.Telegram.Pipeline
+  alias ALF.Examples.TelegramWithComposer.Pipeline
 
   setup do
     file_stream = File.stream!("test/examples/telegram_input.txt")

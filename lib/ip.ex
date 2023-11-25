@@ -11,8 +11,6 @@ defmodule ALF.IP do
           pipeline_module: atom(),
           debug: boolean(),
           history: list(),
-          decomposed: boolean(),
-          recomposed: boolean(),
           composed: boolean(),
           plugs: map(),
           sync_path: nil | list()
@@ -27,8 +25,6 @@ defmodule ALF.IP do
             pipeline_module: nil,
             debug: false,
             history: [],
-            decomposed: false,
-            recomposed: false,
             composed: false,
             plugs: %{},
             sync_path: nil

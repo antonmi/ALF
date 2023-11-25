@@ -10,8 +10,6 @@ defmodule ALF.DSL do
     Done,
     Plug,
     Unplug,
-    Decomposer,
-    Recomposer,
     Composer,
     Tbd
   }
@@ -90,26 +88,6 @@ defmodule ALF.DSL do
       Done.validate_options(unquote(name), unquote(options))
 
       Basic.build_component(Done, unquote(name), unquote(count), unquote(opts), __MODULE__)
-    end
-  end
-
-  defmacro decomposer(name, options \\ [opts: []]) do
-    opts = options[:opts] || []
-    count = options[:count] || 1
-
-    quote do
-      Decomposer.validate_options(unquote(name), unquote(options))
-      Basic.build_component(Decomposer, unquote(name), unquote(count), unquote(opts), __MODULE__)
-    end
-  end
-
-  defmacro recomposer(name, options \\ [opts: []]) do
-    opts = options[:opts] || []
-    count = options[:count] || 1
-
-    quote do
-      Recomposer.validate_options(unquote(name), unquote(options))
-      Basic.build_component(Recomposer, unquote(name), unquote(count), unquote(opts), __MODULE__)
     end
   end
 

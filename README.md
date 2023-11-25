@@ -10,7 +10,7 @@
 
 #### ALF is NOT a general-purpose "language", so implementing a complex domain logic with it might be questionable (although it is possible).
 
-#### ALF is a successor of the [Flowex](https://github.com/antonmi/flowex) project. Check it's [README](https://github.com/antonmi/flowex#readme) to get the general idea. ALF adds conditional branching, packet cloning, goto statement, decomposer/recomposer and other functionalities. Therefore, one can create application trees (graphs) of arbitrary complexity.
+#### ALF is a successor of the [Flowex](https://github.com/antonmi/flowex) project. Check it's [README](https://github.com/antonmi/flowex#readme) to get the general idea. ALF adds conditional branching, packet cloning, goto statement and other functionalities. Therefore, one can create application trees (graphs) of arbitrary complexity.
 
 ### Something to read and watch
 
@@ -330,58 +330,10 @@ Event won't propagate further. It's used alongside with the `Clone` component to
 ```elixir
 dead_end(:dead_end)
 ```
-### Decomposer and Recomposer
+### Composer
 
-These components transform IPs. Decomposer creates several IPs based on one input IP. Recomposer does the opposite - creates a single IP based on a list of previously received IPs.
-Decomposer must implement a 2-arity function (or a module with the `call` function) that return either a list of new events:
+TODO
 
-```elixir
-def decomposer_function(event, _opts) do
-  [event + 1, event + 2, event + 3]
-end
-```
-
-or the the `{list(event), event}` tuple:
-
-```elixir
-def decomposer_function(event, _opts) do
-  {[event + 1, event + 2, event + 3], event * 100}
-end
-```
-
-In the first case the initial IP will disappear and a list of new IPs will be created based on athe returned events.
-In the second case, the `event` of original IP will be replaced by the event from the second value in the tuple.
-
-Recomposer is a bit more tricky. It is a 3-arity function (module with the `call` function). The first argument is incoming `event`, the second one is a list of previously accumulated events, and the last one is `opts`
-The function must return `event`, `{event, list(event)}` or `:continue` atom.
-For example:
-
-```elixir
-  def recomposer_function(event, prev_events, _opts) do
-    sum = Enum.reduce(prev_events, 0, &(&1 + &2)) + event
-
-    case sum > 5 do
-      true -> sum
-      false -> :continue
-    end
-  end
-```
-
-The component will return one event (`sum`) if the sum of previously received events is more than 5. If no, the events are just store in the component.
-`{event, list(event)}` tuple allows to return a event and also specify what to store till another call.
-
-```elixir
-def recomposer_function_tuple(event, prev_events, _opts) do
-  sum = Enum.reduce(prev_events, 0, &(&1 + &2)) + event
-
-  case sum > 5 do
-    true -> {sum, [hd(prev_events)]}
-    false -> :continue
-  end
-end
-```
-
-In that case, the sum will be returned and the first `event` from `prev_events` will be stored.
 See the [telegram_test.exs](https://github.com/antonmi/ALF/tree/main/test/examples/telegram_test.exs) example which solves the famous "Telegram Problem".
 
 ## Implicit components

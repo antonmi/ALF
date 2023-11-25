@@ -11,8 +11,6 @@ defmodule ALF.ErrorIP do
           stacktrace: list(),
           component: map(),
           pipeline_module: atom(),
-          decomposed: boolean(),
-          recomposed: boolean(),
           debug: boolean(),
           history: list(),
           plugs: map()
@@ -27,8 +25,6 @@ defmodule ALF.ErrorIP do
             stacktrace: nil,
             component: nil,
             pipeline_module: nil,
-            decomposed: false,
-            recomposed: false,
             debug: false,
             history: [],
             plugs: %{}
