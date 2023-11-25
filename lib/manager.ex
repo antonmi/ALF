@@ -396,7 +396,7 @@ defmodule ALF.Manager do
     stages = Map.put(state.stages, component.pid, component)
 
     removed_stages =
-      maybe_resubscribe(state.removed_stages, component.stage_set_ref, component.pid)
+      maybe_resubscribe(state.removed_stages, component.set_ref, component.pid)
 
     Process.monitor(component.pid)
     state = %{state | stages: stages, removed_stages: removed_stages}
@@ -428,7 +428,7 @@ defmodule ALF.Manager do
           {:noreply, state}
 
         component ->
-          removed_stages = Map.put(state.removed_stages, component.stage_set_ref, component)
+          removed_stages = Map.put(state.removed_stages, component.set_ref, component)
 
           stages = Map.delete(state.stages, pid)
           {:noreply, %{state | stages: stages, removed_stages: removed_stages}}
@@ -436,8 +436,8 @@ defmodule ALF.Manager do
     end
   end
 
-  defp maybe_resubscribe(removed_stages, stage_set_ref, component_pid) do
-    case Map.get(removed_stages, stage_set_ref) do
+  defp maybe_resubscribe(removed_stages, set_ref, component_pid) do
+    case Map.get(removed_stages, set_ref) do
       nil ->
         removed_stages
 
@@ -450,7 +450,7 @@ defmodule ALF.Manager do
           GenStage.async_subscribe(pid, Keyword.put(opts, :to, component_pid))
         end)
 
-        Map.delete(removed_stages, stage_set_ref)
+        Map.delete(removed_stages, set_ref)
     end
   end
 

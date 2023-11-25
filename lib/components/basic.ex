@@ -5,7 +5,7 @@ defmodule ALF.Components.Basic do
     name: nil,
     pid: nil,
     pipeline_module: nil,
-    stage_set_ref: nil,
+    set_ref: nil,
     count: 1,
     number: 0,
     opts: [],
@@ -75,7 +75,7 @@ defmodule ALF.Components.Basic do
   end
 
   defp component_telemetry_data(state) do
-    Map.take(state, [:pid, :name, :number, :pipeline_module, :type, :stage_set_ref])
+    Map.take(state, [:pid, :name, :number, :pipeline_module, :type, :set_ref])
   end
 
   defp module_exist?(module) do

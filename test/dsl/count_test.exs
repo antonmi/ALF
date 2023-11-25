@@ -21,8 +21,8 @@ defmodule ALF.DSLCountTest do
     test "count" do
       [producer, composer1, composer2, consumer] = ManyComposers.components()
 
-      assert is_reference(composer1.stage_set_ref) and
-               composer1.stage_set_ref == composer2.stage_set_ref
+      assert is_reference(composer1.set_ref) and
+               composer1.set_ref == composer2.set_ref
 
       producer_subs = Enum.map(producer.subscribers, fn {{pid, _ref}, _} -> pid end)
       assert Enum.member?(producer_subs, composer1.pid)
@@ -68,8 +68,8 @@ defmodule ALF.DSLCountTest do
       switch1 = Enum.find(components, &(&1.type == :switch and &1.number == 0))
       switch2 = Enum.find(components, &(&1.type == :switch and &1.number == 1))
 
-      assert is_reference(switch1.stage_set_ref) and
-               switch1.stage_set_ref == switch2.stage_set_ref
+      assert is_reference(switch1.set_ref) and
+               switch1.set_ref == switch2.set_ref
 
       producer_subs = Enum.map(producer.subscribers, fn {{pid, _ref}, _} -> pid end)
       assert Enum.member?(producer_subs, switch1.pid)
@@ -129,8 +129,8 @@ defmodule ALF.DSLCountTest do
       goto_point1 = Enum.find(components, &(&1.type == :goto_point and &1.number == 0))
       goto_point2 = Enum.find(components, &(&1.type == :goto_point and &1.number == 1))
 
-      assert is_reference(goto_point1.stage_set_ref) and
-               goto_point1.stage_set_ref == goto_point2.stage_set_ref
+      assert is_reference(goto_point1.set_ref) and
+               goto_point1.set_ref == goto_point2.set_ref
 
       producer_subs = Enum.map(producer.subscribers, fn {{pid, _ref}, _} -> pid end)
       assert Enum.member?(producer_subs, goto_point1.pid)
@@ -138,7 +138,7 @@ defmodule ALF.DSLCountTest do
 
       goto1 = Enum.find(components, &(&1.type == :goto and &1.number == 0))
       goto2 = Enum.find(components, &(&1.type == :goto and &1.number == 1))
-      assert is_reference(goto1.stage_set_ref) and goto1.stage_set_ref == goto2.stage_set_ref
+      assert is_reference(goto1.set_ref) and goto1.set_ref == goto2.set_ref
 
       consumer = Enum.find(components, &(&1.type == :consumer))
       consumer_subs_to = Enum.map(consumer.subscribed_to, fn {{pid, _ref}, _} -> pid end)
@@ -169,8 +169,8 @@ defmodule ALF.DSLCountTest do
       dead_end1 = Enum.find(components, &(&1.type == :dead_end and &1.number == 0))
       dead_end2 = Enum.find(components, &(&1.type == :dead_end and &1.number == 1))
 
-      assert is_reference(dead_end1.stage_set_ref) and
-               dead_end2.stage_set_ref == dead_end2.stage_set_ref
+      assert is_reference(dead_end1.set_ref) and
+               dead_end2.set_ref == dead_end2.set_ref
 
       producer_subs = Enum.map(producer.subscribers, fn {{pid, _ref}, _} -> pid end)
       assert Enum.member?(producer_subs, dead_end1.pid)
@@ -216,8 +216,8 @@ defmodule ALF.DSLCountTest do
       plug1 = Enum.find(components, &(&1.type == :plug and &1.number == 0))
       plug2 = Enum.find(components, &(&1.type == :plug and &1.number == 1))
 
-      assert is_reference(plug1.stage_set_ref) and
-               plug1.stage_set_ref == plug2.stage_set_ref
+      assert is_reference(plug1.set_ref) and
+               plug1.set_ref == plug2.set_ref
 
       producer_subs = Enum.map(producer.subscribers, fn {{pid, _ref}, _} -> pid end)
       assert Enum.member?(producer_subs, plug1.pid)
@@ -229,8 +229,8 @@ defmodule ALF.DSLCountTest do
       unplug1 = Enum.find(components, &(&1.type == :unplug and &1.number == 0))
       unplug2 = Enum.find(components, &(&1.type == :unplug and &1.number == 1))
 
-      assert is_reference(unplug1.stage_set_ref) and
-               unplug1.stage_set_ref == unplug2.stage_set_ref
+      assert is_reference(unplug1.set_ref) and
+               unplug1.set_ref == unplug2.set_ref
 
       consumer = Enum.find(components, &(&1.type == :consumer))
       consumer_subs_to = Enum.map(consumer.subscribed_to, fn {{pid, _ref}, _} -> pid end)

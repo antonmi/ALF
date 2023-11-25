@@ -52,7 +52,7 @@ defmodule ALF.Builder do
     |> Enum.reduce({producers, final_stages}, fn stage_spec, {prev_stages, stages} ->
       case stage_spec do
         %Switch{branches: branches, count: count} = switch ->
-          stage_set_ref = make_ref()
+          set_ref = make_ref()
 
           {all_last_stages, switches} =
             Enum.reduce(0..(count - 1), {[], []}, fn number, {acc_last_stages, acc_switches} ->
@@ -61,7 +61,7 @@ defmodule ALF.Builder do
                 |> Map.merge(%{
                   pipeline_module: pipeline_module,
                   number: number,
-                  stage_set_ref: stage_set_ref,
+                  set_ref: set_ref,
                   telemetry: telemetry
                 })
                 |> start_stage(supervisor_pid, prev_stages)
@@ -93,7 +93,7 @@ defmodule ALF.Builder do
             clone
             |> Map.merge(%{
               pipeline_module: pipeline_module,
-              stage_set_ref: make_ref(),
+              set_ref: make_ref(),
               telemetry: telemetry
             })
             |> start_stage(supervisor_pid, prev_stages)
@@ -134,13 +134,13 @@ defmodule ALF.Builder do
   end
 
   defp build_component_set(component, supervisor_pid, prev_stages, pipeline_module, telemetry) do
-    stage_set_ref = make_ref()
+    set_ref = make_ref()
 
     Enum.map(0..(component.count - 1), fn number ->
       component
       |> Map.merge(%{
         pipeline_module: pipeline_module,
-        stage_set_ref: stage_set_ref,
+        set_ref: set_ref,
         number: number,
         telemetry: telemetry
       })
@@ -203,7 +203,7 @@ defmodule ALF.Builder do
   defp start_producer(supervisor_pid, pipeline_module, telemetry) do
     producer = %Producer{
       pipeline_module: pipeline_module,
-      stage_set_ref: make_ref(),
+      set_ref: make_ref(),
       telemetry: telemetry
     }
 

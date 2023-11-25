@@ -104,7 +104,7 @@ defmodule ALF.PerformanceStats do
   end
 
   defp component_key(%{type: :stage} = component) do
-    [component.pipeline_module, component.stage_set_ref, {component.name, component.number}]
+    [component.pipeline_module, component.set_ref, {component.name, component.number}]
   end
 
   defp component_key(%{type: :producer} = component) do
