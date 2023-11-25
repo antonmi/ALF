@@ -97,23 +97,23 @@ defmodule ALF.Sink.MixerTest do
     assert (orders ++ parcels) -- lines == []
   end
 
-  #  @tag timeout: 300_000
-  #  test "memory" do
-  #    add :observer, :runtime_tools, :wx to extra_applications
-  #    :observer.start()
-  #
-  #    source1 = FileSource.open("test/examples/parcels/input.csv")
-  #    source2 = FileSource.open("test/examples/parcels/input.csv")
-  #
-  #    stream1 = FileSource.stream(source1)
-  #    stream2 = FileSource.stream(source2)
-  #    sink = ALF.Sink.FileSink.open("test/examples/parcels/output.csv")
-  #
-  #    stream1
-  #    |> Mixer.new()
-  #    |> Mixer.add(stream2)
-  #    |> Mixer.stream()
-  #    |> ALF.Sink.FileSink.stream(sink)
-  #    |> Stream.run()
-  #  end
+#    @tag timeout: 300_000
+#    test "memory" do
+##      add :observer, :runtime_tools, :wx to extra_applications
+#      :observer.start()
+#
+#      source1 = FileSource.open("test_data/input.csv")
+#      source2 = FileSource.open("test_data/input.csv")
+#
+#      stream1 = FileSource.stream(source1)
+#      stream2 = FileSource.stream(source2)
+#      sink = ALF.Sink.FileSink.open("test_data/output.csv")
+#
+#      stream1
+#      |> Mixer.new()
+#      |> Mixer.add(stream2)
+#      |> Mixer.stream()
+#      |> ALF.Sink.FileSink.stream(sink)
+#      |> Stream.run()
+#    end
 end

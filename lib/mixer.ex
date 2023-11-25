@@ -29,7 +29,6 @@ defmodule ALF.Mixer do
   def add(%__MODULE__{pid: pid}, stream), do: GenServer.call(pid, {:add, stream})
 
   def stream(%__MODULE__{} = mixer) do
-    :ok = GenServer.call(mixer.pid, :running)
     :ok = GenServer.call(mixer.pid, :run_streams)
 
     Stream.resource(
@@ -86,10 +85,6 @@ defmodule ALF.Mixer do
   def handle_call(:run_streams, _from, %__MODULE__{} = mixer) do
     run_streams(mixer.streams, mixer.pid, mixer.chunk_every)
 
-    {:reply, :ok, %{mixer | running: true}}
-  end
-
-  def handle_call(:running, _from, %__MODULE__{} = mixer) do
     {:reply, :ok, %{mixer | running: true}}
   end
 

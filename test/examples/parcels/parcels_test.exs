@@ -162,7 +162,9 @@ defmodule ALF.Examples.Parcels.ParcelsTest do
   alias ALF.Examples.Parcels.OrderingPipeline
   alias ALF.Examples.Parcels.Pipeline
   alias ALF.Source.FileSource
+  alias ALF.Sink.FileSink
   alias ALF.Mixer
+  alias ALF.Splitter
 
   def expected_results do
     [
@@ -251,9 +253,23 @@ defmodule ALF.Examples.Parcels.ParcelsTest do
   defmodule ComposedPipeline do
     use ALF.DSL
 
+    @partitions_count 3
+
+    main_stages = stages_from(OrderingPipeline) ++ stages_from(Pipeline)
+
     @components stages_from(BuildPipeline) ++
-                  stages_from(OrderingPipeline) ++
-                  stages_from(Pipeline)
+                  [
+                    switch(:route_event,
+                      branches:
+                        Enum.reduce(0..(@partitions_count - 1), %{}, fn i, acc ->
+                          Map.put(acc, i, main_stages)
+                        end)
+                    )
+                  ]
+
+    def route_event(event, _) do
+      rem(event[:order_number], @partitions_count)
+    end
   end
 
   describe "with ComposedPipeline" do
@@ -271,6 +287,72 @@ defmodule ALF.Examples.Parcels.ParcelsTest do
         |> Enum.to_list()
 
       assert results == expected_results()
+    end
+  end
+
+  defmodule EventToStringPipeline do
+    use ALF.DSL
+
+    @components [
+      stage(:to_string)
+    ]
+
+    def to_string(event, _) do
+      "#{event.type},#{event.occurred_at},#{event.order_number}"
+    end
+  end
+
+  describe "split and save to file" do
+    setup do
+      ComposedPipeline.start()
+      EventToStringPipeline.start()
+
+      on_exit(fn ->
+        ComposedPipeline.stop()
+        EventToStringPipeline.stop()
+      end)
+    end
+
+    test "save to files", %{stream1: stream1, stream2: stream2} do
+      partitions = [
+        fn event -> event[:type] == "ALL_PARCELS_SHIPPED" end,
+        fn event -> event[:type] == "THRESHOLD_EXCEEDED" end
+      ]
+
+      sink1 = FileSink.open("test/examples/parcels/all_parcels_shipped.csv")
+      sink2 = FileSink.open("test/examples/parcels/threshold_exceeded.csv")
+
+      results =
+        [stream1, stream2]
+        |> Mixer.new()
+        |> Mixer.stream()
+        |> ComposedPipeline.stream()
+        |> Splitter.new(partitions)
+        |> Splitter.stream()
+        |> Enum.zip([sink1, sink2])
+        |> Enum.map(fn {stream, sink} ->
+          Task.async(fn ->
+            stream
+            |> EventToStringPipeline.stream()
+            |> FileSink.stream(sink)
+            |> Enum.to_list()
+          end)
+        end)
+        |> Enum.map(&Task.await/1)
+
+      assert results == [
+               ["ALL_PARCELS_SHIPPED,2017-04-21 08:00:00.000Z,111"],
+               [
+                 "THRESHOLD_EXCEEDED,2017-04-20 09:00:00.000Z,222",
+                 "THRESHOLD_EXCEEDED,2017-04-21 09:00:00.000Z,333"
+               ]
+             ]
+
+      assert File.read!("test/examples/parcels/all_parcels_shipped.csv") ==
+               "ALL_PARCELS_SHIPPED,2017-04-21 08:00:00.000Z,111\n"
+
+      assert File.read!("test/examples/parcels/threshold_exceeded.csv") ==
+               "THRESHOLD_EXCEEDED,2017-04-20 09:00:00.000Z,222\nTHRESHOLD_EXCEEDED,2017-04-21 09:00:00.000Z,333\n"
     end
   end
 

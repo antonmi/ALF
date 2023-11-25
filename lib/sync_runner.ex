@@ -64,13 +64,13 @@ defmodule ALF.SyncRunner do
 
       %Switch{} = switch ->
         case switch.__struct__.sync_process(ip, switch) do
-          partition when is_atom(partition) ->
+          %ErrorIP{} = error_ip ->
+            error_ip
+
+          partition ->
             [first | _] = Map.fetch!(switch.branches, partition)
             {sync_path, true} = path(pipeline, first.pid)
             %{ip | sync_path: sync_path}
-
-          error_ip ->
-            error_ip
         end
 
       %Goto{} = goto ->
