@@ -8,6 +8,7 @@ defmodule ALF.Components.Composer do
                 function: nil,
                 source_code: nil,
                 acc: nil,
+                stream_accs: %{},
                 collected_ips: [],
                 new_collected_ips: %{}
               ]
@@ -63,8 +64,9 @@ defmodule ALF.Components.Composer do
 
   defp process_ip(current_ip, state) do
     history = history(current_ip, state)
+    acc = Map.get(state.stream_accs, current_ip.stream_ref, state.acc)
 
-    case call_function(state.module, state.function, current_ip.event, state.acc, state.opts) do
+    case call_function(state.module, state.function, current_ip.event, acc, state.opts) do
       {:ok, {events, acc}} when is_list(events) ->
         ips =
           Enum.map(events, fn event ->
@@ -74,7 +76,8 @@ defmodule ALF.Components.Composer do
           end)
 
         send_result(current_ip, :destroyed)
-        {ips, %{state | acc: acc}}
+        stream_accs = Map.put(state.stream_accs, current_ip.stream_ref, acc)
+        {ips, %{state | stream_accs: stream_accs}}
 
       {:error, error, stacktrace} ->
         send_error_result(current_ip, error, stacktrace, state)
