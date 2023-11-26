@@ -33,7 +33,9 @@ defmodule ALF.Source.FileSource do
       fn -> source end,
       fn source ->
         case call(source) do
-          {:ok, lines} -> {lines, source}
+          {:ok, lines} ->
+            {lines, source}
+
           {:error, :eof} ->
             case source.wait do
               true -> {[], source}

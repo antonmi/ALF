@@ -1,2 +1,2 @@
 TODOs:
-- delete Decomposer, Recomposer, and Clone. Cleanup the ip and ip_error structs
+- Pipeline.info. info component or improve composer. info message per stream?
