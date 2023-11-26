@@ -30,11 +30,11 @@ defmodule ALF.Examples.Parcels.OrderingPipeline do
   use ALF.DSL
 
   @components [
-    composer(:check_ordering, memo: MapSet.new()),
-    composer(:accumulate_waiting, memo: %{})
+    composer(:check_order, memo: MapSet.new()),
+    composer(:wait, memo: %{})
   ]
 
-  def check_ordering(event, order_numbers, _) do
+  def check_order(event, order_numbers, _) do
     order_number = event[:order_number]
 
     case event[:type] do
@@ -50,7 +50,7 @@ defmodule ALF.Examples.Parcels.OrderingPipeline do
     end
   end
 
-  def accumulate_waiting(event, waiting, _) do
+  def wait(event, waiting, _) do
     case event[:type] do
       "ORDER_CREATED" ->
         order_number = event[:order_number]
@@ -72,7 +72,7 @@ defmodule ALF.Examples.Parcels.Pipeline do
 
   @components [
     composer(:check_expired, memo: []),
-    composer(:check_parcels_count, memo: %{})
+    composer(:check_count, memo: %{})
   ]
 
   @seconds_in_week 3600 * 24 * 7
@@ -100,7 +100,7 @@ defmodule ALF.Examples.Parcels.Pipeline do
     end
   end
 
-  def check_parcels_count(event, memo, _) do
+  def check_count(event, memo, _) do
     order_number = event[:order_number]
 
     case event[:type] do

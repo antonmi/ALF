@@ -6,7 +6,7 @@ defmodule ALF.Source.FileSourceTest do
   test "FileSource" do
     path = "test/source/orders.csv"
     source1 = FileSource.open(path, chunk_size: 1)
-    source2 = FileSource.open(path, chunk_size: 1)
+    source2 = FileSource.open(path, chunk_size: 5)
 
     lines1 =
       source1

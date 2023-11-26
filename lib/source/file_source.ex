@@ -3,7 +3,7 @@ defmodule ALF.Source.FileSource do
 
   use GenServer
 
-  defstruct [:path, :pid, :file, :rest, :chunk_size, :line_sep]
+  defstruct [:path, :pid, :file, :rest, :chunk_size, :line_sep, :wait]
 
   @chunk_size 10_000
   @line_sep "\n"
@@ -13,7 +13,8 @@ defmodule ALF.Source.FileSource do
     state = %__MODULE__{
       path: path,
       chunk_size: Keyword.get(opts, :chunk_size, @chunk_size),
-      line_sep: Keyword.get(opts, :line_sep, @line_sep)
+      line_sep: Keyword.get(opts, :line_sep, @line_sep),
+      wait: Keyword.get(opts, :wait, false)
     }
 
     {:ok, pid} = GenServer.start_link(__MODULE__, state)
@@ -33,7 +34,11 @@ defmodule ALF.Source.FileSource do
       fn source ->
         case call(source) do
           {:ok, lines} -> {lines, source}
-          {:error, :eof} -> {:halt, source}
+          {:error, :eof} ->
+            case source.wait do
+              true -> {[], source}
+              false -> {:halt, source}
+            end
         end
       end,
       fn source -> File.close(source.path) end
@@ -46,7 +51,6 @@ defmodule ALF.Source.FileSource do
     GenServer.call(pid, :stop)
   end
 
-  @impl true
   def call(%__MODULE__{pid: pid}), do: GenServer.call(pid, :call)
 
   def __state__(pid) when is_pid(pid), do: GenServer.call(pid, :__state__)

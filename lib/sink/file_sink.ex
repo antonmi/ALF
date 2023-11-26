@@ -43,7 +43,6 @@ defmodule ALF.Sink.FileSink do
     GenServer.call(pid, :stop)
   end
 
-  @impl true
   def call(%__MODULE__{pid: pid}, data), do: GenServer.call(pid, {:call, data})
 
   def __state__(pid) when is_pid(pid), do: GenServer.call(pid, :__state__)
