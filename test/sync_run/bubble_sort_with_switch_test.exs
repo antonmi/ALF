@@ -9,6 +9,7 @@ defmodule ALF.SyncRun.BubbleSortWithSwitch.Pipeline do
     stage(:find_max),
     stage(:update_new_list, count: 10),
     stage(:rebuild_list, count: 10),
+    clone(:logging, to: [stage(:report_step), dead_end(:after_report)]),
     switch(:ready_or_not,
       branches: %{
         ready: [stage(:format_output)],
@@ -31,6 +32,11 @@ defmodule ALF.SyncRun.BubbleSortWithSwitch.Pipeline do
 
   def rebuild_list(struct, _) do
     %{struct | list: struct.list -- [struct.max]}
+  end
+
+  def report_step(struct, _) do
+    #    IO.inspect("Step: #{inspect struct}", charlists: :as_lists)
+    struct
   end
 
   def format_output(struct, _) do

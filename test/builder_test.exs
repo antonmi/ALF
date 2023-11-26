@@ -2,7 +2,7 @@ defmodule ALF.BuilderTest do
   use ExUnit.Case, async: true
 
   alias ALF.Builder
-  alias ALF.Components.{Stage, Switch}
+  alias ALF.Components.{Stage, Switch, Clone, DeadEnd}
 
   setup do
     sup_pid = Process.whereis(ALF.DynamicSupervisor)
@@ -34,6 +34,43 @@ defmodule ALF.BuilderTest do
           },
           function: :cond_function
         }
+      ]
+    end
+  end
+
+  defmodule PipelineWithClone do
+    def alf_components do
+      [
+        %Clone{
+          name: :clone,
+          to: [%Stage{name: :stage1}]
+        },
+        %Stage{name: :stage2}
+      ]
+    end
+  end
+
+  defmodule PipelineWithCloneAndDeadEnd do
+    def alf_components do
+      [
+        %Clone{
+          name: :clone,
+          to: [%Stage{name: :stage1}, %DeadEnd{name: :dead_end}]
+        },
+        %Stage{name: :stage2}
+      ]
+    end
+  end
+
+  defmodule PipelineWithCloneAndDeadEndReversed do
+    def alf_components do
+      [
+        %Clone{
+          name: :clone,
+          to: [%Stage{name: :stage1}]
+        },
+        %Stage{name: :stage2},
+        %DeadEnd{name: :dead_end}
       ]
     end
   end
@@ -85,6 +122,63 @@ defmodule ALF.BuilderTest do
     end
   end
 
+  describe "clone" do
+    test "build pipeline with clone", %{sup_pid: sup_pid} do
+      {:ok, pipeline} = Builder.build(PipelineWithClone, sup_pid, :pipeline)
+
+      [clone | [stage2]] = pipeline.components
+
+      assert %Clone{
+               name: :clone,
+               pid: clone_pid,
+               to: [to_stage]
+             } = clone
+
+      assert is_pid(clone_pid)
+
+      assert %Stage{name: :stage1} = to_stage
+      assert %Stage{name: :stage2} = stage2
+    end
+
+    test "build pipeline with clone and dead_end", %{sup_pid: sup_pid} do
+      {:ok, pipeline} = Builder.build(PipelineWithCloneAndDeadEnd, sup_pid, :pipeline)
+
+      [clone | [stage2]] = pipeline.components
+
+      assert %Clone{
+               name: :clone,
+               pid: clone_pid,
+               to: [to_stage, dead_end]
+             } = clone
+
+      assert is_pid(clone_pid)
+
+      assert %Stage{name: :stage1} = to_stage
+      assert %Stage{name: :stage2} = stage2
+
+      assert %DeadEnd{} = dead_end
+    end
+
+    test "build pipeline with clone and dead_end, reversed", %{sup_pid: sup_pid} do
+      {:ok, pipeline} = Builder.build(PipelineWithCloneAndDeadEndReversed, sup_pid, :pipeline)
+
+      [clone | [stage2, dead_end]] = pipeline.components
+
+      assert %Clone{
+               name: :clone,
+               pid: clone_pid,
+               to: [to_stage]
+             } = clone
+
+      assert is_pid(clone_pid)
+
+      assert %Stage{name: :stage1} = to_stage
+      assert %Stage{name: :stage2} = stage2
+
+      assert %DeadEnd{} = dead_end
+    end
+  end
+
   describe "build_sync" do
     test "build with spec_simple_sync" do
       [producer, stage, consumer] = Builder.build_sync(SimplePipeline, true)
@@ -118,6 +212,29 @@ defmodule ALF.BuilderTest do
       assert stage2.subscribed_to == [{switch.pid, :sync}]
 
       assert consumer.subscribed_to == [{stage1.pid, :sync}, {stage2.pid, :sync}]
+    end
+
+    test "build with spec_with_clone" do
+      [producer, clone, stage, consumer] = Builder.build_sync(PipelineWithClone, true)
+
+      assert clone.telemetry
+      [to_stage] = clone.to
+      assert clone.subscribed_to == [{producer.pid, :sync}]
+
+      assert to_stage.name == :stage1
+      assert to_stage.pid
+      assert to_stage.subscribed_to == [{clone.pid, :sync}]
+
+      assert stage.name == :stage2
+      assert stage.pid
+      assert stage.subscribed_to == [{clone.pid, :sync}]
+
+      assert consumer.subscribed_to == [{stage.pid, :sync}]
+    end
+
+    test "spec_with_clone_and_dead_end" do
+      [_, clone, _stage, _] = Builder.build_sync(PipelineWithCloneAndDeadEnd, true)
+      assert [%Stage{}, %DeadEnd{}] = clone.to
     end
   end
 end

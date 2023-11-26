@@ -110,7 +110,7 @@ defmodule ALF.Components.Basic do
         end
       end
 
-      @type result :: :composed | :destroyed
+      @type result :: :cloned | :destroyed | :composed
 
       @spec send_result(IP.t() | ErrorIP.t(), result | IP.t() | ErrorIP.t()) ::
               IP.t() | ErrorIP.t()

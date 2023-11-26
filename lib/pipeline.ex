@@ -11,7 +11,7 @@ defmodule ALF.Pipeline do
             producer: nil,
             consumer: nil
 
-  alias ALF.Components.Switch
+  alias ALF.Components.{Switch, Clone}
 
   def stages_to_list(components) do
     do_stages_to_list(components, [])
@@ -38,6 +38,9 @@ defmodule ALF.Pipeline do
               do_find_component_by_pid(partition_comps, pid)
             end)
 
+          %Clone{to: to_components} ->
+            do_find_component_by_pid(to_components, pid)
+
           _component ->
             nil
         end
@@ -54,6 +57,9 @@ defmodule ALF.Pipeline do
               Enum.reduce(branches, [], fn {_key, partition_stages}, inner_found ->
                 inner_found ++ do_stages_to_list(partition_stages, [])
               end)
+
+          %Clone{to: pipe_stages} = stage ->
+            [stage] ++ do_stages_to_list(pipe_stages, [])
 
           stage ->
             [stage]

@@ -9,6 +9,7 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
     stage(:find_max),
     stage(:update_new_list, count: 3),
     stage(:rebuild_list, count: 3),
+    clone(:logging, to: [stage(:report_step), dead_end(:after_report)]),
     goto(:goto_if, to: :goto_point),
     stage(:format_output)
   ]
@@ -31,6 +32,11 @@ defmodule ALF.Examples.BubbleSort.Pipeline do
 
   def goto_if(struct, _) do
     !Enum.empty?(struct.list)
+  end
+
+  def report_step(struct, _) do
+    # IO.inspect("Step: #{inspect struct}", charlists: :as_lists)
+    struct
   end
 
   def format_output(struct, _) do

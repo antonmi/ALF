@@ -5,6 +5,7 @@ defmodule ALF.Builder do
     Producer,
     DeadEnd,
     Switch,
+    Clone,
     Consumer
   }
 
@@ -87,6 +88,30 @@ defmodule ALF.Builder do
 
           {all_last_stages, stages ++ switches}
 
+        %Clone{to: pipe_stages} = clone ->
+          clone =
+            clone
+            |> Map.merge(%{
+              pipeline_module: pipeline_module,
+              set_ref: make_ref(),
+              telemetry: telemetry
+            })
+            |> start_stage(supervisor_pid, prev_stages)
+
+          {last_stages, final_stages} =
+            do_build_pipeline(
+              pipeline_module,
+              pipe_stages,
+              [clone],
+              supervisor_pid,
+              [],
+              telemetry
+            )
+
+          clone = %{clone | to: final_stages}
+
+          {last_stages ++ [clone], stages ++ [clone]}
+
         %DeadEnd{} = dead_end ->
           dead_ends =
             build_component_set(dead_end, supervisor_pid, prev_stages, pipeline_module, telemetry)
@@ -160,6 +185,12 @@ defmodule ALF.Builder do
             end)
 
           {stages ++ [switch], last_stage_refs}
+
+        %Clone{to: pipe_stages} = clone ->
+          clone = clone.__struct__.init_sync(clone, telemetry)
+          {to_stages, _last_ref} = do_build_sync(pipe_stages, [clone.pid], telemetry)
+          clone = %{clone | to: to_stages, subscribed_to: subscribed_to}
+          {stages ++ [clone], [clone.pid]}
 
         component ->
           component = component.__struct__.init_sync(component, telemetry)
