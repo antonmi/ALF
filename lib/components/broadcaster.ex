@@ -1,16 +1,16 @@
-defmodule ALF.Components.Clone do
+defmodule ALF.Components.Broadcaster do
   use ALF.Components.Basic
 
   defstruct Basic.common_attributes() ++
               [
-                type: :clone,
+                type: :broadcaster,
                 to: []
               ]
 
   alias ALF.DSLError
 
-  @dsl_options [:to]
-  @dsl_requited_options [:to]
+  @dsl_options [:count]
+  @dsl_requited_options []
 
   @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
@@ -66,16 +66,15 @@ defmodule ALF.Components.Clone do
   end
 
   defp do_sync_process(ip, state) do
-    [
-      %{ip | history: history(ip, state)},
-      %{ip | history: history(ip, state)}
-    ]
+    [%{ip | history: history(ip, state)}]
   end
 
   defp process_ip(ip, state) do
-    send_result(ip, :cloned)
+    Enum.each(2..length(state.subscribers), fn _i ->
+      send_result(ip, :composed)
+    end)
 
-    %{ip | history: history(ip, state)}
+    %{ip | history: history(ip, state), composed: true}
   end
 
   def validate_options(name, options) do
@@ -83,18 +82,18 @@ defmodule ALF.Components.Clone do
     wrong_options = Keyword.keys(options) -- @dsl_options
 
     unless is_atom(name) do
-      raise DSLError, "Clone name must be an atom: #{inspect(name)}"
+      raise DSLError, "broadcaster name must be an atom: #{inspect(name)}"
     end
 
     if Enum.any?(required_left) do
       raise DSLError,
-            "Not all the required options are given for the #{name} clone. " <>
+            "Not all the required options are given for the #{name} broadcaster. " <>
               "You forgot specifying #{inspect(required_left)}"
     end
 
     if Enum.any?(wrong_options) do
       raise DSLError,
-            "Wrong options for the #{name} clone: #{inspect(wrong_options)}. " <>
+            "Wrong options for the #{name} broadcaster: #{inspect(wrong_options)}. " <>
               "Available options are #{inspect(@dsl_options)}"
     end
   end

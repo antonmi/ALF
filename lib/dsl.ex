@@ -3,7 +3,7 @@ defmodule ALF.DSL do
     Basic,
     Stage,
     Switch,
-    Clone,
+    Broadcaster,
     DeadEnd,
     GotoPoint,
     Goto,
@@ -41,14 +41,16 @@ defmodule ALF.DSL do
     end
   end
 
-  defmacro clone(name, options) do
+  defmacro broadcaster(name, options \\ []) do
     count = options[:count] || 1
-    stages = options[:to]
 
     quote do
-      Clone.validate_options(unquote(name), unquote(options))
-      clone = Basic.build_component(Clone, unquote(name), unquote(count), %{}, __MODULE__)
-      %{clone | to: unquote(stages)}
+      Broadcaster.validate_options(unquote(name), unquote(options))
+
+      broadcaster =
+        Basic.build_component(Broadcaster, unquote(name), unquote(count), %{}, __MODULE__)
+
+      %{broadcaster | count: unquote(count)}
     end
   end
 

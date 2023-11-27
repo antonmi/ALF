@@ -1,17 +1,16 @@
-defmodule ALF.Components.CloneTest do
+defmodule ALF.Components.BroadcasterTest do
   use ExUnit.Case, async: true
   alias ALF.{IP, TestProducer, TestConsumer}
-  alias ALF.Components.Clone
+  alias ALF.Components.Broadcaster
 
   setup do
     {:ok, producer_pid} = TestProducer.start_link([])
     %{producer_pid: producer_pid}
   end
 
-  def build_clone() do
-    %Clone{
-      name: :clone,
-      to: [],
+  def build_broadcaster() do
+    %Broadcaster{
+      name: :broadcaster,
       pipeline_module: __MODULE__
     }
   end
@@ -27,7 +26,7 @@ defmodule ALF.Components.CloneTest do
   end
 
   setup %{producer_pid: producer_pid} do
-    {:ok, pid} = Clone.start_link(build_clone())
+    {:ok, pid} = Broadcaster.start_link(build_broadcaster())
 
     GenStage.sync_subscribe(pid, to: producer_pid, max_demand: 1, cancel: :temporary)
 
@@ -35,7 +34,7 @@ defmodule ALF.Components.CloneTest do
     %{pid: pid, consumer1_pid: consumer1_pid, consumer2_pid: consumer2_pid}
   end
 
-  test "test clone", %{
+  test "test broadcaster", %{
     producer_pid: producer_pid,
     consumer1_pid: consumer1_pid,
     consumer2_pid: consumer2_pid

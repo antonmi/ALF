@@ -279,12 +279,15 @@ defmodule MySwitchModule do
 end
 ```
 
-### Clone
+### broadcaster
 
-Clones an IP, useful for running aspects.
+Broadcaster an IP to all the stages connected.
 
 ```elixir
-clone(:my_clone, to: [stage(:foo), dead_end(:dead_end)])
+[
+  broadcaster(:my_broadcast),
+  stage(:foo, count: 5)
+]
 ```
 
 ### Goto
@@ -325,7 +328,7 @@ done(:condition_fun)
 
 ### DeadEnd
 
-Event won't propagate further. It's used alongside with the `Clone` component to avoid duplicate IPs in output
+Event won't propagate further.
 
 ```elixir
 dead_end(:dead_end)

@@ -1,2 +1,3 @@
 TODOs:
-- Pipeline.info. info component or improve composer. info message per stream?
+- mix_streams: true option for Pipeline
+- FileSource batch_size option

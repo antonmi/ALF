@@ -9,7 +9,6 @@ defmodule ALF.SyncRun.BubbleSort.Pipeline do
     stage(:find_max),
     stage(:update_new_list, count: 10),
     stage(:rebuild_list, count: 10),
-    clone(:logging, to: [stage(:report_step), dead_end(:after_report)]),
     goto(:goto_if, to: :goto_point),
     stage(:format_output)
   ]
@@ -32,10 +31,6 @@ defmodule ALF.SyncRun.BubbleSort.Pipeline do
 
   def goto_if(struct, _) do
     !Enum.empty?(struct.list)
-  end
-
-  def report_step(struct, _) do
-    struct
   end
 
   def format_output(struct, _) do
