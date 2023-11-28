@@ -1,3 +1,4 @@
 TODOs:
-- mix_streams: true option for Pipeline
-- FileSource batch_size option
+- Source and FileSource responsibility. Move general functions to Source. 
+  source = FileSource.new()
+  Source.stream(source)  

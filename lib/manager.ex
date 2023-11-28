@@ -198,7 +198,8 @@ defmodule ALF.Manager do
   def stream(stream, pipeline_module, opts \\ []) do
     opts = [
       debug: Keyword.get(opts, :debug, false),
-      timeout: Keyword.get(opts, :timeout, @default_timeout)
+      timeout: Keyword.get(opts, :timeout, @default_timeout),
+      stream_ref: Keyword.get(opts, :stream_ref, make_ref())
     ]
 
     case check_if_ready(pipeline_module) do
@@ -211,7 +212,7 @@ defmodule ALF.Manager do
   end
 
   defp do_stream(pipeline_module, producer_name, stream, opts) do
-    stream_ref = make_ref()
+    stream_ref = opts[:stream_ref]
     timeout = opts[:timeout]
 
     stream
