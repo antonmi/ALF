@@ -3,16 +3,18 @@ defmodule ALF.Source.FileSource do
 
   use GenServer
 
-  defstruct [:path, :pid, :file, :rest, :chunk_size, :line_sep, :wait]
+  defstruct [:path, :pid, :file, :rest, :chars, :batch_size, :line_sep, :wait]
 
-  @chunk_size 10_000
+  @batch_size false
+  @chars 10_000
   @line_sep "\n"
 
   @impl true
   def open(path, opts \\ []) do
     state = %__MODULE__{
       path: path,
-      chunk_size: Keyword.get(opts, :chunk_size, @chunk_size),
+      chars: Keyword.get(opts, :chars, @chars),
+      batch_size: Keyword.get(opts, :batch_size, @batch_size),
       line_sep: Keyword.get(opts, :line_sep, @line_sep),
       wait: Keyword.get(opts, :wait, false)
     }
@@ -59,16 +61,30 @@ defmodule ALF.Source.FileSource do
 
   @impl true
   def handle_call(:call, _from, %__MODULE__{} = state) do
-    case read_lines(state.file, state.chunk_size, state.line_sep) do
+    case read_lines(state.file, state.chars, state.line_sep) do
       {:ok, {[head | tail], last}} ->
-        {:reply, {:ok, [state.rest <> head | tail]}, %{state | rest: last}}
+        lines = [state.rest <> head | tail]
+
+        events =
+          case state.batch_size do
+            false -> lines
+            size -> Enum.chunk_every(lines, size)
+          end
+
+        {:reply, {:ok, events}, %{state | rest: last}}
 
       {:ok, {[], last}} ->
         {:reply, {:ok, []}, %{state | rest: state.rest <> last}}
 
       {:error, :eof} ->
         if String.length(state.rest) > 0 do
-          {:reply, {:ok, [state.rest]}, %{state | rest: ""}}
+          events =
+            case state.batch_size do
+              false -> [state.rest]
+              _ -> [[state.rest]]
+            end
+
+          {:reply, {:ok, events}, %{state | rest: ""}}
         else
           {:reply, {:error, :eof}, state}
         end
@@ -79,8 +95,8 @@ defmodule ALF.Source.FileSource do
 
   def handle_call(:__state__, _from, state), do: {:reply, state, state}
 
-  defp read_lines(file, chunk_size, line_sep) do
-    case IO.read(file, chunk_size) do
+  defp read_lines(file, chars, line_sep) do
+    case IO.read(file, chars) do
       data when is_binary(data) ->
         [last | lines] = Enum.reverse(String.split(data, line_sep))
         {:ok, {Enum.reverse(lines), last}}

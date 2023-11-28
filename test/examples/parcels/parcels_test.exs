@@ -187,8 +187,8 @@ defmodule ALF.Examples.Parcels.ParcelsTest do
   end
 
   setup do
-    source1 = FileSource.open("test/examples/parcels/parcels.csv", chunk_size: 10)
-    source2 = FileSource.open("test/examples/parcels/orders.csv", chunk_size: 10)
+    source1 = FileSource.open("test/examples/parcels/parcels.csv", chars: 10)
+    source2 = FileSource.open("test/examples/parcels/orders.csv", chars: 10)
 
     stream1 = FileSource.stream(source1)
     stream2 = FileSource.stream(source2)
@@ -339,6 +339,41 @@ defmodule ALF.Examples.Parcels.ParcelsTest do
           end)
         end)
         |> Enum.map(&Task.await/1)
+
+      #      @components [
+      #        [
+      #          source(:parcels,
+      #            type: FileSource,
+      #            path: "test/examples/parcels/parcels.csv",
+      #            chars: 10
+      #          ),
+      #          source(:orders,
+      #            type: FileSource,
+      #            path: "test/examples/parcels/orders.csv",
+      #            chars: 10
+      #          )
+      #        ],
+      #        mixer(:my_mixer),
+      #        pipeline(ComposedPipeline),
+      #        splitter(:my_splitter,
+      #          partitions: %{
+      #            fn event -> event[:type] == "ALL_PARCELS_SHIPPED" end => [
+      #              pipeline(EventToStringPipeline),
+      #              sink(:all_parcels_shipped,
+      #                type: FileSink,
+      #                path: "test/examples/parcels/all_parcels_shipped.csv"
+      #              )
+      #            ],
+      #            fn event -> event[:type] == "THRESHOLD_EXCEEDED" end => [
+      #              pipeline(EventToStringPipeline),
+      #              sink(:threshold_exceeded,
+      #                type: FileSink,
+      #                path: "test/examples/parcels/threshold_exceeded.csv"
+      #              )
+      #            ]
+      #          }
+      #        )
+      #      ]
 
       assert results == [
                ["ALL_PARCELS_SHIPPED,2017-04-21 08:00:00.000Z,111"],
