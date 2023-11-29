@@ -43,7 +43,7 @@ Just add `:alf` as dependency to your `mix.exs` file.
 ```elixir
   defp deps do
     [
-      {:alf, "~> 0.8"}
+      {:alf, "~> 0.10"}
     ]
   end
 ```
