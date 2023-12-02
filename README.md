@@ -341,7 +341,7 @@ See the [telegram_test.exs](https://github.com/antonmi/ALF/tree/main/test/exampl
 
 ## Implicit components
 
-<img src="images/implicit_components.png" alt="Implicit components" width="250"/>
+<img src="images/implicit_components.png" alt="Implicit components" width="5000"/>
 
 ### Producer and Consumer
 
