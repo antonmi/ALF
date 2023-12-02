@@ -212,7 +212,7 @@ Check `@dsl_options` in [lib/components](https://github.com/antonmi/ALF/tree/mai
 
 ## Components overview
 
-![alt text](images/components.png "ALF components")
+<img src="images/components.png" alt="ALF components" width="500"/>
 
 ### Stage
 
@@ -341,7 +341,7 @@ See the [telegram_test.exs](https://github.com/antonmi/ALF/tree/main/test/exampl
 
 ## Implicit components
 
-![alt text](images/implicit_components.png "Implicit components")
+<img src="images/implicit_components.png" alt="Implicit components" width="250"/>
 
 ### Producer and Consumer
 
