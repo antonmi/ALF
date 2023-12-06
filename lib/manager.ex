@@ -24,6 +24,7 @@ defmodule ALF.Manager do
 
   @available_options [:telemetry, :sync]
   @default_timeout Application.compile_env(:alf, :default_timeout, 10_000)
+  @wait_tasks_count 100
 
   @spec start_link(t()) :: GenServer.on_start()
   def start_link(%__MODULE__{} = state) do
@@ -227,12 +228,13 @@ defmodule ALF.Manager do
           {ips, nil}
 
         event, nil ->
-          ips =
+          {ips, tasks_count} =
             GenServer.call(
               pipeline_module,
               {:process_event, event, pipeline_module, producer_name, opts}
             )
 
+          maybe_wait(tasks_count)
           {ips, nil}
       end
     )
@@ -387,15 +389,25 @@ defmodule ALF.Manager do
       |> Map.get(stream_ref, MapSet.new())
       |> MapSet.put(task.ref)
 
+    tasks = Map.put(state.tasks, stream_ref, tasks_set)
     ips = Map.get(state.ips, stream_ref, [])
 
     state = %{
       state
-      | tasks: Map.put(state.tasks, stream_ref, tasks_set),
+      | tasks: tasks,
         ips: Map.put(state.ips, stream_ref, [])
     }
 
-    {:reply, ips, state}
+    tasks_count = Enum.reduce(Map.values(tasks), 0, &(&2 + MapSet.size(&1)))
+    {:reply, {ips, tasks_count}, state}
+  end
+
+  defp maybe_wait(tasks_count) do
+    if tasks_count > 2 * @wait_tasks_count do
+      div = div(tasks_count, @wait_tasks_count)
+      to_sleep = trunc(:math.pow(2, div))
+      Process.sleep(to_sleep)
+    end
   end
 
   def handle_call({:done?, stream_ref}, _from, state) do
