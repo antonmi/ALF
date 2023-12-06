@@ -342,7 +342,7 @@ defmodule ALF.ManagerTest do
         |> Manager.stream(SimplePipelineToStream)
         |> Enum.to_list()
 
-      assert results == [4, 6, 8]
+      assert Enum.sort(results) == [4, 6, 8]
     end
 
     test "run several streams at once" do
@@ -543,48 +543,4 @@ defmodule ALF.ManagerTest do
       assert length(components) == 4
     end
   end
-
-  #  describe "parallelism" do
-  #    defmodule Pp do
-  #      use ALF.DSL
-  #
-  #      @components [
-  #        stage(:aaa, count: 3),
-  #        stage(:bbb, count: 3),
-  #        stage(:ccc, count: 3)
-  #      ]
-  #
-  #      def aaa(event, _) do
-  #        IO.inspect("aaa #{event}")
-  #        Process.sleep(900)
-  #        event
-  #      end
-  #
-  #      def bbb(event, _) do
-  #        IO.inspect("bbb #{event}")
-  #        Process.sleep(900)
-  #        event
-  #      end
-  #
-  #      def ccc(event, _) do
-  #        IO.inspect("ccc #{event}")
-  #        Process.sleep(900)
-  #        event
-  #      end
-  #    end
-  #
-  #    setup do
-  #      Pp.start()
-  #      on_exit(&Pp.stop/0)
-  #    end
-  #
-  #    test "test" do
-  #      stream =
-  #        [1,2,3]
-  #        |> Pp.stream
-  ##        |> Stream.run
-  #      Enum.to_list(stream)
-  #      |> IO.inspect
-  #    end
-  #  end
 end

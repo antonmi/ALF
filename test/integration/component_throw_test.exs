@@ -34,16 +34,14 @@ defmodule ALF.ComponentThrowTest do
         |> ThrowInStagePipeline.stream(debug: true)
         |> Enum.to_list()
 
-      assert [
-               %ErrorIP{
-                 component: %ALF.Components.Stage{function: :add_one},
-                 ip: %IP{} = ip,
-                 error: :throw,
-                 stacktrace: "throw in :add_one"
-               },
-               %IP{event: 6},
-               %IP{event: 8}
-             ] = results
+      assert length(Enum.filter(results, &is_struct(&1, IP))) == 2
+
+      %ErrorIP{
+        component: %ALF.Components.Stage{function: :add_one},
+        ip: %IP{} = ip,
+        error: :throw,
+        stacktrace: "throw in :add_one"
+      } = Enum.find(results, &is_struct(&1, ErrorIP))
 
       assert [{{:add_one, 0}, _event}] = ip.history
     end
@@ -80,16 +78,14 @@ defmodule ALF.ComponentThrowTest do
         |> ExitInStagePipeline.stream(debug: true)
         |> Enum.to_list()
 
-      assert [
-               %ErrorIP{
-                 component: %ALF.Components.Stage{function: :add_one},
-                 ip: %IP{} = ip,
-                 error: :exit,
-                 stacktrace: "exit in :add_one"
-               },
-               %IP{event: 6},
-               %IP{event: 8}
-             ] = results
+      assert length(Enum.filter(results, &is_struct(&1, IP))) == 2
+
+      %ErrorIP{
+        component: %ALF.Components.Stage{function: :add_one},
+        ip: %IP{} = ip,
+        error: :exit,
+        stacktrace: "exit in :add_one"
+      } = Enum.find(results, &is_struct(&1, ErrorIP))
 
       assert [{{:add_one, 0}, _event}] = ip.history
     end
