@@ -1,4 +1,5 @@
 TODOs:
-- Source and FileSource responsibility. Move general functions to Source. 
-  source = FileSource.new()
-  Source.stream(source)  
+- Mixed streams see ALF.MixStreamsTest ??? Do I need that?
+- Limit number of tasks in manager
+- Flow interface!!!
+- Composer docs

@@ -46,6 +46,6 @@ defmodule ALF.Examples.PlugWithExamplesTest do
       |> Pipeline.stream()
       |> Enum.to_list()
 
-    assert results == ["Hello Anton!", "Hello Baton!"]
+    assert Enum.sort(results) == ["Hello Anton!", "Hello Baton!"]
   end
 end

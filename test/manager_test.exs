@@ -366,11 +366,9 @@ defmodule ALF.ManagerTest do
         |> Manager.stream(SimplePipelineToStream, debug: true)
         |> Enum.to_list()
 
-      assert [
-               %ALF.IP{event: 4},
-               %ALF.IP{event: 6},
-               %ALF.IP{event: 8}
-             ] = results
+      assert Enum.find(results, &(&1.event == 4))
+      assert Enum.find(results, &(&1.event == 6))
+      assert Enum.find(results, &(&1.event == 8))
     end
   end
 
@@ -545,4 +543,48 @@ defmodule ALF.ManagerTest do
       assert length(components) == 4
     end
   end
+
+  #  describe "parallelism" do
+  #    defmodule Pp do
+  #      use ALF.DSL
+  #
+  #      @components [
+  #        stage(:aaa, count: 3),
+  #        stage(:bbb, count: 3),
+  #        stage(:ccc, count: 3)
+  #      ]
+  #
+  #      def aaa(event, _) do
+  #        IO.inspect("aaa #{event}")
+  #        Process.sleep(900)
+  #        event
+  #      end
+  #
+  #      def bbb(event, _) do
+  #        IO.inspect("bbb #{event}")
+  #        Process.sleep(900)
+  #        event
+  #      end
+  #
+  #      def ccc(event, _) do
+  #        IO.inspect("ccc #{event}")
+  #        Process.sleep(900)
+  #        event
+  #      end
+  #    end
+  #
+  #    setup do
+  #      Pp.start()
+  #      on_exit(&Pp.stop/0)
+  #    end
+  #
+  #    test "test" do
+  #      stream =
+  #        [1,2,3]
+  #        |> Pp.stream
+  ##        |> Stream.run
+  #      Enum.to_list(stream)
+  #      |> IO.inspect
+  #    end
+  #  end
 end

@@ -9,6 +9,8 @@ defmodule ALF.Manager do
             pipeline_sup_pid: nil,
             sup_pid: nil,
             producer_pid: nil,
+            tasks: %{},
+            ips: %{},
             telemetry: nil,
             sync: false
 
@@ -130,7 +132,7 @@ defmodule ALF.Manager do
   end
 
   defp do_call(pipeline_module, producer_name, event, opts) do
-    ip = build_ip(event, pipeline_module, opts[:debug])
+    ip = build_ip(event, pipeline_module, opts[:stream_ref], opts[:debug])
     Producer.load_ip(producer_name, ip)
     timeout = opts[:timeout]
 
@@ -149,7 +151,7 @@ defmodule ALF.Manager do
   end
 
   defp do_sync_call(pipeline_module, pipeline, event, opts) do
-    ip = build_ip(event, pipeline_module, opts[:debug])
+    ip = build_ip(event, pipeline_module, opts[:stream_ref], opts[:debug])
 
     case SyncRunner.run(pipeline, ip) do
       [] ->
@@ -184,10 +186,13 @@ defmodule ALF.Manager do
     ip =
       case opts[:send_result] do
         true ->
-          build_ip(event, pipeline_module, opts[:debug])
+          build_ip(event, pipeline_module, opts[:stream_ref], opts[:debug])
 
         false ->
-          %{build_ip(event, pipeline_module, opts[:debug]) | destination: false}
+          %{
+            build_ip(event, pipeline_module, opts[:stream_ref], opts[:debug])
+            | destination: false
+          }
       end
 
     Producer.load_ip(producer_name, ip)
@@ -212,26 +217,91 @@ defmodule ALF.Manager do
   end
 
   defp do_stream(pipeline_module, producer_name, stream, opts) do
-    stream_ref = opts[:stream_ref]
-    timeout = opts[:timeout]
-
     stream
+    |> Stream.concat([{:__done__, opts[:stream_ref]}])
     |> Stream.transform(
       nil,
-      fn event, nil ->
-        ip = build_ip(event, pipeline_module, opts[:debug])
-        ip = %{ip | stream_ref: stream_ref}
-        Producer.load_ip(producer_name, ip)
+      fn
+        {:__done__, stream_ref}, nil ->
+          ips = wait_for_done(pipeline_module, stream_ref)
+          {ips, nil}
 
-        case wait_result(stream_ref, [], {timeout, ip}) do
-          [] ->
-            {[], nil}
+        event, nil ->
+          ips =
+            GenServer.call(
+              pipeline_module,
+              {:process_event, event, pipeline_module, producer_name, opts}
+            )
 
-          ips ->
-            {Enum.reverse(Enum.map(ips, &format_ip/1)), nil}
-        end
+          {ips, nil}
       end
     )
+  end
+
+  def wait_for_done(pipeline_module, stream_ref) do
+    case GenServer.call(pipeline_module, {:done?, stream_ref}) do
+      {true, ips} ->
+        ips
+
+      {false, _} ->
+        Process.sleep(1)
+        wait_for_done(pipeline_module, stream_ref)
+    end
+  end
+
+  def handle_call({:done?, stream_ref}, _from, state) do
+    tasks_set = Map.fetch!(state.tasks, stream_ref)
+    {:reply, {MapSet.size(tasks_set) == 0, state.ips[stream_ref]}, state}
+  end
+
+  def handle_call({:process_event, event, pipeline_module, producer_name, opts}, _from, state) do
+    task =
+      Task.async(fn ->
+        stream_ref = opts[:stream_ref]
+        timeout = opts[:timeout]
+
+        ip = build_ip(event, pipeline_module, stream_ref, opts[:debug])
+        # TODO move to build_ip  ->  build_ip(event, pipeline_module, opts)
+        Producer.load_ip(producer_name, ip)
+
+        ips =
+          case wait_result(stream_ref, [], {timeout, ip}) do
+            [] ->
+              []
+
+            ips ->
+              Enum.reverse(Enum.map(ips, &format_ip/1))
+          end
+
+        {ips, stream_ref}
+      end)
+
+    tasks_set = Map.get(state.tasks, opts[:stream_ref], MapSet.new())
+    tasks_set = MapSet.put(tasks_set, task.ref)
+    tasks = Map.put(state.tasks, opts[:stream_ref], tasks_set)
+
+    ips = Map.get(state.ips, opts[:stream_ref], [])
+    state = %{state | tasks: tasks, ips: Map.put(state.ips, opts[:stream_ref], [])}
+    {:reply, ips, state}
+  end
+
+  @impl true
+  def handle_info({task_ref, {ips, stream_ref}}, state) do
+    tasks_set = Map.fetch!(state.tasks, stream_ref)
+    tasks_set = MapSet.delete(tasks_set, task_ref)
+    tasks = Map.put(state.tasks, stream_ref, tasks_set)
+
+    old_ips = Map.get(state.ips, stream_ref, [])
+    ips = Map.put(state.ips, stream_ref, old_ips ++ ips)
+
+    state = %{state | tasks: tasks, ips: ips}
+
+    {:noreply, state}
+  end
+
+  def handle_info({:DOWN, _task_ref, :process, _task_pid, :normal}, state) do
+    # TODO track this somehow, what if task crashes in the middle
+    {:noreply, state}
   end
 
   defp do_sync_stream(pipeline_module, pipeline, stream, opts) do
@@ -239,7 +309,7 @@ defmodule ALF.Manager do
     |> Stream.transform(
       nil,
       fn event, nil ->
-        ip = build_ip(event, pipeline_module, opts[:debug])
+        ip = build_ip(event, pipeline_module, opts[:srteam_ref], opts[:debug])
         ips = SyncRunner.run(pipeline, ip)
         ips = Enum.map(ips, &format_ip/1)
         {ips, nil}
@@ -486,9 +556,10 @@ defmodule ALF.Manager do
   defp format_ip(%IP{debug: false} = ip), do: ip.event
   defp format_ip(%ErrorIP{} = error_ip), do: error_ip
 
-  defp build_ip(event, pipeline_module, debug) do
+  defp build_ip(event, pipeline_module, stream_ref, debug) do
     %IP{
       ref: make_ref(),
+      stream_ref: stream_ref,
       destination: self(),
       init_event: event,
       event: event,

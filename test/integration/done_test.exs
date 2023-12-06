@@ -27,7 +27,7 @@ defmodule ALF.DoneTest do
         |> DoneInStagePipeline.stream()
         |> Enum.to_list()
 
-      assert results == [4, 3, 4]
+      assert Enum.sort(results) == [3, 4, 4]
     end
   end
 
@@ -66,7 +66,7 @@ defmodule ALF.DoneTest do
         |> DoneModuleInStagePipeline.stream()
         |> Enum.to_list()
 
-      assert results == [4, 3, 4]
+      assert Enum.sort(results) == [3, 4, 4]
     end
   end
 
@@ -96,11 +96,8 @@ defmodule ALF.DoneTest do
         |> DoneWithErrorInStagePipeline.stream()
         |> Enum.to_list()
 
-      assert [
-               4,
-               %ALF.ErrorIP{error: %RuntimeError{message: "error"}},
-               %ALF.ErrorIP{error: %RuntimeError{message: "error"}}
-             ] = results
+      assert Enum.member?(results, 4)
+      assert length(Enum.filter(results, &is_struct(&1, ALF.ErrorIP))) == 2
     end
   end
 

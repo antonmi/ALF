@@ -34,15 +34,13 @@ defmodule ALF.ComponentErrorTest do
         |> ErrorInStagePipeline.stream(debug: true)
         |> Enum.to_list()
 
-      assert [
-               %ErrorIP{
-                 component: %ALF.Components.Stage{function: :add_one},
-                 ip: %IP{} = ip,
-                 error: %RuntimeError{message: "Error in :add_one"}
-               },
-               %IP{event: 6},
-               %IP{event: 8}
-             ] = results
+      assert length(Enum.filter(results, &is_struct(&1, IP))) == 2
+
+      %ErrorIP{
+        component: %ALF.Components.Stage{function: :add_one},
+        ip: %IP{} = ip,
+        error: %RuntimeError{message: "Error in :add_one"}
+      } = Enum.find(results, &is_struct(&1, ErrorIP))
 
       assert [{{:add_one, 0}, _event}] = ip.history
     end
@@ -79,16 +77,14 @@ defmodule ALF.ComponentErrorTest do
         |> ThrowInStagePipeline.stream(debug: true)
         |> Enum.to_list()
 
-      assert [
-               %ErrorIP{
-                 component: %ALF.Components.Stage{function: :add_one},
-                 ip: %IP{} = ip,
-                 error: :throw,
-                 stacktrace: "throw in :add_one"
-               },
-               %IP{event: 6},
-               %IP{event: 8}
-             ] = results
+      assert length(Enum.filter(results, &is_struct(&1, IP))) == 2
+
+      %ErrorIP{
+        component: %ALF.Components.Stage{function: :add_one},
+        ip: %IP{} = ip,
+        error: :throw,
+        stacktrace: "throw in :add_one"
+      } = Enum.find(results, &is_struct(&1, ErrorIP))
 
       assert [{{:add_one, 0}, _event}] = ip.history
     end
@@ -124,15 +120,13 @@ defmodule ALF.ComponentErrorTest do
         |> ErrorInStageMultTwoPipeline.stream(debug: true)
         |> Enum.to_list()
 
-      assert [
-               %ErrorIP{
-                 component: %ALF.Components.Stage{function: :mult_two},
-                 ip: %IP{} = ip,
-                 error: %RuntimeError{message: "Error in :mult_two"}
-               },
-               %IP{},
-               %IP{}
-             ] = results
+      assert length(Enum.filter(results, &is_struct(&1, IP))) == 2
+
+      %ErrorIP{
+        component: %ALF.Components.Stage{function: :mult_two},
+        ip: %IP{} = ip,
+        error: %RuntimeError{message: "Error in :mult_two"}
+      } = Enum.find(results, &is_struct(&1, ErrorIP))
 
       assert [{{:mult_two, 0}, _}, {{:add_one, 0}, _}] = ip.history
     end
