@@ -205,7 +205,7 @@ defmodule ALF.Manager do
     opts = [
       debug: Keyword.get(opts, :debug, false),
       timeout: Keyword.get(opts, :timeout, @default_timeout),
-      stream_ref: Keyword.get(opts, :stream_ref, make_ref())
+      stream_ref: make_ref()
     ]
 
     case check_if_ready(pipeline_module) do
