@@ -402,14 +402,6 @@ defmodule ALF.Manager do
     {:reply, {ips, tasks_count}, state}
   end
 
-  defp maybe_wait(tasks_count) do
-    if tasks_count > 2 * @wait_tasks_count do
-      div = div(tasks_count, @wait_tasks_count)
-      to_sleep = trunc(:math.pow(2, div))
-      Process.sleep(to_sleep)
-    end
-  end
-
   def handle_call({:done?, stream_ref}, _from, state) do
     tasks_set = Map.fetch!(state.tasks, stream_ref)
     {:reply, {MapSet.size(tasks_set) == 0, state.ips[stream_ref]}, state}
@@ -519,6 +511,14 @@ defmodule ALF.Manager do
           stages = Map.delete(state.stages, pid)
           {:noreply, %{state | stages: stages, removed_stages: removed_stages}}
       end
+    end
+  end
+
+  defp maybe_wait(tasks_count) do
+    if tasks_count > 2 * @wait_tasks_count do
+      div = div(tasks_count, @wait_tasks_count)
+      to_sleep = trunc(:math.pow(2, div))
+      Process.sleep(to_sleep)
     end
   end
 

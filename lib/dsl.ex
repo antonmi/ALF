@@ -228,6 +228,24 @@ defmodule ALF.DSL do
         ALF.Manager.stream(stream, __MODULE__, opts)
       end
 
+      @spec flow(map(), list(), Keyword.t()) :: Enumerable.t()
+      def flow(flow, names, opts \\ [debug: false])
+
+      def flow(flow, names, opts) when is_map(flow) and is_list(names) do
+        Enum.reduce(flow, %{}, fn {name, stream}, acc ->
+          if name in names do
+            stream = ALF.Manager.stream(stream, __MODULE__, opts)
+            Map.put(acc, name, stream)
+          else
+            Map.put(acc, name, stream)
+          end
+        end)
+      end
+
+      def flow(flow, name, opts) when is_map(flow) do
+        flow(flow, [name], opts)
+      end
+
       @spec components() :: list(map())
       def components() do
         ALF.Manager.components(__MODULE__)
