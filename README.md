@@ -279,17 +279,6 @@ defmodule MySwitchModule do
 end
 ```
 
-### broadcaster
-
-Broadcaster an IP to all the stages connected.
-
-```elixir
-[
-  broadcaster(:my_broadcast),
-  stage(:foo, count: 5)
-]
-```
-
 ### Goto
 
 Send packet to a given `goto_point`

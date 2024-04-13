@@ -63,21 +63,6 @@ defmodule ALF.DSL.ValidationsTest do
     end
   end
 
-  describe "Broadcaster" do
-    test "invalid options", %{sup_pid: sup_pid} do
-      assert_raise DSLError,
-                   "Wrong options for the broadcaster broadcaster: [:foo]. " <>
-                     "Available options are [:count]",
-                   fn ->
-                     defmodule BroadcasterWithWrongRequiredOpts do
-                       use ALF.DSL
-
-                       @components [broadcaster(:broadcaster, foo: :bar)]
-                     end
-                   end
-    end
-  end
-
   describe "Goto" do
     test "required options", %{sup_pid: sup_pid} do
       assert_raise DSLError,

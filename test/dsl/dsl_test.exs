@@ -6,7 +6,6 @@ defmodule ALF.DSLTest do
   alias ALF.Components.{
     Stage,
     Switch,
-    Broadcaster,
     GotoPoint,
     Goto,
     Plug,
@@ -29,7 +28,6 @@ defmodule ALF.DSLTest do
 
     @components [
       goto_point(:goto_point),
-      broadcaster(:broadcaster),
       stage(Mod1, count: 2),
       switch(:cond_function,
         branches: %{
@@ -82,10 +80,9 @@ defmodule ALF.DSLTest do
     test "build PipelineB", %{sup_pid: sup_pid} do
       {:ok, pipeline} = Builder.build(PipelineB, sup_pid, false)
 
-      [goto_point, broadcaster, _stage11, _stage12, switch, goto] = pipeline.components
+      [goto_point, _stage11, _stage12, switch, goto] = pipeline.components
 
       assert %GotoPoint{name: :goto_point} = goto_point
-      assert %Broadcaster{name: :broadcaster} = broadcaster
 
       assert %Switch{
                name: :cond_function,

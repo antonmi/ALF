@@ -51,12 +51,16 @@ defmodule ALF.Components.Goto do
 
   @impl true
   def handle_call({:find_where_to_go, components}, _from, state) do
-    goto_point =
-      components
-      |> Enum.filter(&(&1.name == state.to and &1.__struct__ == GotoPoint))
-      |> Enum.random()
+    state =
+      case Enum.filter(components, &(&1.name == state.to and &1.__struct__ == GotoPoint)) do
+        [] ->
+          state
 
-    state = %{state | to_pid: goto_point.pid}
+        goto_points ->
+          goto_point = Enum.random(goto_points)
+          %{state | to_pid: goto_point.pid}
+      end
+
     {:reply, state, [], state}
   end
 
