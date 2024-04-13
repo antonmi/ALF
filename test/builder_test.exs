@@ -2,7 +2,7 @@ defmodule ALF.BuilderTest do
   use ExUnit.Case, async: true
 
   alias ALF.Builder
-  alias ALF.Components.{Stage, Switch, Broadcaster}
+  alias ALF.Components.{Stage, Switch}
 
   setup do
     sup_pid = Process.whereis(ALF.DynamicSupervisor)
@@ -34,16 +34,6 @@ defmodule ALF.BuilderTest do
           },
           function: :cond_function
         }
-      ]
-    end
-  end
-
-  defmodule PipelineWithBroadcaster do
-    def alf_components do
-      [
-        %Broadcaster{name: :broadcaster},
-        %Stage{name: :stage1, count: 2},
-        %Stage{name: :stage2}
       ]
     end
   end
@@ -95,18 +85,6 @@ defmodule ALF.BuilderTest do
     end
   end
 
-  describe "broadcaster" do
-    test "build pipeline with broadcaster", %{sup_pid: sup_pid} do
-      {:ok, pipeline} = Builder.build(PipelineWithBroadcaster, sup_pid, :pipeline)
-
-      [broadcaster, _stage11, _stage12, stage2] = pipeline.components
-
-      assert %Broadcaster{name: :broadcaster, pid: broadcaster_pid} = broadcaster
-      assert is_pid(broadcaster_pid)
-      assert %Stage{name: :stage2} = stage2
-    end
-  end
-
   describe "build_sync" do
     test "build with spec_simple_sync" do
       [producer, stage, consumer] = Builder.build_sync(SimplePipeline, true)
@@ -140,20 +118,6 @@ defmodule ALF.BuilderTest do
       assert stage2.subscribed_to == [{switch.pid, :sync}]
 
       assert consumer.subscribed_to == [{stage1.pid, :sync}, {stage2.pid, :sync}]
-    end
-
-    test "build with spec_with_broadcaster" do
-      [producer, broadcaster, stage1, stage2, consumer] =
-        Builder.build_sync(PipelineWithBroadcaster, true)
-
-      assert broadcaster.telemetry
-      assert broadcaster.subscribed_to == [{producer.pid, :sync}]
-
-      assert stage1.name == :stage1
-      assert stage1.pid
-      assert stage1.subscribed_to == [{broadcaster.pid, :sync}]
-
-      assert consumer.subscribed_to == [{stage2.pid, :sync}]
     end
   end
 end

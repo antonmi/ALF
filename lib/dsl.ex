@@ -3,7 +3,6 @@ defmodule ALF.DSL do
     Basic,
     Stage,
     Switch,
-    Broadcaster,
     DeadEnd,
     GotoPoint,
     Goto,
@@ -38,19 +37,6 @@ defmodule ALF.DSL do
         Basic.build_component(Switch, unquote(atom), unquote(count), unquote(opts), __MODULE__)
 
       %{switch | branches: branches}
-    end
-  end
-
-  defmacro broadcaster(name, options \\ []) do
-    count = options[:count] || 1
-
-    quote do
-      Broadcaster.validate_options(unquote(name), unquote(options))
-
-      broadcaster =
-        Basic.build_component(Broadcaster, unquote(name), unquote(count), %{}, __MODULE__)
-
-      %{broadcaster | count: unquote(count)}
     end
   end
 

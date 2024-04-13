@@ -2,7 +2,7 @@ defmodule ALF.PipelineTest do
   use ExUnit.Case, async: true
 
   alias ALF.{Builder, Pipeline}
-  alias ALF.Components.{Producer, Stage, Switch, Broadcaster, Consumer}
+  alias ALF.Components.{Producer, Stage, Switch, Consumer}
 
   defmodule Pipeline1 do
     def alf_components do
@@ -13,9 +13,7 @@ defmodule ALF.PipelineTest do
           branches: %{
             part1: [%Stage{name: :stage_in_part1}],
             part2: [
-              %Stage{name: :stage_in_part2},
-              %Broadcaster{name: :broadcaster},
-              %Stage{name: :stage_after_broadcaster, count: 2}
+              %Stage{name: :stage_in_part2}
             ]
           },
           function: :cond_function
@@ -39,9 +37,7 @@ defmodule ALF.PipelineTest do
         branches: %{
           part1: [%Stage{name: :stage_in_part1, pid: stage_in_part1_pid}],
           part2: [
-            %Stage{name: :stage_in_part2, pid: stage_in_part2_pid},
-            %Broadcaster{name: :broadcaster, pid: broadcaster_pid},
-            %Stage{name: :stage_after_broadcaster, pid: stage_after_broadcaster_pid, count: 2}
+            %Stage{name: :stage_in_part2, pid: stage_in_part2_pid}
           ]
         },
         function: :cond_function
@@ -56,8 +52,6 @@ defmodule ALF.PipelineTest do
       switch_stage1_pid: switch_stage1_pid,
       stage_in_part1_pid: stage_in_part1_pid,
       stage_in_part2_pid: stage_in_part2_pid,
-      broadcaster_pid: broadcaster_pid,
-      stage_after_broadcaster_pid: stage_after_broadcaster_pid,
       last_stage_pid: last_stage_pid
     }
   end
@@ -84,14 +78,6 @@ defmodule ALF.PipelineTest do
     } do
       assert %Stage{name: :stage_in_part2} =
                Pipeline.find_component_by_pid(pipeline, stage_in_part2_pid)
-    end
-
-    test "for stage_after_broadcaster_pid", %{
-      pipeline: pipeline,
-      stage_after_broadcaster_pid: stage_after_broadcaster_pid
-    } do
-      assert %Stage{name: :stage_after_broadcaster} =
-               Pipeline.find_component_by_pid(pipeline, stage_after_broadcaster_pid)
     end
 
     test "for last_stage_pid", %{

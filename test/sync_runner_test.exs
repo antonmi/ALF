@@ -2,7 +2,7 @@ defmodule ALF.SyncRunnerTest do
   use ExUnit.Case, async: true
 
   alias ALF.{Builder, SyncRunner}
-  alias ALF.Components.{Producer, Stage, Switch, Broadcaster, Consumer}
+  alias ALF.Components.{Producer, Stage, Switch, Consumer}
 
   defmodule Pipeline1 do
     def alf_components do
@@ -13,8 +13,7 @@ defmodule ALF.SyncRunnerTest do
           branches: %{
             part1: [%Stage{name: :stage_in_part1}],
             part2: [
-              %Broadcaster{name: :broadcaster},
-              %Stage{name: :stage_after_broadcaster}
+              %Stage{name: :stage_in_part2}
             ]
           },
           function: :cond_function
@@ -36,8 +35,7 @@ defmodule ALF.SyncRunnerTest do
         branches: %{
           part1: [%Stage{name: :stage_in_part1, pid: stage_in_part1_pid}],
           part2: [
-            %Broadcaster{name: :broadcaster, pid: broadcaster_pid},
-            %Stage{name: :stage_after_broadcaster, pid: stage_after_broadcaster_pid}
+            %Stage{name: :stage_in_part2, pid: stage_in_part2}
           ]
         },
         function: :cond_function
@@ -52,8 +50,7 @@ defmodule ALF.SyncRunnerTest do
       stage1_pid: stage1_pid,
       switch_stage1_pid: switch_stage1_pid,
       stage_in_part1_pid: stage_in_part1_pid,
-      broadcaster_pid: broadcaster_pid,
-      stage_after_broadcaster_pid: stage_after_broadcaster_pid,
+      stage_in_part2: stage_in_part2,
       last_stage_pid: last_stage_pid,
       consumer_pid: consumer_pid
     }
@@ -108,16 +105,14 @@ defmodule ALF.SyncRunnerTest do
 
     test "for stage_after_broadcaster_pid", %{
       pipeline: pipeline,
-      broadcaster_pid: broadcaster_pid,
-      stage_after_broadcaster_pid: stage_after_broadcaster_pid,
+      stage_in_part2: stage_in_part2,
       last_stage_pid: last_stage_pid,
       consumer_pid: consumer_pid
     } do
-      {path, true} = SyncRunner.path(pipeline, broadcaster_pid)
+      {path, true} = SyncRunner.path(pipeline, stage_in_part2)
 
       assert path == [
-               broadcaster_pid,
-               stage_after_broadcaster_pid,
+               stage_in_part2,
                last_stage_pid,
                consumer_pid
              ]
@@ -132,11 +127,6 @@ defmodule ALF.SyncRunnerTest do
   describe "find_component/2" do
     test "find switch", %{pipeline: pipeline, switch_stage1_pid: switch_stage1_pid} do
       assert %Switch{name: :switch} = SyncRunner.find_component(pipeline, switch_stage1_pid)
-    end
-
-    test "find broadcaster", %{pipeline: pipeline, broadcaster_pid: broadcaster_pid} do
-      assert %Broadcaster{name: :broadcaster} =
-               SyncRunner.find_component(pipeline, broadcaster_pid)
     end
   end
 end
