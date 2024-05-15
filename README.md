@@ -216,7 +216,7 @@ Check `@dsl_options` in [lib/components](https://github.com/antonmi/ALF/tree/mai
 
 ### Stage
 
-Stage is the main component where one puts a piece of application logic. It might be a simple 2-arity function or a module with `call/2` function:
+Stage is the stateless component where one puts a piece of application logic. It might be a simple 2-arity function or a module with `call/2` function:
 
 ```elixir
   stage(:my_fun, opts: %{foo: bar})
@@ -243,6 +243,37 @@ There is the `:count` option that allows running several copies of a stage.
   stage(:my_fun, count: 5)
 ```
 Use it for controlling parallelism.
+
+### Composer
+
+Composer is a stateful component, the state of the composer ("memo") can be updated on each event.
+
+Think about `Enum.reduce/3`, where one can set the initial value of accumulator and then return a new value after each iteration.
+
+`composer(:sum, memo: 0)`
+
+The implementation function is a 3-arity function with the "memo" as the second argument.
+
+The function must return a `{list(event), new_memo}` tuple.
+
+```elixir
+def sum(event, memo, _opts) do
+  new_memo = memo + event
+  {[event], new_memo} 
+end
+```
+
+The first element in the returned value is a list of events, meaning that a composer can produce many events or no events at all.
+
+Both, having memory and the ability to return several events give the composer component a huge power.
+
+See, for example, the [telegram_test.exs](https://github.com/antonmi/ALF/tree/main/test/examples/telegram_test.exs) example which solves the famous "Telegram Problem".
+
+#### Composer vs Stage
+
+One may have noticed that the stage component is actually a special case of the composer - no memory, only one event is returned.
+
+However, I would keep them as separate components in order to explicitly separate stateless and stateful transformation in a pipeline.
 
 ### Switch
 
@@ -322,11 +353,6 @@ Event won't propagate further.
 ```elixir
 dead_end(:dead_end)
 ```
-### Composer
-
-TODO
-
-See the [telegram_test.exs](https://github.com/antonmi/ALF/tree/main/test/examples/telegram_test.exs) example which solves the famous "Telegram Problem".
 
 ## Implicit components
 
