@@ -145,9 +145,7 @@ defmodule ALF.Manager do
         format_ip(ip)
 
       ips ->
-        ips
-        |> Enum.reverse()
-        |> Enum.map(&format_ip/1)
+        Enum.map(ips, &format_ip/1)
     end
   end
 
@@ -277,7 +275,7 @@ defmodule ALF.Manager do
         acc
 
       {^ref, ip} ->
-        [ip | acc]
+        acc ++ [ip]
     after
       timeout ->
         error_ip = ALF.Components.Basic.build_error_ip(initial_ip, :timeout, [], :no_info)
